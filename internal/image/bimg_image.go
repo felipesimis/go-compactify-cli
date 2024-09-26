@@ -3,6 +3,7 @@ package image
 import "github.com/h2non/bimg"
 
 type BimgImage interface {
+	Resize(width, height int) ([]byte, error)
 	Size() (bimg.ImageSize, error)
 }
 
@@ -16,4 +17,8 @@ func NewBimgImage(buffer []byte) BimgImage {
 
 func (b *BimgImageWrapper) Size() (bimg.ImageSize, error) {
 	return b.image.Size()
+}
+
+func (b *BimgImageWrapper) Resize(width, height int) ([]byte, error) {
+	return b.image.Resize(width, height)
 }
