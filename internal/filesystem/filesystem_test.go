@@ -91,3 +91,16 @@ func TestFileSystemWrapper_CreateSiblingDirError(t *testing.T) {
 	assert.Empty(t, newDir)
 	assert.EqualError(t, err, exportedErr.Error())
 }
+
+func TestFileSystemWrapper_CreateSiblingDir(t *testing.T) {
+	fs := NewFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "test")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	newDir, err := fs.CreateSiblingDir(tmpDir, "_suffix")
+	assert.NoError(t, err)
+	assert.DirExists(t, newDir)
+	assert.Contains(t, newDir, "_suffix")
+}
