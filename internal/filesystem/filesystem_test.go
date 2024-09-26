@@ -107,7 +107,6 @@ func TestFileSystemWrapper_CreateSiblingDir(t *testing.T) {
 
 func TestFileSystemWrapper_ReadFileError(t *testing.T) {
 	fs := NewFileSystem()
-
 	tmpDir, err := os.MkdirTemp("", "test")
 	assert.NoError(t, err)
 
@@ -116,4 +115,19 @@ func TestFileSystemWrapper_ReadFileError(t *testing.T) {
 	expectedErr := &ErrReadFile{Path: nonExistentPath, Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
 	assert.Nil(t, data)
 	assert.EqualError(t, err, expectedErr.Error())
+}
+
+func TestFileSystemWrapper_ReadFile(t *testing.T) {
+	fs := NewFileSystem()
+	tmpDir, err := os.MkdirTemp("", "test")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	tmpFile, err := os.CreateTemp(tmpDir, "file*.txt")
+	assert.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	data, err := fs.ReadFile(tmpFile.Name())
+	assert.NoError(t, err)
+	assert.NotNil(t, data)
 }
