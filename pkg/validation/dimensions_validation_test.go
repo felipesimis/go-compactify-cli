@@ -11,3 +11,9 @@ func TestDimensionsValidation_Validate_Error(t *testing.T) {
 	err := v.Validate()
 	assert.Equal(t, ErrInvalidDimensions, err)
 }
+
+func TestDimensionsValidation_Validate_Success(t *testing.T) {
+	v := &DimensionsValidation{Width: 100, Height: 100}
+	err := v.Validate()
+	assert.Nil(t, err)
+}
