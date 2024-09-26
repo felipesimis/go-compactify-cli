@@ -28,3 +28,12 @@ type ErrCreateSiblingDir struct {
 func (e *ErrCreateSiblingDir) Error() string {
 	return fmt.Sprintf("failed to create sibling directory -> %v", e.Err)
 }
+
+type ErrReadFile struct {
+	Path string
+	Err  error
+}
+
+func (e *ErrReadFile) Error() string {
+	return fmt.Sprintf("failed to read file '%s': %v", e.Path, e.Err)
+}

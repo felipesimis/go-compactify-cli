@@ -104,3 +104,16 @@ func TestFileSystemWrapper_CreateSiblingDir(t *testing.T) {
 	assert.DirExists(t, newDir)
 	assert.Contains(t, newDir, "_suffix")
 }
+
+func TestFileSystemWrapper_ReadFileError(t *testing.T) {
+	fs := NewFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "test")
+	assert.NoError(t, err)
+
+	nonExistentPath := filepath.Join(tmpDir, "nonexistent")
+	data, err := fs.ReadFile(nonExistentPath)
+	expectedErr := &ErrReadFile{Path: nonExistentPath, Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
+	assert.Nil(t, data)
+	assert.EqualError(t, err, expectedErr.Error())
+}
