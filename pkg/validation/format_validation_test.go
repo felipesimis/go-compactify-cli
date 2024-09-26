@@ -9,5 +9,11 @@ import (
 func TestFormatValidation_Validate_EmptyFormat(t *testing.T) {
 	f := FormatValidation{Format: ""}
 	err := f.Validate()
+	assert.Equal(t, ErrFormatRequired, err)
+}
+
+func TestFormatValidation_Validate_InvalidFormat(t *testing.T) {
+	f := FormatValidation{Format: "invalid"}
+	err := f.Validate()
 	assert.Equal(t, ErrInvalidFormat, err)
 }
