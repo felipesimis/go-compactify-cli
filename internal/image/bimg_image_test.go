@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/h2non/bimg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,4 +36,13 @@ func TestBimgImageWrapper_Resize(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 300, size.Width)
 	assert.Equal(t, 200, size.Height)
+}
+
+func TestBimgImageWrapper_Convert(t *testing.T) {
+	img := NewBimgImage(mockedImage())
+	converted, err := img.Convert(bimg.PNG)
+
+	assert.Nil(t, err)
+	assert.NotEmpty(t, converted)
+	assert.Equal(t, "png", NewBimgImage(converted).ImageType())
 }
