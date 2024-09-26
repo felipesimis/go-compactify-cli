@@ -11,6 +11,7 @@ type FileSystem interface {
 	ReadDir(path string) ([]string, error)
 	CreateSiblingDir(path, suffix string) (string, error)
 	ReadFile(path string) ([]byte, error)
+	WriteFile(path string, data []byte) error
 }
 
 type FileSystemWrapper struct {
@@ -76,4 +77,12 @@ func (fs *FileSystemWrapper) ReadFile(path string) ([]byte, error) {
 		return nil, &ErrReadFile{Path: path, Err: err}
 	}
 	return file, nil
+}
+
+func (fs *FileSystemWrapper) WriteFile(name string, data []byte) error {
+	err := os.WriteFile(name, data, 0644)
+	if err != nil {
+		return &ErrWriteFile{Path: name, Err: err}
+	}
+	return nil
 }
