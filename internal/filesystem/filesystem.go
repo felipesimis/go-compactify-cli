@@ -20,7 +20,7 @@ func NewFileSystem() FileSystem {
 func (fs *FileSystemWrapper) ReadDir(path string) ([]string, error) {
 	dir, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, &ErrOpenDir{Path: path, Err: err}
 	}
 	defer dir.Close()
 
