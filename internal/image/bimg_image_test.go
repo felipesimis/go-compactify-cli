@@ -46,3 +46,16 @@ func TestBimgImageWrapper_Convert(t *testing.T) {
 	assert.NotEmpty(t, converted)
 	assert.Equal(t, "png", NewBimgImage(converted).ImageType())
 }
+
+func TestBimgImageWrapper_Crop(t *testing.T) {
+	img := NewBimgImage(mockedImage())
+	cropped, err := img.Crop(300, 200, bimg.GravitySmart)
+
+	assert.Nil(t, err)
+	assert.NotEmpty(t, cropped)
+
+	size, err := NewBimgImage(cropped).Size()
+	assert.Nil(t, err)
+	assert.Equal(t, 300, size.Width)
+	assert.Equal(t, 200, size.Height)
+}
