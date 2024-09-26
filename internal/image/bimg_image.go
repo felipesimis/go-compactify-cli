@@ -5,6 +5,8 @@ import "github.com/h2non/bimg"
 type BimgImage interface {
 	Resize(width, height int) ([]byte, error)
 	Size() (bimg.ImageSize, error)
+	Convert(format bimg.ImageType) ([]byte, error)
+	ImageType() string
 }
 
 type BimgImageWrapper struct {
@@ -21,4 +23,12 @@ func (b *BimgImageWrapper) Size() (bimg.ImageSize, error) {
 
 func (b *BimgImageWrapper) Resize(width, height int) ([]byte, error) {
 	return b.image.Resize(width, height)
+}
+
+func (b *BimgImageWrapper) Convert(format bimg.ImageType) ([]byte, error) {
+	return b.image.Convert(format)
+}
+
+func (b *BimgImageWrapper) ImageType() string {
+	return b.image.Type()
 }
