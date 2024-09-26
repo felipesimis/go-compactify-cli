@@ -23,6 +23,14 @@ func (m *MockDir) Readdir(count int) ([]os.FileInfo, error) {
 	return args.Get(0).([]os.FileInfo), args.Error(1)
 }
 
+type MockMkdirer struct {
+	Err error
+}
+
+func (m *MockMkdirer) Mkdir(name string, perm os.FileMode) error {
+	return m.Err
+}
+
 func TestFileSystemWrapper_ReadDir(t *testing.T) {
 	fs := NewFileSystem()
 
@@ -67,9 +75,19 @@ func TestFileSystemWrapper_ReaddirError(t *testing.T) {
 	mockDir.On("Readdir", -1).Return(nil, errors.New("simulated readdir error"))
 
 	files, err := fs.(*FileSystemWrapper).readDir(mockDir, "/mock/path")
-	expectedErr := &ReadDirError{Path: "/mock/path", Err: errors.New("simulated readdir error")}
+	expectedErr := &ErrReadDir{Path: "/mock/path", Err: errors.New("simulated readdir error")}
 	assert.Nil(t, files)
 	assert.EqualError(t, err, expectedErr.Error())
 
 	mockDir.AssertExpectations(t)
+}
+
+func TestFileSystemWrapper_CreateSiblingDirError(t *testing.T) {
+	mockMkdirer := &MockMkdirer{Err: errors.New("mock error")}
+	fs := &FileSystemWrapper{Mkdirer: mockMkdirer}
+
+	newDir, err := fs.CreateSiblingDir("/some/path", "_suffix")
+	exportedErr := &ErrCreateSiblingDir{Err: mockMkdirer.Err}
+	assert.Empty(t, newDir)
+	assert.EqualError(t, err, exportedErr.Error())
 }
