@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,4 +31,17 @@ func TestFileSystemWrapper_ReadDir(t *testing.T) {
 	for _, file := range result {
 		assert.Contains(t, files, filepath.Base(file))
 	}
+}
+
+func TestFileSystemWrapper_OpenError(t *testing.T) {
+	fs := NewFileSystem()
+
+	tmpDir, err := os.MkdirTemp("", "test")
+	assert.NoError(t, err)
+
+	nonExistentPath := filepath.Join(tmpDir, "nonexistent")
+	files, err := fs.ReadDir(nonExistentPath)
+	expectedErr := &ErrOpenDir{Path: nonExistentPath, Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
+	assert.Nil(t, files)
+	assert.EqualError(t, err, expectedErr.Error())
 }
