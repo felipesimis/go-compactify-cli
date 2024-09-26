@@ -9,16 +9,19 @@ import (
 
 type FileSystem interface {
 	ReadDir(path string) ([]string, error)
+	CreateSiblingDir(path, suffix string) (string, error)
 }
 
-type FileSystemWrapper struct{}
+type FileSystemWrapper struct {
+	Mkdirer Mkdirer
+}
 
 type Dir interface {
 	Readdir(count int) ([]os.FileInfo, error)
 }
 
 func NewFileSystem() FileSystem {
-	return &FileSystemWrapper{}
+	return &FileSystemWrapper{Mkdirer: &OSWrapper{}}
 }
 
 func (fs *FileSystemWrapper) ReadDir(path string) ([]string, error) {
@@ -34,7 +37,7 @@ func (fs *FileSystemWrapper) ReadDir(path string) ([]string, error) {
 func (fs *FileSystemWrapper) readDir(dir Dir, path string) ([]string, error) {
 	fileInfos, err := dir.Readdir(-1)
 	if err != nil {
-		return nil, &ReadDirError{Path: path, Err: err}
+		return nil, &ErrReadDir{Path: path, Err: err}
 	}
 
 	var files []string
@@ -44,4 +47,24 @@ func (fs *FileSystemWrapper) readDir(dir Dir, path string) ([]string, error) {
 		}
 	}
 	return files, nil
+}
+
+type Mkdirer interface {
+	Mkdir(name string, perm os.FileMode) error
+}
+
+type OSWrapper struct{}
+
+func (o *OSWrapper) Mkdir(name string, perm os.FileMode) error {
+	return os.Mkdir(name, perm)
+}
+
+func (fs *FileSystemWrapper) CreateSiblingDir(path, suffix string) (string, error) {
+	parentDir := filepath.Dir(path)
+	newDir := filepath.Join(parentDir, filepath.Base(path)+suffix)
+	err := fs.Mkdirer.Mkdir(newDir, os.ModePerm)
+	if err != nil {
+		return "", &ErrCreateSiblingDir{Err: err}
+	}
+	return newDir, nil
 }
