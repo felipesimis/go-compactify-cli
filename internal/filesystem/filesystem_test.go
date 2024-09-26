@@ -140,3 +140,15 @@ func TestFileSystemWrapper_WriteFileError(t *testing.T) {
 	expectedErr := &ErrWriteFile{Path: invalidPath, Err: fmt.Errorf("open %s: no such file or directory", invalidPath)}
 	assert.EqualError(t, err, expectedErr.Error())
 }
+
+func TestFileSystemWrapper_WriteFile(t *testing.T) {
+	fs := NewFileSystem()
+	tmpDir, err := os.MkdirTemp("", "test")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	tmpFile := filepath.Join(tmpDir, "image.png")
+	err = fs.WriteFile(tmpFile, []byte("data"))
+	assert.NoError(t, err)
+	assert.FileExists(t, tmpFile)
+}
