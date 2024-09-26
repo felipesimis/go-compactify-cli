@@ -7,6 +7,7 @@ type BimgImage interface {
 	Size() (bimg.ImageSize, error)
 	Convert(format bimg.ImageType) ([]byte, error)
 	ImageType() string
+	Crop(width, height int, gravity bimg.Gravity) ([]byte, error)
 }
 
 type BimgImageWrapper struct {
@@ -31,4 +32,8 @@ func (b *BimgImageWrapper) Convert(format bimg.ImageType) ([]byte, error) {
 
 func (b *BimgImageWrapper) ImageType() string {
 	return b.image.Type()
+}
+
+func (b *BimgImageWrapper) Crop(width, height int, gravity bimg.Gravity) ([]byte, error) {
+	return b.image.Crop(width, height, gravity)
 }
