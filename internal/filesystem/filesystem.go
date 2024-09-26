@@ -13,6 +13,10 @@ type FileSystem interface {
 
 type FileSystemWrapper struct{}
 
+type Dir interface {
+	Readdir(count int) ([]os.FileInfo, error)
+}
+
 func NewFileSystem() FileSystem {
 	return &FileSystemWrapper{}
 }
@@ -20,13 +24,17 @@ func NewFileSystem() FileSystem {
 func (fs *FileSystemWrapper) ReadDir(path string) ([]string, error) {
 	dir, err := os.Open(path)
 	if err != nil {
-		return nil, &ErrOpenDir{Path: path, Err: err}
+		return nil, &ErrOpenDir{Err: err}
 	}
 	defer dir.Close()
 
+	return fs.readDir(dir, path)
+}
+
+func (fs *FileSystemWrapper) readDir(dir Dir, path string) ([]string, error) {
 	fileInfos, err := dir.Readdir(-1)
 	if err != nil {
-		return nil, err
+		return nil, &ReadDirError{Path: path, Err: err}
 	}
 
 	var files []string
