@@ -17,3 +17,9 @@ func TestFormatValidation_Validate_InvalidFormat(t *testing.T) {
 	err := f.Validate()
 	assert.Equal(t, ErrInvalidFormat, err)
 }
+
+func TestFormatValidation_Validate_Success(t *testing.T) {
+	f := FormatValidation{Format: "jpg"}
+	err := f.Validate()
+	assert.Nil(t, err)
+}
