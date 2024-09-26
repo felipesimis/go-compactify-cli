@@ -37,3 +37,12 @@ type ErrReadFile struct {
 func (e *ErrReadFile) Error() string {
 	return fmt.Sprintf("failed to read file '%s': %v", e.Path, e.Err)
 }
+
+type ErrWriteFile struct {
+	Path string
+	Err  error
+}
+
+func (e *ErrWriteFile) Error() string {
+	return fmt.Sprintf("failed to write file '%s': %v", e.Path, e.Err)
+}

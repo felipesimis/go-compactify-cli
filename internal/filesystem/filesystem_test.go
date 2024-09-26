@@ -131,3 +131,12 @@ func TestFileSystemWrapper_ReadFile(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, data)
 }
+
+func TestFileSystemWrapper_WriteFileError(t *testing.T) {
+	fs := NewFileSystem()
+
+	invalidPath := "/invalid/path/to/image.png"
+	err := fs.WriteFile(invalidPath, []byte("data"))
+	expectedErr := &ErrWriteFile{Path: invalidPath, Err: fmt.Errorf("open %s: no such file or directory", invalidPath)}
+	assert.EqualError(t, err, expectedErr.Error())
+}
