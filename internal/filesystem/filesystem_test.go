@@ -1,13 +1,27 @@
 package filesystem
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+type MockDir struct {
+	mock.Mock
+}
+
+func (m *MockDir) Readdir(count int) ([]os.FileInfo, error) {
+	args := m.Called(count)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]os.FileInfo), args.Error(1)
+}
 
 func TestFileSystemWrapper_ReadDir(t *testing.T) {
 	fs := NewFileSystem()
@@ -41,7 +55,21 @@ func TestFileSystemWrapper_OpenError(t *testing.T) {
 
 	nonExistentPath := filepath.Join(tmpDir, "nonexistent")
 	files, err := fs.ReadDir(nonExistentPath)
-	expectedErr := &ErrOpenDir{Path: nonExistentPath, Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
+	expectedErr := &ErrOpenDir{Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
 	assert.Nil(t, files)
 	assert.EqualError(t, err, expectedErr.Error())
+}
+
+func TestFileSystemWrapper_ReaddirError(t *testing.T) {
+	fs := NewFileSystem()
+
+	mockDir := new(MockDir)
+	mockDir.On("Readdir", -1).Return(nil, errors.New("simulated readdir error"))
+
+	files, err := fs.(*FileSystemWrapper).readDir(mockDir, "/mock/path")
+	expectedErr := &ReadDirError{Path: "/mock/path", Err: errors.New("simulated readdir error")}
+	assert.Nil(t, files)
+	assert.EqualError(t, err, expectedErr.Error())
+
+	mockDir.AssertExpectations(t)
 }
