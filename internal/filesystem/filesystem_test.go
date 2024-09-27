@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
 type MockDir struct {
@@ -31,55 +32,59 @@ func (m *MockMkdirer) Mkdir(name string, perm os.FileMode) error {
 	return m.Err
 }
 
-func TestFileSystemWrapper_ReadDir(t *testing.T) {
-	fs := NewFileSystem()
+type FileSystemTestSuite struct {
+	suite.Suite
+	fs     FileSystem
+	tmpDir string
+}
 
-	tmpDir, err := os.MkdirTemp("", "test")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+func (suite *FileSystemTestSuite) SetupTest() {
+	suite.fs = NewFileSystem()
+	var err error
+	suite.tmpDir, err = os.MkdirTemp("", "test")
+	assert.NoError(suite.T(), err)
+}
 
+func (suite *FileSystemTestSuite) TearDownTest() {
+	defer os.RemoveAll(suite.tmpDir)
+}
+
+func (suite *FileSystemTestSuite) TestReadDir() {
 	imageFiles := []string{"image1.jpg", "image2.jpeg", "image3.png", "image4.webp"}
 	files := append(imageFiles, "file1.txt", "file2.pdf", "file3.doc")
 	for _, file := range files {
-		tmpFile, err := os.Create(filepath.Join(tmpDir, file))
-		assert.NoError(t, err)
+		tmpFile, err := os.Create(filepath.Join(suite.tmpDir, file))
+		assert.NoError(suite.T(), err)
 		tmpFile.Close()
 	}
 
-	result, err := fs.ReadDir(tmpDir)
-	assert.NoError(t, err)
-	assert.Len(t, result, 4)
+	result, err := suite.fs.ReadDir(suite.tmpDir)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), result, 4)
 
 	for _, file := range result {
-		assert.Contains(t, files, filepath.Base(file))
+		assert.Contains(suite.T(), files, filepath.Base(file))
 	}
 }
 
-func TestFileSystemWrapper_OpenError(t *testing.T) {
-	fs := NewFileSystem()
-
-	tmpDir, err := os.MkdirTemp("", "test")
-	assert.NoError(t, err)
-
-	nonExistentPath := filepath.Join(tmpDir, "nonexistent")
-	files, err := fs.ReadDir(nonExistentPath)
+func (suite *FileSystemTestSuite) TestOpenError() {
+	nonExistentPath := filepath.Join(suite.tmpDir, "nonexistent")
+	files, err := suite.fs.ReadDir(nonExistentPath)
 	expectedErr := &ErrOpenDir{Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
-	assert.Nil(t, files)
-	assert.EqualError(t, err, expectedErr.Error())
+	assert.Nil(suite.T(), files)
+	assert.EqualError(suite.T(), err, expectedErr.Error())
 }
 
-func TestFileSystemWrapper_ReaddirError(t *testing.T) {
-	fs := NewFileSystem()
-
+func (suite *FileSystemTestSuite) TestReaddirError() {
 	mockDir := new(MockDir)
 	mockDir.On("Readdir", -1).Return(nil, errors.New("simulated readdir error"))
 
-	files, err := fs.(*FileSystemWrapper).readDir(mockDir, "/mock/path")
+	files, err := suite.fs.(*FileSystemWrapper).readDir(mockDir, "/mock/path")
 	expectedErr := &ErrReadDir{Path: "/mock/path", Err: errors.New("simulated readdir error")}
-	assert.Nil(t, files)
-	assert.EqualError(t, err, expectedErr.Error())
+	assert.Nil(suite.T(), files)
+	assert.EqualError(suite.T(), err, expectedErr.Error())
 
-	mockDir.AssertExpectations(t)
+	mockDir.AssertExpectations(suite.T())
 }
 
 func TestFileSystemWrapper_CreateSiblingDirError(t *testing.T) {
@@ -92,63 +97,45 @@ func TestFileSystemWrapper_CreateSiblingDirError(t *testing.T) {
 	assert.EqualError(t, err, exportedErr.Error())
 }
 
-func TestFileSystemWrapper_CreateSiblingDir(t *testing.T) {
-	fs := NewFileSystem()
-
-	tmpDir, err := os.MkdirTemp("", "test")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
-
-	newDir, err := fs.CreateSiblingDir(tmpDir, "_suffix")
-	assert.NoError(t, err)
-	assert.DirExists(t, newDir)
-	assert.Contains(t, newDir, "_suffix")
+func (suite *FileSystemTestSuite) TestCreateSiblingDir() {
+	newDir, err := suite.fs.CreateSiblingDir(suite.tmpDir, "_suffix")
+	assert.NoError(suite.T(), err)
+	assert.DirExists(suite.T(), newDir)
+	assert.Contains(suite.T(), newDir, "_suffix")
 }
 
-func TestFileSystemWrapper_ReadFileError(t *testing.T) {
-	fs := NewFileSystem()
-	tmpDir, err := os.MkdirTemp("", "test")
-	assert.NoError(t, err)
-
-	nonExistentPath := filepath.Join(tmpDir, "nonexistent")
-	data, err := fs.ReadFile(nonExistentPath)
+func (suite *FileSystemTestSuite) TestReadFileError() {
+	nonExistentPath := filepath.Join(suite.tmpDir, "nonexistent")
+	data, err := suite.fs.ReadFile(nonExistentPath)
 	expectedErr := &ErrReadFile{Path: nonExistentPath, Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
-	assert.Nil(t, data)
-	assert.EqualError(t, err, expectedErr.Error())
+	assert.Nil(suite.T(), data)
+	assert.EqualError(suite.T(), err, expectedErr.Error())
 }
 
-func TestFileSystemWrapper_ReadFile(t *testing.T) {
-	fs := NewFileSystem()
-	tmpDir, err := os.MkdirTemp("", "test")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
-
-	tmpFile, err := os.CreateTemp(tmpDir, "file*.txt")
-	assert.NoError(t, err)
+func (suite *FileSystemTestSuite) TestReadFile() {
+	tmpFile, err := os.CreateTemp(suite.tmpDir, "file*.txt")
+	assert.NoError(suite.T(), err)
 	defer os.Remove(tmpFile.Name())
 
-	data, err := fs.ReadFile(tmpFile.Name())
-	assert.NoError(t, err)
-	assert.NotNil(t, data)
+	data, err := suite.fs.ReadFile(tmpFile.Name())
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), data)
 }
 
-func TestFileSystemWrapper_WriteFileError(t *testing.T) {
-	fs := NewFileSystem()
-
+func (suite *FileSystemTestSuite) TestWriteFileError() {
 	invalidPath := "/invalid/path/to/image.png"
-	err := fs.WriteFile(invalidPath, []byte("data"))
+	err := suite.fs.WriteFile(invalidPath, []byte("data"))
 	expectedErr := &ErrWriteFile{Path: invalidPath, Err: fmt.Errorf("open %s: no such file or directory", invalidPath)}
-	assert.EqualError(t, err, expectedErr.Error())
+	assert.EqualError(suite.T(), err, expectedErr.Error())
 }
 
-func TestFileSystemWrapper_WriteFile(t *testing.T) {
-	fs := NewFileSystem()
-	tmpDir, err := os.MkdirTemp("", "test")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+func (suite *FileSystemTestSuite) TestWriteFile() {
+	tmpFile := filepath.Join(suite.tmpDir, "image.png")
+	err := suite.fs.WriteFile(tmpFile, []byte("data"))
+	assert.NoError(suite.T(), err)
+	assert.FileExists(suite.T(), tmpFile)
+}
 
-	tmpFile := filepath.Join(tmpDir, "image.png")
-	err = fs.WriteFile(tmpFile, []byte("data"))
-	assert.NoError(t, err)
-	assert.FileExists(t, tmpFile)
+func TestFileSystemTestSuite(t *testing.T) {
+	suite.Run(t, new(FileSystemTestSuite))
 }
