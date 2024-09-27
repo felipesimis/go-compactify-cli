@@ -7,6 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	concurrency int
+)
+
 var rootCmd = &cobra.Command{
 	Use:   "compactify",
 	Short: "Compactify: A versatile image compression and manipulation tool",
@@ -21,4 +25,8 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func init() {
+	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", 20, "Number of concurrent operations")
 }
