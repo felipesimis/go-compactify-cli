@@ -8,10 +8,15 @@ import (
 )
 
 type FileSystem interface {
-	ReadDir(path string) ([]string, error)
+	ReadDir(path string) ([]FileInfo, error)
 	CreateSiblingDir(path, suffix string) (string, error)
 	ReadFile(path string) ([]byte, error)
 	WriteFile(path string, data []byte) error
+}
+
+type FileInfo struct {
+	Path string
+	Size int64
 }
 
 type FileSystemWrapper struct {
@@ -26,7 +31,7 @@ func NewFileSystem() FileSystem {
 	return &FileSystemWrapper{Mkdirer: &OSWrapper{}}
 }
 
-func (fs *FileSystemWrapper) ReadDir(path string) ([]string, error) {
+func (fs *FileSystemWrapper) ReadDir(path string) ([]FileInfo, error) {
 	dir, err := os.Open(path)
 	if err != nil {
 		return nil, &ErrOpenDir{Err: err}
@@ -36,16 +41,19 @@ func (fs *FileSystemWrapper) ReadDir(path string) ([]string, error) {
 	return fs.readDir(dir, path)
 }
 
-func (fs *FileSystemWrapper) readDir(dir Dir, path string) ([]string, error) {
+func (fs *FileSystemWrapper) readDir(dir Dir, path string) ([]FileInfo, error) {
 	fileInfos, err := dir.Readdir(-1)
 	if err != nil {
 		return nil, &ErrReadDir{Path: path, Err: err}
 	}
 
-	var files []string
+	var files []FileInfo
 	for _, fi := range fileInfos {
 		if !fi.IsDir() && utils.IsValidImage(fi.Name()) {
-			files = append(files, filepath.Join(path, fi.Name()))
+			files = append(files, FileInfo{
+				Path: filepath.Join(path, fi.Name()),
+				Size: fi.Size(),
+			})
 		}
 	}
 	return files, nil

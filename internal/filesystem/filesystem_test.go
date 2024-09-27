@@ -63,7 +63,7 @@ func (suite *FileSystemTestSuite) TestReadDir() {
 	assert.Len(suite.T(), result, 4)
 
 	for _, file := range result {
-		assert.Contains(suite.T(), files, filepath.Base(file))
+		assert.Contains(suite.T(), files, filepath.Base(file.Path))
 	}
 }
 
