@@ -40,11 +40,37 @@ func TestBimgImageWrapper_Resize(t *testing.T) {
 
 func TestBimgImageWrapper_Convert(t *testing.T) {
 	img := NewBimgImage(mockedImage())
-	converted, err := img.Convert(bimg.PNG)
+	converted, err := img.Convert("png")
 
 	assert.Nil(t, err)
 	assert.NotEmpty(t, converted)
 	assert.Equal(t, "png", NewBimgImage(converted).ImageType())
+
+	converted, err = img.Convert("unknown")
+	assert.Equal(t, ErrUnsupportedImageType, err)
+	assert.Empty(t, converted)
+}
+
+func TestBimgImageWrapper_mapStringToImageType(t *testing.T) {
+	imageType, err := mapStringToImageType("jpeg")
+	assert.Nil(t, err)
+	assert.Equal(t, bimg.JPEG, imageType)
+
+	imageType, err = mapStringToImageType("jpg")
+	assert.Nil(t, err)
+	assert.Equal(t, bimg.JPEG, imageType)
+
+	imageType, err = mapStringToImageType("webp")
+	assert.Nil(t, err)
+	assert.Equal(t, bimg.WEBP, imageType)
+
+	imageType, err = mapStringToImageType("png")
+	assert.Nil(t, err)
+	assert.Equal(t, bimg.PNG, imageType)
+
+	imageType, err = mapStringToImageType("unknown")
+	assert.Equal(t, ErrUnsupportedImageType, err)
+	assert.Equal(t, bimg.UNKNOWN, imageType)
 }
 
 func TestBimgImageWrapper_Crop(t *testing.T) {
