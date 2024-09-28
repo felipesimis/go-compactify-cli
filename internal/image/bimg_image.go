@@ -1,11 +1,17 @@
 package image
 
-import "github.com/h2non/bimg"
+import (
+	"errors"
+
+	"github.com/h2non/bimg"
+)
+
+var ErrUnsupportedImageType = errors.New("unsupported image type")
 
 type BimgImage interface {
 	Resize(width, height int) ([]byte, error)
 	Size() (bimg.ImageSize, error)
-	Convert(format bimg.ImageType) ([]byte, error)
+	Convert(format string) ([]byte, error)
 	ImageType() string
 	Crop(width, height int, gravity bimg.Gravity) ([]byte, error)
 }
@@ -26,8 +32,12 @@ func (b *BimgImageWrapper) Resize(width, height int) ([]byte, error) {
 	return b.image.Resize(width, height)
 }
 
-func (b *BimgImageWrapper) Convert(format bimg.ImageType) ([]byte, error) {
-	return b.image.Convert(format)
+func (b *BimgImageWrapper) Convert(format string) ([]byte, error) {
+	bimgFormat, err := mapStringToImageType(format)
+	if err != nil {
+		return nil, err
+	}
+	return b.image.Convert(bimgFormat)
 }
 
 func (b *BimgImageWrapper) ImageType() string {
@@ -36,4 +46,17 @@ func (b *BimgImageWrapper) ImageType() string {
 
 func (b *BimgImageWrapper) Crop(width, height int, gravity bimg.Gravity) ([]byte, error) {
 	return b.image.Crop(width, height, gravity)
+}
+
+func mapStringToImageType(format string) (bimg.ImageType, error) {
+	switch format {
+	case "jpeg", "jpg":
+		return bimg.JPEG, nil
+	case "webp":
+		return bimg.WEBP, nil
+	case "png":
+		return bimg.PNG, nil
+	default:
+		return bimg.UNKNOWN, ErrUnsupportedImageType
+	}
 }
