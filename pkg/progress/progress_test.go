@@ -4,6 +4,7 @@ package progress
 import (
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -11,7 +12,7 @@ import (
 func TestProgressBar(t *testing.T) {
 	var buf bytes.Buffer
 	total := 10
-	pb := NewProgressBar(&buf, total, "Processing")
+	pb := NewProgressBar(&buf, total, 20, "Processing")
 	assert.NotNil(t, pb.bar)
 
 	pb.Increment()
@@ -34,4 +35,15 @@ func TestProgressBar(t *testing.T) {
 	assert.Contains(t, output, "]")
 	assert.Contains(t, output, "100%")
 	assert.Contains(t, output, "10/10")
+}
+
+func TestCalculateThrottle(t *testing.T) {
+	throttle := calculateThrottle(100, 120)
+	assert.Equal(t, 40*time.Millisecond, throttle)
+
+	throttle = calculateThrottle(100, 1)
+	assert.Equal(t, 1000*time.Millisecond, throttle)
+
+	throttle = calculateThrottle(100, 20)
+	assert.Equal(t, 200*time.Millisecond, throttle)
 }

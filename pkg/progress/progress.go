@@ -12,7 +12,9 @@ type ProgressBar struct {
 	bar *progressbar.ProgressBar
 }
 
-func NewProgressBar(writer io.Writer, total int, description string) *ProgressBar {
+func NewProgressBar(writer io.Writer, total, concurrency int, description string) *ProgressBar {
+	throttle := calculateThrottle(total, concurrency)
+
 	bar := progressbar.NewOptions(total,
 		progressbar.OptionEnableColorCodes(true),
 		progressbar.OptionShowCount(),
@@ -26,7 +28,7 @@ func NewProgressBar(writer io.Writer, total int, description string) *ProgressBa
 		}),
 		progressbar.OptionSetWidth(40),
 		progressbar.OptionSetWriter(writer),
-		progressbar.OptionThrottle(50*time.Millisecond),
+		progressbar.OptionThrottle(throttle),
 		progressbar.OptionUseANSICodes(true),
 		progressbar.OptionOnCompletion(func() {
 			fmt.Println()
@@ -41,4 +43,22 @@ func (p *ProgressBar) Increment() {
 
 func (p *ProgressBar) Finish() {
 	p.bar.Finish()
+}
+
+func calculateThrottle(total, concurrency int) time.Duration {
+	baseThrottle := 40 * time.Millisecond
+	adjustmentFactor := float64(total) / float64(concurrency)
+	throttle := baseThrottle * time.Duration(adjustmentFactor)
+
+	minThrottle := 40 * time.Millisecond
+	maxThrottle := 1000 * time.Millisecond
+
+	if throttle < minThrottle {
+		return minThrottle
+	}
+	if throttle > maxThrottle {
+		return maxThrottle
+	}
+
+	return throttle
 }
