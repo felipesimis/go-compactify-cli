@@ -98,7 +98,7 @@ func resizeImages(ctx context.Context, params processing.FileProcessingParams, e
 	dimensionValidation := &validation.DimensionsValidation{Width: extraParams.Width, Height: extraParams.Height}
 	err := dimensionValidation.Validate()
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
 	img, err := params.FS.ReadFile(params.File.Path)
