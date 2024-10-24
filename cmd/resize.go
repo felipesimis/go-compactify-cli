@@ -1,17 +1,15 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
-	"sync"
 	"sync/atomic"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
+	"github.com/felipesimis/compactify-cli/internal/processing"
 	"github.com/felipesimis/compactify-cli/internal/utils"
 	"github.com/felipesimis/compactify-cli/pkg/progress"
 	"github.com/felipesimis/compactify-cli/pkg/validation"
@@ -24,21 +22,22 @@ var (
 	height    int
 )
 
-type ProcessFileParams struct {
-	fileInfo      filesystem.FileInfo
-	fs            filesystem.FileSystem
-	outputDir     string
+type ResizeParams struct {
+	Width  int
+	Height int
+}
+
+type ResizeStats struct {
 	initialSize   *uint64
 	finalSize     *uint64
 	skippedImages *uint32
 	resizedImages *uint32
-	errChan       chan error
-	width         int
-	height        int
-	progressBar   *progress.ProgressBar
 }
 
 func resizeRun(cmd *cobra.Command, args []string) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	fs := filesystem.NewFileSystem()
 	files, err := fs.ReadDir(directory)
 	if err != nil {
@@ -50,97 +49,82 @@ func resizeRun(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	sem := make(chan struct{}, concurrency)
-	errChan := make(chan error, len(files))
-	var wg sync.WaitGroup
 	var initialSize, finalSize uint64
 	var skippedImages, resizedImages uint32
 
-	rb := utils.NewResultBuilder(utils.RealTimeProvider{})
-	progressBar := progress.NewProgressBar(os.Stdout, len(files), "Resizing images")
+	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
+	progressBar := progress.NewProgressBar(os.Stdout, len(files), concurrency, "Resizing images")
 
-	for _, fileInfo := range files {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(fileInfo filesystem.FileInfo) {
-			defer func() {
-				<-sem
-				wg.Done()
-			}()
-			params := ProcessFileParams{
-				fileInfo:      fileInfo,
-				fs:            fs,
-				outputDir:     outputDir,
+	params := processing.ProcessFilesParams{
+		Files:       files,
+		FS:          fs,
+		OutputDir:   outputDir,
+		ProgressBar: progressBar,
+		ExtraParams: ResizeParams{Width: width, Height: height},
+		ProcessorFunc: func(p processing.FileProcessingParams) error {
+			extraParams := p.ExtraParams.(ResizeParams)
+			stats := &ResizeStats{
 				initialSize:   &initialSize,
 				finalSize:     &finalSize,
 				skippedImages: &skippedImages,
 				resizedImages: &resizedImages,
-				errChan:       errChan,
-				width:         width,
-				height:        height,
-				progressBar:   progressBar,
 			}
-			processFile(params)
-		}(fileInfo)
+			return resizeImages(ctx, p, extraParams, stats)
+		},
+		Concurrency: concurrency,
 	}
-
-	wg.Wait()
-	close(errChan)
+	processing.ProcessFiles(params)
 
 	progressBar.Finish()
 
-	for err := range errChan {
-		log.Println(err)
-	}
-
 	totalImages := uint32(len(files))
-	rb.SetTotalImages(totalImages).
+	resultBuilder.SetTotalImages(totalImages).
 		SetSkippedImages(skippedImages).
 		SetProcessedImages(resizedImages).
 		SetOutputDirectory(outputDir).
 		SetInitialSize(float64(initialSize)).
 		SetFinalSize(float64(finalSize))
-	result := rb.Build()
+	result := resultBuilder.Build()
 	fmt.Println(result.PrintResults("resized"))
 }
 
-func processFile(params ProcessFileParams) {
-	dimensionValidation := &validation.DimensionsValidation{Width: params.width, Height: params.height}
+func resizeImages(ctx context.Context, params processing.FileProcessingParams, extraParams ResizeParams, stats *ResizeStats) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	dimensionValidation := &validation.DimensionsValidation{Width: extraParams.Width, Height: extraParams.Height}
 	err := dimensionValidation.Validate()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	img, err := params.fs.ReadFile(params.fileInfo.Path)
+	img, err := params.FS.ReadFile(params.File.Path)
 	if err != nil {
-		params.errChan <- err
-		atomic.AddUint32(params.skippedImages, 1)
-		params.progressBar.Increment()
-		return
+		atomic.AddUint32(stats.skippedImages, 1)
+		return err
 	}
 
-	atomic.AddUint64(params.initialSize, uint64(params.fileInfo.Size))
+	atomic.AddUint64(stats.initialSize, uint64(params.File.Size))
 	newImg := image.NewBimgImage(img)
-	resizedImg, err := newImg.Resize(params.width, params.height)
+	resizedImg, err := newImg.Resize(extraParams.Width, extraParams.Height)
 	if err != nil {
-		params.errChan <- err
-		atomic.AddUint32(params.skippedImages, 1)
-		params.progressBar.Increment()
-		return
+		atomic.AddUint32(stats.skippedImages, 1)
+		return err
 	}
 
-	outputPath := utils.BuildOutputPath(params.outputDir, params.fileInfo.Path)
-	err = params.fs.WriteFile(outputPath, resizedImg)
+	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
+	err = params.FS.WriteFile(outputPath, resizedImg)
 	if err != nil {
-		params.errChan <- err
-		atomic.AddUint32(params.skippedImages, 1)
-		params.progressBar.Increment()
-		return
+		atomic.AddUint32(stats.skippedImages, 1)
+		return err
 	}
 
-	atomic.AddUint64(params.finalSize, uint64(len(resizedImg)))
-	atomic.AddUint32(params.resizedImages, 1)
-	params.progressBar.Increment()
+	atomic.AddUint64(stats.finalSize, uint64(len(resizedImg)))
+	atomic.AddUint32(stats.resizedImages, 1)
+	return nil
 }
 
 var resizeCmd = &cobra.Command{
@@ -157,10 +141,9 @@ and the image will be resized accordingly.`,
 func init() {
 	rootCmd.AddCommand(resizeCmd)
 
-	resizeCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the image to resize")
+	resizeCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the images to resize")
 	resizeCmd.Flags().IntVarP(&width, "width", "w", 0, "Desired width of the image")
 	resizeCmd.Flags().IntVarP(&height, "height", "H", 0, "Desired height of the image")
-	resizeCmd.Flags().IntVarP(&concurrency, "concurrency", "c", 20, "Number of concurrent operations")
 
 	resizeCmd.MarkFlagRequired("directory")
 	resizeCmd.MarkFlagRequired("width")
