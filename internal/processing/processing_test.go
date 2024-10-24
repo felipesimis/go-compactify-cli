@@ -6,6 +6,7 @@ import (
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
 type MockFileSystem struct {
@@ -47,62 +48,54 @@ func (m *MockProgressBar) Finish() {
 	m.Called()
 }
 
-func TestProcessFiles(t *testing.T) {
-	mockFS := new(MockFileSystem)
-	mockProgressBar := new(MockProgressBar)
-
-	files := []filesystem.FileInfo{
-		{Path: "image1.jpg"},
-		{Path: "image2.jpg"},
-	}
-
-	mockFS.On("ReadFile", "image1.jpg").Return([]byte("content1"), nil)
-	mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
-	mockProgressBar.On("Increment").Twice()
-
-	params := ProcessFilesParams{
-		Files:       files,
-		FS:          mockFS,
-		OutputDir:   "output",
-		ProgressBar: mockProgressBar,
-		ProcessorFunc: func(params FileProcessingParams) error {
-			_, err := params.FS.ReadFile(params.File.Path)
-			return err
-		},
-		Concurrency: 1,
-	}
-	ProcessFiles(params)
-
-	mockFS.AssertExpectations(t)
-	mockProgressBar.AssertExpectations(t)
+type ProcessingTestSuite struct {
+	suite.Suite
+	mockFS          *MockFileSystem
+	mockProgressBar *MockProgressBar
+	files           []filesystem.FileInfo
+	params          ProcessFilesParams
 }
 
-func TestProcessFilesWithError(t *testing.T) {
-	mockFS := new(MockFileSystem)
-	mockProgressBar := new(MockProgressBar)
-
-	files := []filesystem.FileInfo{
+func (suite *ProcessingTestSuite) SetupTest() {
+	suite.mockFS = new(MockFileSystem)
+	suite.mockProgressBar = new(MockProgressBar)
+	suite.files = []filesystem.FileInfo{
 		{Path: "image1.jpg"},
 		{Path: "image2.jpg"},
 	}
-
-	mockFS.On("ReadFile", "image1.jpg").Return(nil, errors.New("read error"))
-	mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
-	mockProgressBar.On("Increment").Twice()
-
-	params := ProcessFilesParams{
-		Files:       files,
-		FS:          mockFS,
+	suite.params = ProcessFilesParams{
+		Files:       suite.files,
+		FS:          suite.mockFS,
 		OutputDir:   "output",
-		ProgressBar: mockProgressBar,
+		ProgressBar: suite.mockProgressBar,
 		ProcessorFunc: func(params FileProcessingParams) error {
 			_, err := params.FS.ReadFile(params.File.Path)
 			return err
 		},
 		Concurrency: 1,
 	}
-	ProcessFiles(params)
+}
 
-	mockFS.AssertExpectations(t)
-	mockProgressBar.AssertExpectations(t)
+func (suite *ProcessingTestSuite) TestProcessFiles() {
+	suite.mockFS.On("ReadFile", "image1.jpg").Return([]byte("content1"), nil)
+	suite.mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
+	suite.mockProgressBar.On("Increment").Twice()
+
+	ProcessFiles(suite.params)
+	suite.mockFS.AssertExpectations(suite.T())
+	suite.mockProgressBar.AssertExpectations(suite.T())
+}
+
+func (suite *ProcessingTestSuite) TestProcessFilesWithError() {
+	suite.mockFS.On("ReadFile", "image1.jpg").Return(nil, errors.New("read error"))
+	suite.mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
+	suite.mockProgressBar.On("Increment").Twice()
+
+	ProcessFiles(suite.params)
+	suite.mockFS.AssertExpectations(suite.T())
+	suite.mockProgressBar.AssertExpectations(suite.T())
+}
+
+func TestProcessingTestSuite(t *testing.T) {
+	suite.Run(t, new(ProcessingTestSuite))
 }
