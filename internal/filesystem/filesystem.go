@@ -7,11 +7,19 @@ import (
 	"github.com/felipesimis/compactify-cli/internal/utils"
 )
 
+type FileReader interface {
+	ReadFile(path string) ([]byte, error)
+}
+
+type FileWriter interface {
+	WriteFile(path string, data []byte) error
+}
+
 type FileSystem interface {
 	ReadDir(path string) ([]FileInfo, error)
 	CreateSiblingDir(path, suffix string) (string, error)
-	ReadFile(path string) ([]byte, error)
-	WriteFile(path string, data []byte) error
+	FileReader
+	FileWriter
 }
 
 type FileInfo struct {
