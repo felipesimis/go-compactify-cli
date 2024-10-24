@@ -1,6 +1,7 @@
 package processing
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
@@ -56,6 +57,36 @@ func TestProcessFiles(t *testing.T) {
 	}
 
 	mockFS.On("ReadFile", "image1.jpg").Return([]byte("content1"), nil)
+	mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
+	mockProgressBar.On("Increment").Twice()
+
+	params := ProcessFilesParams{
+		Files:       files,
+		FS:          mockFS,
+		OutputDir:   "output",
+		ProgressBar: mockProgressBar,
+		ProcessorFunc: func(params FileProcessingParams) error {
+			_, err := params.FS.ReadFile(params.File.Path)
+			return err
+		},
+		Concurrency: 1,
+	}
+	ProcessFiles(params)
+
+	mockFS.AssertExpectations(t)
+	mockProgressBar.AssertExpectations(t)
+}
+
+func TestProcessFilesWithError(t *testing.T) {
+	mockFS := new(MockFileSystem)
+	mockProgressBar := new(MockProgressBar)
+
+	files := []filesystem.FileInfo{
+		{Path: "image1.jpg"},
+		{Path: "image2.jpg"},
+	}
+
+	mockFS.On("ReadFile", "image1.jpg").Return(nil, errors.New("read error"))
 	mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
 	mockProgressBar.On("Increment").Twice()
 
