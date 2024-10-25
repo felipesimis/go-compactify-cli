@@ -38,6 +38,12 @@ func resizeRun(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
+	err := dimensionValidation.Validate()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	fs := filesystem.NewFileSystem()
 	files, err := fs.ReadDir(directory)
 	if err != nil {
@@ -93,12 +99,6 @@ func resizeImages(ctx context.Context, params processing.FileProcessingParams, e
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
-	}
-
-	dimensionValidation := &validation.DimensionsValidation{Width: extraParams.Width, Height: extraParams.Height}
-	err := dimensionValidation.Validate()
-	if err != nil {
-		log.Fatal(err)
 	}
 
 	img, err := params.FS.ReadFile(params.File.Path)
