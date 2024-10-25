@@ -15,6 +15,7 @@ type BimgImage interface {
 	ImageType() string
 	Crop(width, height int, gravity bimg.Gravity) ([]byte, error)
 	Flip() ([]byte, error)
+	Enlarge(width, height int) ([]byte, error)
 }
 
 type BimgImageWrapper struct {
@@ -64,4 +65,8 @@ func mapStringToImageType(format string) (bimg.ImageType, error) {
 
 func (b *BimgImageWrapper) Flip() ([]byte, error) {
 	return b.image.Flip()
+}
+
+func (b *BimgImageWrapper) Enlarge(width, height int) ([]byte, error) {
+	return b.image.Enlarge(width, height)
 }
