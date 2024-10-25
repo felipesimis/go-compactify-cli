@@ -100,3 +100,15 @@ func TestBimgImageWrapper_Flip(t *testing.T) {
 	assert.Equal(t, originalSize.Width, flippedSize.Width)
 	assert.Equal(t, originalSize.Height, flippedSize.Height)
 }
+
+func TestBimgImageWrapper_Enlarge(t *testing.T) {
+	img := NewBimgImage(mockedImage())
+	enlarged, err := img.Enlarge(1200, 800)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, enlarged)
+
+	size, err := NewBimgImage(enlarged).Size()
+	assert.Nil(t, err)
+	assert.Equal(t, 1200, size.Width)
+	assert.Equal(t, 800, size.Height)
+}
