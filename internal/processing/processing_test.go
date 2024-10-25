@@ -13,16 +13,6 @@ type MockFileSystem struct {
 	mock.Mock
 }
 
-func (m *MockFileSystem) ReadDir(path string) ([]filesystem.FileInfo, error) {
-	args := m.Called(path)
-	return args.Get(0).([]filesystem.FileInfo), args.Error(1)
-}
-
-func (m *MockFileSystem) CreateSiblingDir(path, suffix string) (string, error) {
-	args := m.Called(path, suffix)
-	return args.String(0), args.Error(1)
-}
-
 func (m *MockFileSystem) ReadFile(path string) ([]byte, error) {
 	args := m.Called(path)
 	if args.Get(0) == nil {
