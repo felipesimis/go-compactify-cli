@@ -85,3 +85,18 @@ func TestBimgImageWrapper_Crop(t *testing.T) {
 	assert.Equal(t, 300, size.Width)
 	assert.Equal(t, 200, size.Height)
 }
+
+func TestBimgImageWrapper_Flip(t *testing.T) {
+	img := NewBimgImage(mockedImage())
+	flipped, err := img.Flip()
+	assert.Nil(t, err)
+	assert.NotEmpty(t, flipped)
+
+	originalSize, err := img.Size()
+	assert.Nil(t, err)
+	flippedSize, err := NewBimgImage(flipped).Size()
+	assert.Nil(t, err)
+
+	assert.Equal(t, originalSize.Width, flippedSize.Width)
+	assert.Equal(t, originalSize.Height, flippedSize.Height)
+}
