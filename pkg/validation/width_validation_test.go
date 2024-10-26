@@ -17,3 +17,9 @@ func TestWidthValidation_ErrWidthLarge(t *testing.T) {
 	err := w.Validate()
 	assert.Equal(t, ErrWidthTooLarge, err)
 }
+
+func TestWidthValidation_ValidWidth_Success(t *testing.T) {
+	w := WidthValidation{Width: 30, MinWidth: 20, MaxWidth: 50}
+	err := w.Validate()
+	assert.Nil(t, err)
+}
