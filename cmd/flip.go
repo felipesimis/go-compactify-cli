@@ -108,9 +108,10 @@ func flipImages(ctx context.Context, params processing.FileProcessingParams, sta
 }
 
 var flipCmd = &cobra.Command{
-	Use:   "flip",
-	Args:  cobra.NoArgs,
-	Short: "Flip images vertically",
+	Use:     "flip",
+	Aliases: []string{"invert", "mirror"},
+	Args:    cobra.NoArgs,
+	Short:   "Flip images vertically",
 	Long: `Flip images vertically.
 This command allows you to flip an image along the vertical axis, creating a mirror image.
 It can be useful for various image processing tasks, such as creating reflections or correcting image orientation.`,

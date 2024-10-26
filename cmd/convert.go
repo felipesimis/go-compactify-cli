@@ -128,9 +128,10 @@ func convertImages(ctx context.Context, params processing.FileProcessingParams, 
 }
 
 var convertCmd = &cobra.Command{
-	Use:   "convert",
-	Args:  cobra.NoArgs,
-	Short: "Convert images to a specified format",
+	Use:     "convert",
+	Aliases: []string{"conv"},
+	Args:    cobra.NoArgs,
+	Short:   "Convert images to a specified format",
 	Long: `Convert images in a directory to a specified format.
 This command allows you to change the format of images, which can be useful for optimizing images for 
 different uses, such as web, mobile, or print. You can specify the desired format, 

@@ -121,9 +121,10 @@ func processThumbnailImages(ctx context.Context, params processing.FileProcessin
 }
 
 var thumbnailCmd = &cobra.Command{
-	Use:   "thumbnail",
-	Args:  cobra.NoArgs,
-	Short: "Create a thumbnail of an image with specified width",
+	Use:     "thumbnail",
+	Args:    cobra.NoArgs,
+	Aliases: []string{"thumb", "preview"},
+	Short:   "Create a thumbnail of an image with specified width",
 	Long: `Create a thumbnail of an image with a specified width, maintaining the aspect ratio 4:4.
 This command allows you to generate smaller versions of images, which can be useful for previews or web usage.`,
 	Run: thumbnailRun,

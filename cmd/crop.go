@@ -131,9 +131,10 @@ func cropImages(ctx context.Context, params processing.FileProcessingParams, ext
 }
 
 var cropCmd = &cobra.Command{
-	Use:   "crop",
-	Args:  cobra.NoArgs,
-	Short: "Crop an image to specified dimensions",
+	Use:     "crop",
+	Aliases: []string{"cut"},
+	Args:    cobra.NoArgs,
+	Short:   "Crop an image to specified dimensions",
 	Long: `Crop an image to a specific width and height.
 This command allows you to change the dimensions of an image by cropping it, which can be useful for optimizing images for 
 different uses, such as web, mobile, or print. You can specify the desired width and height, 
