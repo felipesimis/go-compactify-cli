@@ -112,3 +112,15 @@ func TestBimgImageWrapper_Enlarge(t *testing.T) {
 	assert.Equal(t, 1200, size.Width)
 	assert.Equal(t, 800, size.Height)
 }
+
+func TestBimgImageWrapper_Thumbnail(t *testing.T) {
+	img := NewBimgImage(mockedImage())
+	thumbnail, err := img.Thumbnail(300)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, thumbnail)
+
+	size, err := NewBimgImage(thumbnail).Size()
+	assert.Nil(t, err)
+	assert.Equal(t, 300, size.Width)
+	assert.Equal(t, 300, size.Height)
+}
