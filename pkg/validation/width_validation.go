@@ -20,5 +20,8 @@ func (w *WidthValidation) Validate() error {
 	if w.Width < w.MinWidth {
 		return ErrWidthTooSmall
 	}
+	if w.MaxWidth > 0 && w.Width > w.MaxWidth {
+		return ErrWidthTooLarge
+	}
 	return nil
 }
