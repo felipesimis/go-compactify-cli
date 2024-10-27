@@ -131,3 +131,18 @@ func TestBimgImageWrapper_ImageInterpretation(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, bimg.InterpretationSRGB, interpretation)
 }
+
+func TestBimgImageWrapper_Grayscale(t *testing.T) {
+	img := NewBimgImage(mockedImage())
+	initialInterpretation, err := img.ImageInterpretation()
+	assert.Nil(t, err)
+	assert.Equal(t, bimg.InterpretationSRGB, initialInterpretation)
+
+	grayscale, err := img.Grayscale()
+	assert.Nil(t, err)
+	assert.NotEmpty(t, grayscale)
+
+	grayscaleInterpretation, err := NewBimgImage(grayscale).ImageInterpretation()
+	assert.Nil(t, err)
+	assert.Equal(t, bimg.InterpretationBW, grayscaleInterpretation)
+}
