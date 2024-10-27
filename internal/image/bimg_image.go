@@ -18,6 +18,7 @@ type BimgImage interface {
 	Enlarge(width, height int) ([]byte, error)
 	Thumbnail(width int) ([]byte, error)
 	ImageInterpretation() (bimg.Interpretation, error)
+	Grayscale() ([]byte, error)
 }
 
 type BimgImageWrapper struct {
@@ -79,4 +80,8 @@ func (b *BimgImageWrapper) Thumbnail(width int) ([]byte, error) {
 
 func (b *BimgImageWrapper) ImageInterpretation() (bimg.Interpretation, error) {
 	return b.image.Interpretation()
+}
+
+func (b *BimgImageWrapper) Grayscale() ([]byte, error) {
+	return b.image.Colourspace(bimg.InterpretationBW)
 }
