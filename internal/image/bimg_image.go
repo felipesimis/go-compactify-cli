@@ -17,6 +17,7 @@ type BimgImage interface {
 	Flip() ([]byte, error)
 	Enlarge(width, height int) ([]byte, error)
 	Thumbnail(width int) ([]byte, error)
+	ImageInterpretation() (bimg.Interpretation, error)
 }
 
 type BimgImageWrapper struct {
@@ -74,4 +75,8 @@ func (b *BimgImageWrapper) Enlarge(width, height int) ([]byte, error) {
 
 func (b *BimgImageWrapper) Thumbnail(width int) ([]byte, error) {
 	return b.image.Thumbnail(width)
+}
+
+func (b *BimgImageWrapper) ImageInterpretation() (bimg.Interpretation, error) {
+	return b.image.Interpretation()
 }
