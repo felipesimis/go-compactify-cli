@@ -125,6 +125,11 @@ func TestBimgImageWrapper_Thumbnail(t *testing.T) {
 	assert.Equal(t, 300, size.Height)
 }
 
+func TestBimgImageWrapper_Length(t *testing.T) {
+	img := NewBimgImage(mockedImage())
+	assert.Equal(t, 3773, img.Length())
+}
+
 func TestBimgImageWrapper_ImageInterpretation(t *testing.T) {
 	img := NewBimgImage(mockedImage())
 	interpretation, err := img.ImageInterpretation()
