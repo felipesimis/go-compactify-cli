@@ -161,3 +161,13 @@ func TestBimgImageWrapper_EnablePalette(t *testing.T) {
 	assert.NotZero(t, paletteImgLength)
 	assert.NotEqual(t, initialImgLength, paletteImgLength, "Expected image data to change after applying palette")
 }
+
+func TestBimgImageWrapper_LosslessCompress(t *testing.T) {
+	img := NewBimgImage(mockedImage())
+	compressedImg, err := img.LosslessCompress()
+	assert.Nil(t, err)
+	assert.NotEmpty(t, compressedImg)
+
+	compressedImgLength := NewBimgImage(compressedImg).Length()
+	assert.NotZero(t, compressedImgLength)
+}
