@@ -20,6 +20,7 @@ type BimgImage interface {
 	ImageInterpretation() (bimg.Interpretation, error)
 	Grayscale() ([]byte, error)
 	Length() int
+	EnablePalette() ([]byte, error)
 }
 
 type BimgImageWrapper struct {
@@ -89,4 +90,8 @@ func (b *BimgImageWrapper) Grayscale() ([]byte, error) {
 
 func (b *BimgImageWrapper) Length() int {
 	return b.image.Length()
+}
+
+func (b *BimgImageWrapper) EnablePalette() ([]byte, error) {
+	return b.image.Process(bimg.Options{Palette: true})
 }
