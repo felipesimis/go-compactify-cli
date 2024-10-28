@@ -21,6 +21,7 @@ type BimgImage interface {
 	Grayscale() ([]byte, error)
 	Length() int
 	EnablePalette() ([]byte, error)
+	LosslessCompress() ([]byte, error)
 }
 
 type BimgImageWrapper struct {
@@ -94,4 +95,8 @@ func (b *BimgImageWrapper) Length() int {
 
 func (b *BimgImageWrapper) EnablePalette() ([]byte, error) {
 	return b.image.Process(bimg.Options{Palette: true})
+}
+
+func (b *BimgImageWrapper) LosslessCompress() ([]byte, error) {
+	return b.image.Process(bimg.Options{Lossless: true})
 }
