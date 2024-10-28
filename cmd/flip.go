@@ -43,7 +43,7 @@ func flipRun(cmd *cobra.Command, args []string) {
 		ProgressBar: progressBar,
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &flippedImages)
-			return flipImages(ctx, p, stats)
+			return processFlipImage(ctx, p, stats)
 		},
 		Concurrency: concurrency,
 	}
@@ -62,7 +62,7 @@ func flipRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("flipped"))
 }
 
-func flipImages(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
+func processFlipImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

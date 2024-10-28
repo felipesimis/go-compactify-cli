@@ -56,7 +56,7 @@ func thumbnailRun(cmd *cobra.Command, args []string) {
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			extraParams := p.ExtraParams.(ThumbnailParams)
 			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &thumbnailImages)
-			return processThumbnailImages(ctx, p, extraParams, stats)
+			return processThumbnailImage(ctx, p, extraParams, stats)
 		},
 		Concurrency: concurrency,
 	}
@@ -75,7 +75,7 @@ func thumbnailRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("thumbnails"))
 }
 
-func processThumbnailImages(ctx context.Context, params processing.FileProcessingParams, extraParams ThumbnailParams, stats *utils.ImageProcessingStats) error {
+func processThumbnailImage(ctx context.Context, params processing.FileProcessingParams, extraParams ThumbnailParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

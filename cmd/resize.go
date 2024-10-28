@@ -63,7 +63,7 @@ func resizeRun(cmd *cobra.Command, args []string) {
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			extraParams := p.ExtraParams.(ResizeParams)
 			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &resizedImages)
-			return resizeImages(ctx, p, extraParams, stats)
+			return processResizeImage(ctx, p, extraParams, stats)
 		},
 		Concurrency: concurrency,
 	}
@@ -82,7 +82,7 @@ func resizeRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("resized"))
 }
 
-func resizeImages(ctx context.Context, params processing.FileProcessingParams, extraParams ResizeParams, stats *utils.ImageProcessingStats) error {
+func processResizeImage(ctx context.Context, params processing.FileProcessingParams, extraParams ResizeParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

@@ -65,7 +65,7 @@ func cropRun(cmd *cobra.Command, args []string) {
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			extraParams := p.ExtraParams.(CropParams)
 			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &croppedImages)
-			return cropImages(ctx, p, extraParams, stats)
+			return processCropImage(ctx, p, extraParams, stats)
 		},
 		Concurrency: concurrency,
 	}
@@ -84,7 +84,7 @@ func cropRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("cropped"))
 }
 
-func cropImages(ctx context.Context, params processing.FileProcessingParams, extraParams CropParams, stats *utils.ImageProcessingStats) error {
+func processCropImage(ctx context.Context, params processing.FileProcessingParams, extraParams CropParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

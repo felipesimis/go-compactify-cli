@@ -57,7 +57,7 @@ func enlargeRun(cmd *cobra.Command, args []string) {
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			extraParams := p.ExtraParams.(EnlargeParams)
 			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &enlargedImages)
-			return enlargeImages(ctx, p, extraParams, stats)
+			return processEnlargeImage(ctx, p, extraParams, stats)
 		},
 		Concurrency: concurrency,
 	}
@@ -76,7 +76,7 @@ func enlargeRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("enlarged"))
 }
 
-func enlargeImages(ctx context.Context, params processing.FileProcessingParams, extraParams EnlargeParams, stats *utils.ImageProcessingStats) error {
+func processEnlargeImage(ctx context.Context, params processing.FileProcessingParams, extraParams EnlargeParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

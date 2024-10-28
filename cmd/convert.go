@@ -60,7 +60,7 @@ func convertRun(cmd *cobra.Command, args []string) {
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			extraParams := p.ExtraParams.(ConvertParams)
 			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &convertedImages)
-			return convertImages(ctx, p, extraParams, stats)
+			return processConvertImage(ctx, p, extraParams, stats)
 		},
 		Concurrency: concurrency,
 	}
@@ -79,7 +79,7 @@ func convertRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("converted"))
 }
 
-func convertImages(ctx context.Context, params processing.FileProcessingParams, extraParams ConvertParams, stats *utils.ImageProcessingStats) error {
+func processConvertImage(ctx context.Context, params processing.FileProcessingParams, extraParams ConvertParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
