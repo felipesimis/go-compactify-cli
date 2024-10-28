@@ -151,3 +151,16 @@ func TestBimgImageWrapper_Grayscale(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, bimg.InterpretationBW, grayscaleInterpretation)
 }
+
+func TestBimgImageWrapper_EnablePalette(t *testing.T) {
+	img := NewBimgImage(mockedImage())
+	initialImgLength := img.Length()
+
+	palette, err := img.EnablePalette()
+	assert.Nil(t, err)
+	assert.NotEmpty(t, palette)
+
+	paletteImgLength := NewBimgImage(palette).Length()
+	assert.NotZero(t, paletteImgLength)
+	assert.NotEqual(t, initialImgLength, paletteImgLength, "Expected image data to change after applying palette")
+}
