@@ -20,13 +20,6 @@ type ThumbnailParams struct {
 	Width int
 }
 
-type ThumbnailStats struct {
-	initialSize     *uint64
-	finalSize       *uint64
-	skippedImages   *uint32
-	thumbnailImages *uint32
-}
-
 func thumbnailRun(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -62,12 +55,7 @@ func thumbnailRun(cmd *cobra.Command, args []string) {
 		ExtraParams: ThumbnailParams{Width: width},
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			extraParams := p.ExtraParams.(ThumbnailParams)
-			stats := &ThumbnailStats{
-				initialSize:     &initialSize,
-				finalSize:       &finalSize,
-				skippedImages:   &skippedImages,
-				thumbnailImages: &thumbnailImages,
-			}
+			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &thumbnailImages)
 			return processThumbnailImages(ctx, p, extraParams, stats)
 		},
 		Concurrency: concurrency,
@@ -87,7 +75,7 @@ func thumbnailRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("thumbnails"))
 }
 
-func processThumbnailImages(ctx context.Context, params processing.FileProcessingParams, extraParams ThumbnailParams, stats *ThumbnailStats) error {
+func processThumbnailImages(ctx context.Context, params processing.FileProcessingParams, extraParams ThumbnailParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -96,27 +84,27 @@ func processThumbnailImages(ctx context.Context, params processing.FileProcessin
 
 	img, err := params.FS.ReadFile(params.File.Path)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.initialSize, uint64(params.File.Size))
+	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
 	newImg := image.NewBimgImage(img)
 	thumbnailsImg, err := newImg.Thumbnail(extraParams.Width)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
 	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
 	err = params.FS.WriteFile(outputPath, thumbnailsImg)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.finalSize, uint64(len(thumbnailsImg)))
-	atomic.AddUint32(stats.thumbnailImages, 1)
+	atomic.AddUint64(stats.FinalSize, uint64(len(thumbnailsImg)))
+	atomic.AddUint32(stats.ProcessedImages, 1)
 	return nil
 }
 

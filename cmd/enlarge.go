@@ -21,13 +21,6 @@ type EnlargeParams struct {
 	Height int
 }
 
-type EnlargeStats struct {
-	initialSize    *uint64
-	finalSize      *uint64
-	skippedImages  *uint32
-	enlargedImages *uint32
-}
-
 func enlargeRun(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -63,12 +56,7 @@ func enlargeRun(cmd *cobra.Command, args []string) {
 		ExtraParams: EnlargeParams{Width: width, Height: height},
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			extraParams := p.ExtraParams.(EnlargeParams)
-			stats := &EnlargeStats{
-				initialSize:    &initialSize,
-				finalSize:      &finalSize,
-				skippedImages:  &skippedImages,
-				enlargedImages: &enlargedImages,
-			}
+			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &enlargedImages)
 			return enlargeImages(ctx, p, extraParams, stats)
 		},
 		Concurrency: concurrency,
@@ -88,7 +76,7 @@ func enlargeRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("enlarged"))
 }
 
-func enlargeImages(ctx context.Context, params processing.FileProcessingParams, extraParams EnlargeParams, stats *EnlargeStats) error {
+func enlargeImages(ctx context.Context, params processing.FileProcessingParams, extraParams EnlargeParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -97,27 +85,27 @@ func enlargeImages(ctx context.Context, params processing.FileProcessingParams, 
 
 	img, err := params.FS.ReadFile(params.File.Path)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.initialSize, uint64(params.File.Size))
+	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
 	newImg := image.NewBimgImage(img)
 	enlargedImg, err := newImg.Enlarge(extraParams.Width, extraParams.Height)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
 	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
 	err = params.FS.WriteFile(outputPath, enlargedImg)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.finalSize, uint64(len(enlargedImg)))
-	atomic.AddUint32(stats.enlargedImages, 1)
+	atomic.AddUint64(stats.FinalSize, uint64(len(enlargedImg)))
+	atomic.AddUint32(stats.ProcessedImages, 1)
 	return nil
 }
 

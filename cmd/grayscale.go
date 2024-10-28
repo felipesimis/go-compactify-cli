@@ -15,13 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type GrayscaleStats struct {
-	initialSize     *uint64
-	finalSize       *uint64
-	skippedImages   *uint32
-	grayscaleImages *uint32
-}
-
 func grayscaleRun(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -49,12 +42,7 @@ func grayscaleRun(cmd *cobra.Command, args []string) {
 		OutputDir:   outputDir,
 		ProgressBar: progressBar,
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
-			stats := &GrayscaleStats{
-				initialSize:     &initialSize,
-				finalSize:       &finalSize,
-				skippedImages:   &skippedImages,
-				grayscaleImages: &grayscaleImages,
-			}
+			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &grayscaleImages)
 			return processGrayscaleImage(ctx, p, stats)
 		},
 		Concurrency: concurrency,
@@ -74,7 +62,7 @@ func grayscaleRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("grayscale"))
 }
 
-func processGrayscaleImage(ctx context.Context, params processing.FileProcessingParams, stats *GrayscaleStats) error {
+func processGrayscaleImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -83,27 +71,27 @@ func processGrayscaleImage(ctx context.Context, params processing.FileProcessing
 
 	img, err := params.FS.ReadFile(params.File.Path)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.initialSize, uint64(params.File.Size))
+	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
 	newImg := image.NewBimgImage(img)
 	grayscaleImages, err := newImg.Grayscale()
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
 	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
 	err = params.FS.WriteFile(outputPath, grayscaleImages)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.finalSize, uint64(len(grayscaleImages)))
-	atomic.AddUint32(stats.grayscaleImages, 1)
+	atomic.AddUint64(stats.FinalSize, uint64(len(grayscaleImages)))
+	atomic.AddUint32(stats.ProcessedImages, 1)
 	return nil
 }
 

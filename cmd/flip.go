@@ -15,13 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type FlipStats struct {
-	initialSize   *uint64
-	finalSize     *uint64
-	skippedImages *uint32
-	flippedImages *uint32
-}
-
 func flipRun(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -49,12 +42,7 @@ func flipRun(cmd *cobra.Command, args []string) {
 		OutputDir:   outputDir,
 		ProgressBar: progressBar,
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
-			stats := &FlipStats{
-				initialSize:   &initialSize,
-				finalSize:     &finalSize,
-				skippedImages: &skippedImages,
-				flippedImages: &flippedImages,
-			}
+			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &flippedImages)
 			return flipImages(ctx, p, stats)
 		},
 		Concurrency: concurrency,
@@ -74,7 +62,7 @@ func flipRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("flipped"))
 }
 
-func flipImages(ctx context.Context, params processing.FileProcessingParams, stats *FlipStats) error {
+func flipImages(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -83,27 +71,27 @@ func flipImages(ctx context.Context, params processing.FileProcessingParams, sta
 
 	img, err := params.FS.ReadFile(params.File.Path)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.initialSize, uint64(params.File.Size))
+	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
 	newImg := image.NewBimgImage(img)
 	flippedImg, err := newImg.Flip()
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
 	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
 	err = params.FS.WriteFile(outputPath, flippedImg)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.finalSize, uint64(len(flippedImg)))
-	atomic.AddUint32(stats.flippedImages, 1)
+	atomic.AddUint64(stats.FinalSize, uint64(len(flippedImg)))
+	atomic.AddUint32(stats.ProcessedImages, 1)
 	return nil
 }
 

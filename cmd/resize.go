@@ -27,13 +27,6 @@ type ResizeParams struct {
 	Height int
 }
 
-type ResizeStats struct {
-	initialSize   *uint64
-	finalSize     *uint64
-	skippedImages *uint32
-	resizedImages *uint32
-}
-
 func resizeRun(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -69,12 +62,7 @@ func resizeRun(cmd *cobra.Command, args []string) {
 		ExtraParams: ResizeParams{Width: width, Height: height},
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			extraParams := p.ExtraParams.(ResizeParams)
-			stats := &ResizeStats{
-				initialSize:   &initialSize,
-				finalSize:     &finalSize,
-				skippedImages: &skippedImages,
-				resizedImages: &resizedImages,
-			}
+			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &resizedImages)
 			return resizeImages(ctx, p, extraParams, stats)
 		},
 		Concurrency: concurrency,
@@ -94,7 +82,7 @@ func resizeRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("resized"))
 }
 
-func resizeImages(ctx context.Context, params processing.FileProcessingParams, extraParams ResizeParams, stats *ResizeStats) error {
+func resizeImages(ctx context.Context, params processing.FileProcessingParams, extraParams ResizeParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -103,27 +91,27 @@ func resizeImages(ctx context.Context, params processing.FileProcessingParams, e
 
 	img, err := params.FS.ReadFile(params.File.Path)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.initialSize, uint64(params.File.Size))
+	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
 	newImg := image.NewBimgImage(img)
 	resizedImg, err := newImg.Resize(extraParams.Width, extraParams.Height)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
 	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
 	err = params.FS.WriteFile(outputPath, resizedImg)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.finalSize, uint64(len(resizedImg)))
-	atomic.AddUint32(stats.resizedImages, 1)
+	atomic.AddUint64(stats.FinalSize, uint64(len(resizedImg)))
+	atomic.AddUint32(stats.ProcessedImages, 1)
 	return nil
 }
 

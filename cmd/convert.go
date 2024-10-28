@@ -24,13 +24,6 @@ type ConvertParams struct {
 	Format string
 }
 
-type ConvertStats struct {
-	initialSize     *uint64
-	finalSize       *uint64
-	skippedImages   *uint32
-	convertedImages *uint32
-}
-
 func convertRun(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -66,12 +59,7 @@ func convertRun(cmd *cobra.Command, args []string) {
 		ExtraParams: ConvertParams{Format: format},
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			extraParams := p.ExtraParams.(ConvertParams)
-			stats := &ConvertStats{
-				initialSize:     &initialSize,
-				finalSize:       &finalSize,
-				skippedImages:   &skippedImages,
-				convertedImages: &convertedImages,
-			}
+			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &convertedImages)
 			return convertImages(ctx, p, extraParams, stats)
 		},
 		Concurrency: concurrency,
@@ -91,7 +79,7 @@ func convertRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("converted"))
 }
 
-func convertImages(ctx context.Context, params processing.FileProcessingParams, extraParams ConvertParams, stats *ConvertStats) error {
+func convertImages(ctx context.Context, params processing.FileProcessingParams, extraParams ConvertParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -100,16 +88,16 @@ func convertImages(ctx context.Context, params processing.FileProcessingParams, 
 
 	img, err := params.FS.ReadFile(params.File.Path)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.initialSize, uint64(params.File.Size))
+	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
 
 	newImg := image.NewBimgImage(img)
 	convertedImg, err := newImg.Convert(extraParams.Format)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
@@ -117,12 +105,12 @@ func convertImages(ctx context.Context, params processing.FileProcessingParams, 
 	newName := strings.TrimSuffix(outputPath, filepath.Ext(outputPath)) + "." + extraParams.Format
 	err = params.FS.WriteFile(newName, convertedImg)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.finalSize, uint64(len(convertedImg)))
-	atomic.AddUint32(stats.convertedImages, 1)
+	atomic.AddUint64(stats.FinalSize, uint64(len(convertedImg)))
+	atomic.AddUint32(stats.ProcessedImages, 1)
 	params.ProgressBar.Increment()
 	return nil
 }

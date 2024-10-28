@@ -27,13 +27,6 @@ type CropParams struct {
 	Gravity bimg.Gravity
 }
 
-type CropStats struct {
-	initialSize   *uint64
-	finalSize     *uint64
-	skippedImages *uint32
-	croppedImages *uint32
-}
-
 func cropRun(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -71,12 +64,7 @@ func cropRun(cmd *cobra.Command, args []string) {
 		ExtraParams: CropParams{Width: width, Height: height, Gravity: bimg.Gravity(gravity)},
 		ProcessorFunc: func(p processing.FileProcessingParams) error {
 			extraParams := p.ExtraParams.(CropParams)
-			stats := &CropStats{
-				initialSize:   &initialSize,
-				finalSize:     &finalSize,
-				skippedImages: &skippedImages,
-				croppedImages: &croppedImages,
-			}
+			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &croppedImages)
 			return cropImages(ctx, p, extraParams, stats)
 		},
 		Concurrency: concurrency,
@@ -96,7 +84,7 @@ func cropRun(cmd *cobra.Command, args []string) {
 	fmt.Println(result.PrintResults("cropped"))
 }
 
-func cropImages(ctx context.Context, params processing.FileProcessingParams, extraParams CropParams, stats *CropStats) error {
+func cropImages(ctx context.Context, params processing.FileProcessingParams, extraParams CropParams, stats *utils.ImageProcessingStats) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -105,27 +93,27 @@ func cropImages(ctx context.Context, params processing.FileProcessingParams, ext
 
 	img, err := params.FS.ReadFile(params.File.Path)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.initialSize, uint64(params.File.Size))
+	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
 	newImg := image.NewBimgImage(img)
 	croppedImg, err := newImg.Crop(extraParams.Width, extraParams.Height, extraParams.Gravity)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
 	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
 	err = params.FS.WriteFile(outputPath, croppedImg)
 	if err != nil {
-		atomic.AddUint32(stats.skippedImages, 1)
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return err
 	}
 
-	atomic.AddUint64(stats.finalSize, uint64(len(croppedImg)))
-	atomic.AddUint32(stats.croppedImages, 1)
+	atomic.AddUint64(stats.FinalSize, uint64(len(croppedImg)))
+	atomic.AddUint32(stats.ProcessedImages, 1)
 	params.ProgressBar.Increment()
 	return nil
 }
