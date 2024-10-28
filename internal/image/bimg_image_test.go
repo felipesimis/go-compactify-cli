@@ -27,28 +27,26 @@ func TestBimgImageWrapper_Size(t *testing.T) {
 
 func TestBimgImageWrapper_Resize(t *testing.T) {
 	img := NewBimgImage(mockedImage())
-	resized, err := img.Resize(300, 200)
-
+	resizedImg, err := img.Resize(300, 200)
 	assert.Nil(t, err)
-	assert.NotEmpty(t, resized)
+	assert.NotEmpty(t, resizedImg)
 
-	size, err := NewBimgImage(resized).Size()
+	imgSize, err := NewBimgImage(resizedImg).Size()
 	assert.Nil(t, err)
-	assert.Equal(t, 300, size.Width)
-	assert.Equal(t, 200, size.Height)
+	assert.Equal(t, 300, imgSize.Width)
+	assert.Equal(t, 200, imgSize.Height)
 }
 
 func TestBimgImageWrapper_Convert(t *testing.T) {
 	img := NewBimgImage(mockedImage())
-	converted, err := img.Convert("png")
-
+	convertedImg, err := img.Convert("png")
 	assert.Nil(t, err)
-	assert.NotEmpty(t, converted)
-	assert.Equal(t, "png", NewBimgImage(converted).ImageType())
+	assert.NotEmpty(t, convertedImg)
+	assert.Equal(t, "png", NewBimgImage(convertedImg).ImageType())
 
-	converted, err = img.Convert("unknown")
+	convertedImg, err = img.Convert("unknown")
 	assert.Equal(t, ErrUnsupportedImageType, err)
-	assert.Empty(t, converted)
+	assert.Empty(t, convertedImg)
 }
 
 func TestBimgImageWrapper_mapStringToImageType(t *testing.T) {
@@ -75,12 +73,11 @@ func TestBimgImageWrapper_mapStringToImageType(t *testing.T) {
 
 func TestBimgImageWrapper_Crop(t *testing.T) {
 	img := NewBimgImage(mockedImage())
-	cropped, err := img.Crop(300, 200, bimg.GravitySmart)
-
+	croppedImg, err := img.Crop(300, 200, bimg.GravitySmart)
 	assert.Nil(t, err)
-	assert.NotEmpty(t, cropped)
+	assert.NotEmpty(t, croppedImg)
 
-	size, err := NewBimgImage(cropped).Size()
+	size, err := NewBimgImage(croppedImg).Size()
 	assert.Nil(t, err)
 	assert.Equal(t, 300, size.Width)
 	assert.Equal(t, 200, size.Height)
@@ -88,41 +85,41 @@ func TestBimgImageWrapper_Crop(t *testing.T) {
 
 func TestBimgImageWrapper_Flip(t *testing.T) {
 	img := NewBimgImage(mockedImage())
-	flipped, err := img.Flip()
+	flippedImg, err := img.Flip()
 	assert.Nil(t, err)
-	assert.NotEmpty(t, flipped)
+	assert.NotEmpty(t, flippedImg)
 
 	originalSize, err := img.Size()
 	assert.Nil(t, err)
-	flippedSize, err := NewBimgImage(flipped).Size()
+	flippedImgSize, err := NewBimgImage(flippedImg).Size()
 	assert.Nil(t, err)
 
-	assert.Equal(t, originalSize.Width, flippedSize.Width)
-	assert.Equal(t, originalSize.Height, flippedSize.Height)
+	assert.Equal(t, originalSize.Width, flippedImgSize.Width)
+	assert.Equal(t, originalSize.Height, flippedImgSize.Height)
 }
 
 func TestBimgImageWrapper_Enlarge(t *testing.T) {
 	img := NewBimgImage(mockedImage())
-	enlarged, err := img.Enlarge(1200, 800)
+	enlargedImg, err := img.Enlarge(1200, 800)
 	assert.Nil(t, err)
-	assert.NotEmpty(t, enlarged)
+	assert.NotEmpty(t, enlargedImg)
 
-	size, err := NewBimgImage(enlarged).Size()
+	enlargedImgSize, err := NewBimgImage(enlargedImg).Size()
 	assert.Nil(t, err)
-	assert.Equal(t, 1200, size.Width)
-	assert.Equal(t, 800, size.Height)
+	assert.Equal(t, 1200, enlargedImgSize.Width)
+	assert.Equal(t, 800, enlargedImgSize.Height)
 }
 
 func TestBimgImageWrapper_Thumbnail(t *testing.T) {
 	img := NewBimgImage(mockedImage())
-	thumbnail, err := img.Thumbnail(300)
+	thumbnailImg, err := img.Thumbnail(300)
 	assert.Nil(t, err)
-	assert.NotEmpty(t, thumbnail)
+	assert.NotEmpty(t, thumbnailImg)
 
-	size, err := NewBimgImage(thumbnail).Size()
+	thumbnailImgSize, err := NewBimgImage(thumbnailImg).Size()
 	assert.Nil(t, err)
-	assert.Equal(t, 300, size.Width)
-	assert.Equal(t, 300, size.Height)
+	assert.Equal(t, 300, thumbnailImgSize.Width)
+	assert.Equal(t, 300, thumbnailImgSize.Height)
 }
 
 func TestBimgImageWrapper_Length(t *testing.T) {
@@ -143,24 +140,24 @@ func TestBimgImageWrapper_Grayscale(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, bimg.InterpretationSRGB, initialInterpretation)
 
-	grayscale, err := img.Grayscale()
+	grayscaleImg, err := img.Grayscale()
 	assert.Nil(t, err)
-	assert.NotEmpty(t, grayscale)
+	assert.NotEmpty(t, grayscaleImg)
 
-	grayscaleInterpretation, err := NewBimgImage(grayscale).ImageInterpretation()
+	grayscaleImgInterpretation, err := NewBimgImage(grayscaleImg).ImageInterpretation()
 	assert.Nil(t, err)
-	assert.Equal(t, bimg.InterpretationBW, grayscaleInterpretation)
+	assert.Equal(t, bimg.InterpretationBW, grayscaleImgInterpretation)
 }
 
 func TestBimgImageWrapper_EnablePalette(t *testing.T) {
 	img := NewBimgImage(mockedImage())
 	initialImgLength := img.Length()
 
-	palette, err := img.EnablePalette()
+	paletteImg, err := img.EnablePalette()
 	assert.Nil(t, err)
-	assert.NotEmpty(t, palette)
+	assert.NotEmpty(t, paletteImg)
 
-	paletteImgLength := NewBimgImage(palette).Length()
+	paletteImgLength := NewBimgImage(paletteImg).Length()
 	assert.NotZero(t, paletteImgLength)
 	assert.NotEqual(t, initialImgLength, paletteImgLength, "Expected image data to change after applying palette")
 }
