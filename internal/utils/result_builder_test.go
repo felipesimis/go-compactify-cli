@@ -80,11 +80,11 @@ func TestResultBuilder_Build(t *testing.T) {
 	assert.Equal(t, time.Second, result.elapsedTime)
 	assert.Equal(t, 10.0, result.initialSize)
 	assert.Equal(t, 5.0, result.finalSize)
-	assert.Equal(t, 5.0, result.savedSize)
+	assert.Equal(t, -5.0, result.sizeDifference)
 	assert.Equal(t, 10, int(result.totalImages))
 	assert.Equal(t, 3, int(result.skippedImages))
 	assert.Equal(t, 7, int(result.processedImages))
-	assert.Equal(t, 50.0, result.savedSizePercentage)
+	assert.Equal(t, 50.0, result.sizeDifferencePercentage)
 	assert.Equal(t, "output", result.outputDirectory)
 	timeMock.AssertExpectations(t)
 }
@@ -106,8 +106,8 @@ Skipped images: 3
 Resized images: 7
 Initial size: 10.00 MB
 Final size: 5.00 MB
-Saved size: 5.00 MB
-Saved size percentage: 50.00%
+Size difference: -5.00 MB
+Size difference percentage: 50.00%
 Output directory: output`
 
 	assert.Equal(t, expected, printedResult)

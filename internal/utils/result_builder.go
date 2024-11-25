@@ -26,16 +26,16 @@ func (RealTimeProvider) Since(t time.Time) time.Duration {
 }
 
 type Result struct {
-	startTime           time.Time
-	elapsedTime         time.Duration
-	totalImages         uint32
-	skippedImages       uint32
-	processedImages     uint32
-	initialSize         float64
-	finalSize           float64
-	savedSize           float64
-	savedSizePercentage float64
-	outputDirectory     string
+	startTime                time.Time
+	elapsedTime              time.Duration
+	totalImages              uint32
+	skippedImages            uint32
+	processedImages          uint32
+	initialSize              float64
+	finalSize                float64
+	sizeDifference           float64
+	sizeDifferencePercentage float64
+	outputDirectory          string
 }
 
 type ResultBuilder struct {
@@ -86,19 +86,23 @@ func (rb *ResultBuilder) Build() *Result {
 	elapsedTime := rb.timeProvider.Since(rb.result.startTime)
 	initialSizeMB := rb.result.initialSize / bytesInMb
 	finalSizeMB := rb.result.finalSize / bytesInMb
-	savedSizeMB := initialSizeMB - finalSizeMB
-	savedSizePercentage := (savedSizeMB / initialSizeMB) * 100
+	sizeDifferenceMB := initialSizeMB - finalSizeMB
+	sizeDifferencePercentage := (sizeDifferenceMB / initialSizeMB) * 100
+
+	if finalSizeMB < initialSizeMB {
+		sizeDifferenceMB = -sizeDifferenceMB
+	}
 
 	return &Result{
-		elapsedTime:         elapsedTime,
-		totalImages:         rb.result.totalImages,
-		skippedImages:       rb.result.skippedImages,
-		processedImages:     rb.result.processedImages,
-		initialSize:         initialSizeMB,
-		finalSize:           finalSizeMB,
-		savedSize:           savedSizeMB,
-		savedSizePercentage: savedSizePercentage,
-		outputDirectory:     rb.result.outputDirectory,
+		elapsedTime:              elapsedTime,
+		totalImages:              rb.result.totalImages,
+		skippedImages:            rb.result.skippedImages,
+		processedImages:          rb.result.processedImages,
+		initialSize:              initialSizeMB,
+		finalSize:                finalSizeMB,
+		sizeDifference:           sizeDifferenceMB,
+		sizeDifferencePercentage: sizeDifferencePercentage,
+		outputDirectory:          rb.result.outputDirectory,
 	}
 }
 
@@ -109,8 +113,8 @@ func (r *Result) PrintResults(key string) string {
 	result += fmt.Sprintf("%s images: %d\n", strings.ToUpper(string(key[0]))+key[1:], r.processedImages)
 	result += fmt.Sprintf("Initial size: %.2f MB\n", r.initialSize)
 	result += fmt.Sprintf("Final size: %.2f MB\n", r.finalSize)
-	result += fmt.Sprintf("Saved size: %.2f MB\n", r.savedSize)
-	result += fmt.Sprintf("Saved size percentage: %.2f%%\n", r.savedSizePercentage)
+	result += fmt.Sprintf("Size difference: %.2f MB\n", r.sizeDifference)
+	result += fmt.Sprintf("Size difference percentage: %.2f%%\n", r.sizeDifferencePercentage)
 	result += fmt.Sprintf("Output directory: %s", r.outputDirectory)
 	return result
 }
