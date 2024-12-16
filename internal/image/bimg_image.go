@@ -8,20 +8,48 @@ import (
 
 var ErrUnsupportedImageType = errors.New("unsupported image type")
 
-type BimgImage interface {
+type Resizeable interface {
 	Resize(width, height int) ([]byte, error)
-	Size() (bimg.ImageSize, error)
-	Convert(format string) ([]byte, error)
-	ImageType() string
-	Crop(width, height int, gravity bimg.Gravity) ([]byte, error)
-	Flip() ([]byte, error)
 	Enlarge(width, height int) ([]byte, error)
 	Thumbnail(width int) ([]byte, error)
-	ImageInterpretation() (bimg.Interpretation, error)
+}
+
+type Convertible interface {
+	Convert(format string) ([]byte, error)
+	ImageType() string
+}
+
+type Croppable interface {
+	Crop(width, height int, gravity bimg.Gravity) ([]byte, error)
+}
+
+type Flippable interface {
+	Flip() ([]byte, error)
+}
+
+type ColorManipulable interface {
 	Grayscale() ([]byte, error)
-	Length() int
 	EnablePalette() ([]byte, error)
+	ImageInterpretation() (bimg.Interpretation, error)
+}
+
+type Measurable interface {
+	Size() (bimg.ImageSize, error)
+	Length() int
+}
+
+type Compressionable interface {
 	LosslessCompress() ([]byte, error)
+}
+
+type BimgImage interface {
+	Resizeable
+	Convertible
+	Croppable
+	Flippable
+	ColorManipulable
+	Measurable
+	Compressionable
 }
 
 type BimgImageWrapper struct {
