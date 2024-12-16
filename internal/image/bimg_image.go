@@ -36,6 +36,7 @@ type ColorManipulable interface {
 type Measurable interface {
 	Size() (bimg.ImageSize, error)
 	Length() int
+	Metadata() (bimg.ImageMetadata, error)
 }
 
 type Compressionable interface {
@@ -127,4 +128,8 @@ func (b *BimgImageWrapper) EnablePalette() ([]byte, error) {
 
 func (b *BimgImageWrapper) LosslessCompress() ([]byte, error) {
 	return b.image.Process(bimg.Options{Lossless: true})
+}
+
+func (b *BimgImageWrapper) Metadata() (bimg.ImageMetadata, error) {
+	return b.image.Metadata()
 }
