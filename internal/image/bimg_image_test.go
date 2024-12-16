@@ -171,3 +171,14 @@ func TestBimgImageWrapper_LosslessCompress(t *testing.T) {
 	compressedImgLength := NewBimgImage(compressedImg).Length()
 	assert.NotZero(t, compressedImgLength)
 }
+
+func TestBimgImageWrapper_Metadata(t *testing.T) {
+	img := NewBimgImage(mockedImage())
+	metadata, err := img.Metadata()
+	assert.Nil(t, err)
+	assert.NotEmpty(t, metadata)
+
+	assert.Equal(t, 600, metadata.Size.Width)
+	assert.Equal(t, 400, metadata.Size.Height)
+	assert.Equal(t, "jpeg", metadata.Type)
+}
