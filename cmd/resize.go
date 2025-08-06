@@ -2,16 +2,13 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"os"
 	"sync/atomic"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
 	"github.com/felipesimis/compactify-cli/internal/processing"
 	"github.com/felipesimis/compactify-cli/internal/utils"
-	"github.com/felipesimis/compactify-cli/pkg/progress"
 	"github.com/felipesimis/compactify-cli/pkg/validation"
 	"github.com/spf13/cobra"
 )
@@ -38,53 +35,25 @@ func resizeRun(cmd *cobra.Command, args []string) {
 	}
 
 	fs := filesystem.NewFileSystem()
-	files, err := fs.ReadDir(directory)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	outputDir, err := fs.CreateSiblingDir(directory, "-resized")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var initialSize, finalSize uint64
-	var skippedImages, resizedImages uint32
-
-	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
-	progressBar := progress.NewProgressBar(os.Stdout, len(files), concurrency, "Resizing images")
-
-	params := processing.ProcessFilesParams{
-		Files:       files,
-		FS:          fs,
-		OutputDir:   outputDir,
-		ProgressBar: progressBar,
-		ExtraParams: ResizeParams{Width: width, Height: height},
-		ProcessorFunc: func(p processing.FileProcessingParams) error {
-			extraParams := p.ExtraParams.(ResizeParams)
-			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &resizedImages)
-			return processResizeImage(ctx, p, extraParams, stats)
-		},
-		Concurrency: concurrency,
-	}
-	processing.ProcessFiles(params)
-
-	progressBar.Finish()
-
-	totalImages := uint32(len(files))
-	resultBuilder.SetTotalImages(totalImages).
-		SetSkippedImages(skippedImages).
-		SetProcessedImages(resizedImages).
-		SetOutputDirectory(outputDir).
-		SetInitialSize(float64(initialSize)).
-		SetFinalSize(float64(finalSize))
-	result := resultBuilder.Build()
-	fmt.Println(result.PrintResults("resized"))
+	RunOperation(OperationConfig{
+		Ctx:                ctx,
+		FileSystem:         fs,
+		InputDir:           directory,
+		OutputSuffix:       "-resized",
+		ProgressBarMessage: "Resizing images",
+		ExtraParams:        ResizeParams{Width: width, Height: height},
+		ProcessorFunc:      processResizeImage,
+		ResultVerb:         "resized",
+	})
 }
 
-func processResizeImage(ctx context.Context, params processing.FileProcessingParams, extraParams ResizeParams, stats *utils.ImageProcessingStats) error {
+func processResizeImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
+	extraParams := params.ExtraParams.(ResizeParams)
+
 	select {
 	case <-ctx.Done():
+		atomic.AddUint32(stats.SkippedImages, 1)
 		return ctx.Err()
 	default:
 	}
