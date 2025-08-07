@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"log"
-	"sync/atomic"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
@@ -50,38 +49,10 @@ func resizeRun(cmd *cobra.Command, args []string) {
 
 func processResizeImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	extraParams := params.ExtraParams.(ResizeParams)
-
-	select {
-	case <-ctx.Done():
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return ctx.Err()
-	default:
-	}
-
-	img, err := params.FS.ReadFile(params.File.Path)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
-	newImg := image.NewBimgImage(img)
-	resizedImg, err := newImg.Resize(extraParams.Width, extraParams.Height)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
-	err = params.FS.WriteFile(outputPath, resizedImg)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	atomic.AddUint64(stats.FinalSize, uint64(len(resizedImg)))
-	atomic.AddUint32(stats.ProcessedImages, 1)
-	return nil
+	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
+		newImg := image.NewBimgImage(img)
+		return newImg.Resize(extraParams.Width, extraParams.Height)
+	})
 }
 
 var resizeCmd = &cobra.Command{
