@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"sync/atomic"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
 	"github.com/felipesimis/compactify-cli/internal/processing"
 	"github.com/felipesimis/compactify-cli/internal/utils"
-	"github.com/felipesimis/compactify-cli/pkg/progress"
 	"github.com/felipesimis/compactify-cli/pkg/validation"
 	"github.com/h2non/bimg"
 	"github.com/spf13/cobra"
@@ -40,82 +37,25 @@ func cropRun(cmd *cobra.Command, args []string) {
 	}
 
 	fs := filesystem.NewFileSystem()
-	files, err := fs.ReadDir(directory)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	outputDir, err := fs.CreateSiblingDir(directory, fmt.Sprintf("-cropped_%dx%d", width, height))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var initialSize, finalSize uint64
-	var skippedImages, croppedImages uint32
-
-	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
-	progressBar := progress.NewProgressBar(os.Stdout, len(files), concurrency, "Cropping images")
-
-	params := processing.ProcessFilesParams{
-		Files:       files,
-		FS:          fs,
-		OutputDir:   outputDir,
-		ProgressBar: progressBar,
-		ExtraParams: CropParams{Width: width, Height: height, Gravity: bimg.Gravity(gravity)},
-		ProcessorFunc: func(p processing.FileProcessingParams) error {
-			extraParams := p.ExtraParams.(CropParams)
-			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &croppedImages)
-			return processCropImage(ctx, p, extraParams, stats)
-		},
-		Concurrency: concurrency,
-	}
-	processing.ProcessFiles(params)
-
-	progressBar.Finish()
-
-	totalImages := uint32(len(files))
-	resultBuilder.SetTotalImages(totalImages).
-		SetSkippedImages(skippedImages).
-		SetProcessedImages(croppedImages).
-		SetOutputDirectory(outputDir).
-		SetInitialSize(float64(initialSize)).
-		SetFinalSize(float64(finalSize))
-	result := resultBuilder.Build()
-	fmt.Println(result.PrintResults("cropped"))
+	RunOperation(OperationConfig{
+		Ctx:                ctx,
+		FileSystem:         fs,
+		InputDir:           directory,
+		OutputSuffix:       fmt.Sprintf("-cropped_%dx%d", width, height),
+		ProgressBarMessage: "Cropping images",
+		ExtraParams:        CropParams{Width: width, Height: height, Gravity: bimg.Gravity(gravity)},
+		ProcessorFunc:      processCropImage,
+		ResultVerb:         "cropped",
+	})
 }
 
-func processCropImage(ctx context.Context, params processing.FileProcessingParams, extraParams CropParams, stats *utils.ImageProcessingStats) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-
-	img, err := params.FS.ReadFile(params.File.Path)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
-	newImg := image.NewBimgImage(img)
-	croppedImg, err := newImg.Crop(extraParams.Width, extraParams.Height, extraParams.Gravity)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
-	err = params.FS.WriteFile(outputPath, croppedImg)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	atomic.AddUint64(stats.FinalSize, uint64(len(croppedImg)))
-	atomic.AddUint32(stats.ProcessedImages, 1)
-	params.ProgressBar.Increment()
-	return nil
+func processCropImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
+	extraParams := params.ExtraParams.(CropParams)
+	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
+		newImg := image.NewBimgImage(img)
+		return newImg.Crop(extraParams.Width, extraParams.Height, extraParams.Gravity)
+	})
 }
 
 var cropCmd = &cobra.Command{
