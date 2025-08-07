@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync/atomic"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/processing"
@@ -72,4 +73,37 @@ func RunOperation(config OperationConfig) {
 		SetFinalSize(float64(finalSize))
 	result := resultBuilder.Build()
 	fmt.Println(result.PrintResults(config.ResultVerb))
+}
+
+func HandleImageProcessing(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats, processFunc func([]byte) ([]byte, error)) error {
+	select {
+	case <-ctx.Done():
+		atomic.AddUint32(stats.SkippedImages, 1)
+		return ctx.Err()
+	default:
+	}
+
+	img, err := params.FS.ReadFile(params.File.Path)
+	if err != nil {
+		atomic.AddUint32(stats.SkippedImages, 1)
+		return err
+	}
+
+	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
+	newImg, err := processFunc(img)
+	if err != nil {
+		atomic.AddUint32(stats.SkippedImages, 1)
+		return err
+	}
+
+	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
+	err = params.FS.WriteFile(outputPath, newImg)
+	if err != nil {
+		atomic.AddUint32(stats.SkippedImages, 1)
+		return err
+	}
+
+	atomic.AddUint64(stats.FinalSize, uint64(len(newImg)))
+	atomic.AddUint32(stats.ProcessedImages, 1)
+	return nil
 }
