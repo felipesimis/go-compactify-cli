@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"sync/atomic"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
 	"github.com/felipesimis/compactify-cli/internal/processing"
 	"github.com/felipesimis/compactify-cli/internal/utils"
-	"github.com/felipesimis/compactify-cli/pkg/progress"
 	"github.com/felipesimis/compactify-cli/pkg/validation"
 	"github.com/spf13/cobra"
 )
@@ -32,81 +29,24 @@ func enlargeRun(cmd *cobra.Command, args []string) {
 	}
 
 	fs := filesystem.NewFileSystem()
-	files, err := fs.ReadDir(directory)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	outputDir, err := fs.CreateSiblingDir(directory, fmt.Sprintf("-enlarged_%dx%d", width, height))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var initialSize, finalSize uint64
-	var skippedImages, enlargedImages uint32
-
-	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
-	progressBar := progress.NewProgressBar(os.Stdout, len(files), concurrency, "Enlarging images")
-
-	params := processing.ProcessFilesParams{
-		Files:       files,
-		FS:          fs,
-		OutputDir:   outputDir,
-		ProgressBar: progressBar,
-		ExtraParams: EnlargeParams{Width: width, Height: height},
-		ProcessorFunc: func(p processing.FileProcessingParams) error {
-			extraParams := p.ExtraParams.(EnlargeParams)
-			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &enlargedImages)
-			return processEnlargeImage(ctx, p, extraParams, stats)
-		},
-		Concurrency: concurrency,
-	}
-	processing.ProcessFiles(params)
-
-	progressBar.Finish()
-
-	totalImages := uint32(len(files))
-	resultBuilder.SetTotalImages(totalImages).
-		SetSkippedImages(skippedImages).
-		SetProcessedImages(enlargedImages).
-		SetOutputDirectory(outputDir).
-		SetInitialSize(float64(initialSize)).
-		SetFinalSize(float64(finalSize))
-	result := resultBuilder.Build()
-	fmt.Println(result.PrintResults("enlarged"))
+	RunOperation(OperationConfig{
+		Ctx:                ctx,
+		FileSystem:         fs,
+		InputDir:           directory,
+		OutputSuffix:       fmt.Sprintf("-enlarged-%dx%d", width, height),
+		ProgressBarMessage: "Enlarging images",
+		ExtraParams:        EnlargeParams{Width: width, Height: height},
+		ProcessorFunc:      processEnlargeImage,
+		ResultVerb:         "enlarged",
+	})
 }
 
-func processEnlargeImage(ctx context.Context, params processing.FileProcessingParams, extraParams EnlargeParams, stats *utils.ImageProcessingStats) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-
-	img, err := params.FS.ReadFile(params.File.Path)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
-	newImg := image.NewBimgImage(img)
-	enlargedImg, err := newImg.Enlarge(extraParams.Width, extraParams.Height)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
-	err = params.FS.WriteFile(outputPath, enlargedImg)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	atomic.AddUint64(stats.FinalSize, uint64(len(enlargedImg)))
-	atomic.AddUint32(stats.ProcessedImages, 1)
-	return nil
+func processEnlargeImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
+	extraParams := params.ExtraParams.(EnlargeParams)
+	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
+		newImg := image.NewBimgImage(img)
+		return newImg.Enlarge(extraParams.Width, extraParams.Height)
+	})
 }
 
 var enlargeCmd = &cobra.Command{
