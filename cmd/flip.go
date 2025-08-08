@@ -29,11 +29,7 @@ func flipRun(cmd *cobra.Command, args []string) {
 func processFlipImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
 		newImg := image.NewBimgImage(img)
-		flippedImg, err := newImg.Flip()
-		if err != nil {
-			return nil, err
-		}
-		return flippedImg, nil
+		return newImg.Flip()
 	})
 }
 

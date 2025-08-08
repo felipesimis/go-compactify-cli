@@ -29,11 +29,7 @@ func losslessRun(cmd *cobra.Command, args []string) {
 func processLosslessImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
 		newImg := image.NewBimgImage(img)
-		compressedImg, err := newImg.LosslessCompress()
-		if err != nil {
-			return nil, err
-		}
-		return compressedImg, nil
+		return newImg.LosslessCompress()
 	})
 }
 

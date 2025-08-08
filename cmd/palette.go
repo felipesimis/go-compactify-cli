@@ -29,11 +29,7 @@ func paletteRun(cmd *cobra.Command, args []string) {
 func processPaletteImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
 		newImg := image.NewBimgImage(img)
-		palettedImg, err := newImg.EnablePalette()
-		if err != nil {
-			return nil, err
-		}
-		return palettedImg, nil
+		return newImg.EnablePalette()
 	})
 }
 

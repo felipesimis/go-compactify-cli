@@ -42,11 +42,7 @@ func processThumbnailImage(ctx context.Context, params processing.FileProcessing
 	extraParams := ThumbnailParams{Width: width}
 	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
 		newImg := image.NewBimgImage(img)
-		thumbnailImg, err := newImg.Thumbnail(extraParams.Width)
-		if err != nil {
-			return nil, err
-		}
-		return thumbnailImg, nil
+		return newImg.Thumbnail(extraParams.Width)
 	})
 }
 
