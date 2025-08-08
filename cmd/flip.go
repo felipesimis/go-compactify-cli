@@ -2,16 +2,11 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"os"
-	"sync/atomic"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
 	"github.com/felipesimis/compactify-cli/internal/processing"
 	"github.com/felipesimis/compactify-cli/internal/utils"
-	"github.com/felipesimis/compactify-cli/pkg/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -20,79 +15,26 @@ func flipRun(cmd *cobra.Command, args []string) {
 	defer cancel()
 
 	fs := filesystem.NewFileSystem()
-	files, err := fs.ReadDir(directory)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	outputDir, err := fs.CreateSiblingDir(directory, "-flipped")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var initialSize, finalSize uint64
-	var skippedImages, flippedImages uint32
-
-	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
-	progressBar := progress.NewProgressBar(os.Stdout, len(files), concurrency, "Resizing images")
-
-	params := processing.ProcessFilesParams{
-		Files:       files,
-		FS:          fs,
-		OutputDir:   outputDir,
-		ProgressBar: progressBar,
-		ProcessorFunc: func(p processing.FileProcessingParams) error {
-			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &flippedImages)
-			return processFlipImage(ctx, p, stats)
-		},
-		Concurrency: concurrency,
-	}
-	processing.ProcessFiles(params)
-
-	progressBar.Finish()
-
-	totalImages := uint32(len(files))
-	resultBuilder.SetTotalImages(totalImages).
-		SetSkippedImages(skippedImages).
-		SetProcessedImages(flippedImages).
-		SetOutputDirectory(outputDir).
-		SetInitialSize(float64(initialSize)).
-		SetFinalSize(float64(finalSize))
-	result := resultBuilder.Build()
-	fmt.Println(result.PrintResults("flipped"))
+	RunOperation(OperationConfig{
+		Ctx:                ctx,
+		FileSystem:         fs,
+		InputDir:           directory,
+		OutputSuffix:       "-flipped",
+		ProgressBarMessage: "Flipping images",
+		ProcessorFunc:      processFlipImage,
+		ResultVerb:         "flipped",
+	})
 }
 
 func processFlipImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-
-	img, err := params.FS.ReadFile(params.File.Path)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
-	newImg := image.NewBimgImage(img)
-	flippedImg, err := newImg.Flip()
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
-	err = params.FS.WriteFile(outputPath, flippedImg)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	atomic.AddUint64(stats.FinalSize, uint64(len(flippedImg)))
-	atomic.AddUint32(stats.ProcessedImages, 1)
-	return nil
+	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
+		newImg := image.NewBimgImage(img)
+		flippedImg, err := newImg.Flip()
+		if err != nil {
+			return nil, err
+		}
+		return flippedImg, nil
+	})
 }
 
 var flipCmd = &cobra.Command{
