@@ -2,16 +2,12 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"os"
-	"sync/atomic"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
 	"github.com/felipesimis/compactify-cli/internal/processing"
 	"github.com/felipesimis/compactify-cli/internal/utils"
-	"github.com/felipesimis/compactify-cli/pkg/progress"
 	"github.com/felipesimis/compactify-cli/pkg/validation"
 	"github.com/spf13/cobra"
 )
@@ -31,81 +27,27 @@ func thumbnailRun(cmd *cobra.Command, args []string) {
 	}
 
 	fs := filesystem.NewFileSystem()
-	files, err := fs.ReadDir(directory)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	outputDir, err := fs.CreateSiblingDir(directory, "-thumbnails")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var initialSize, finalSize uint64
-	var skippedImages, thumbnailImages uint32
-
-	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
-	progressBar := progress.NewProgressBar(os.Stdout, len(files), concurrency, "Creating thumbnails")
-
-	params := processing.ProcessFilesParams{
-		Files:       files,
-		FS:          fs,
-		OutputDir:   outputDir,
-		ProgressBar: progressBar,
-		ExtraParams: ThumbnailParams{Width: width},
-		ProcessorFunc: func(p processing.FileProcessingParams) error {
-			extraParams := p.ExtraParams.(ThumbnailParams)
-			stats := utils.NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &thumbnailImages)
-			return processThumbnailImage(ctx, p, extraParams, stats)
-		},
-		Concurrency: concurrency,
-	}
-	processing.ProcessFiles(params)
-
-	progressBar.Finish()
-
-	totalImages := uint32(len(files))
-	resultBuilder.SetTotalImages(totalImages).
-		SetSkippedImages(skippedImages).
-		SetProcessedImages(thumbnailImages).
-		SetOutputDirectory(outputDir).
-		SetInitialSize(float64(initialSize)).
-		SetFinalSize(float64(finalSize))
-	result := resultBuilder.Build()
-	fmt.Println(result.PrintResults("thumbnails"))
+	RunOperation(OperationConfig{
+		Ctx:                ctx,
+		FileSystem:         fs,
+		InputDir:           directory,
+		OutputSuffix:       "-thumbnail",
+		ProgressBarMessage: "Creating thumbnails",
+		ProcessorFunc:      processThumbnailImage,
+		ResultVerb:         "thumbnails created",
+	})
 }
 
-func processThumbnailImage(ctx context.Context, params processing.FileProcessingParams, extraParams ThumbnailParams, stats *utils.ImageProcessingStats) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-
-	img, err := params.FS.ReadFile(params.File.Path)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
-	newImg := image.NewBimgImage(img)
-	thumbnailsImg, err := newImg.Thumbnail(extraParams.Width)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
-	err = params.FS.WriteFile(outputPath, thumbnailsImg)
-	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
-		return err
-	}
-
-	atomic.AddUint64(stats.FinalSize, uint64(len(thumbnailsImg)))
-	atomic.AddUint32(stats.ProcessedImages, 1)
-	return nil
+func processThumbnailImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
+	extraParams := ThumbnailParams{Width: width}
+	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
+		newImg := image.NewBimgImage(img)
+		thumbnailImg, err := newImg.Thumbnail(extraParams.Width)
+		if err != nil {
+			return nil, err
+		}
+		return thumbnailImg, nil
+	})
 }
 
 var thumbnailCmd = &cobra.Command{
