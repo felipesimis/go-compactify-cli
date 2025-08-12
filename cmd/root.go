@@ -14,10 +14,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "compactify",
 	Short: "Compactify: A versatile image compression and manipulation tool",
-	Long: `Compactify is a powerful CLI tool focused on compressing images efficiently.
-In addition to compression, it provides various commands for image manipulation,
-including resizing, cropping, converting, and more. Ideal for optimizing images
-for web and other uses.`,
+	Long:  `Compactify is your complete solution for optimizing images. With fast and intuitive commands, you can easily compress, resize, and convert your images, saving time and space.`,
 }
 
 func Execute() {
