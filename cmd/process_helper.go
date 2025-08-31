@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync/atomic"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
@@ -96,7 +98,18 @@ func HandleImageProcessing(ctx context.Context, params processing.FileProcessing
 		return err
 	}
 
-	outputPath := utils.BuildOutputPath(params.OutputDir, params.File.Path)
+	var outputPath string
+	if convertParams, ok := params.ExtraParams.(ConvertParams); ok && convertParams.Format != "" {
+		originalFileName := filepath.Base(params.File.Path)
+		fileExt := filepath.Ext(originalFileName)
+		fileNameWithoutExt := strings.TrimSuffix(originalFileName, fileExt)
+		newFilename := fmt.Sprintf("%s.%s", fileNameWithoutExt, convertParams.Format)
+
+		outputPath = filepath.Join(params.OutputDir, newFilename)
+	} else {
+		outputPath = utils.BuildOutputPath(params.OutputDir, params.File.Path)
+	}
+
 	err = params.FS.WriteFile(outputPath, newImg)
 	if err != nil {
 		atomic.AddUint32(stats.SkippedImages, 1)
