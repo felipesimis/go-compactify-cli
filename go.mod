@@ -1,6 +1,6 @@
 module github.com/felipesimis/compactify-cli
 
-go 1.23.1
+go 1.25.0
 
 require (
 	github.com/h2non/bimg v1.1.9
