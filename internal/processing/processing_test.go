@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -82,9 +83,13 @@ func (suite *ProcessingTestSuite) TestProcessFilesWithError() {
 	suite.mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
 	suite.mockProgressBar.On("Increment").Twice()
 
-	ProcessFiles(suite.params)
+	errs := ProcessFiles(suite.params)
 	suite.mockFS.AssertExpectations(suite.T())
 	suite.mockProgressBar.AssertExpectations(suite.T())
+
+	assert.Len(suite.T(), errs, 1, "Expected one error")
+	assert.Contains(suite.T(), errs[0].Error(), "read error", "Expected error message to contain 'read error'")
+	assert.Contains(suite.T(), errs[0].Error(), "image1.jpg", "Expected error message to contain 'error processing file image1.jpg'")
 }
 
 func TestProcessingTestSuite(t *testing.T) {
