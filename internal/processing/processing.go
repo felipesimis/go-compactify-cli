@@ -1,7 +1,7 @@
 package processing
 
 import (
-	"log"
+	"fmt"
 	"sync"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
@@ -37,7 +37,7 @@ type ProcessFilesParams struct {
 	Concurrency   int
 }
 
-func ProcessFiles(params ProcessFilesParams) {
+func ProcessFiles(params ProcessFilesParams) []error {
 	sem := make(chan struct{}, params.Concurrency)
 	var wg sync.WaitGroup
 	var errChan = make(chan error, len(params.Files))
@@ -59,7 +59,7 @@ func ProcessFiles(params ProcessFilesParams) {
 			}
 			err := params.ProcessorFunc(fpParams)
 			if err != nil {
-				errChan <- err
+				errChan <- fmt.Errorf("error processing file '%s': %w", file.Path, err)
 			}
 			fpParams.ProgressBar.Increment()
 		}(file)
@@ -69,9 +69,12 @@ func ProcessFiles(params ProcessFilesParams) {
 	close(sem)
 	close(errChan)
 
+	var processErrors []error
+
 	for err := range errChan {
 		if err != nil {
-			log.Println(err)
+			processErrors = append(processErrors, err)
 		}
 	}
+	return processErrors
 }
