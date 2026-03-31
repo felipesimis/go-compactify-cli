@@ -36,6 +36,7 @@ type Result struct {
 	sizeDifference           float64
 	sizeDifferencePercentage float64
 	outputDirectory          string
+	errors                   []error
 }
 
 type ResultBuilder struct {
@@ -82,6 +83,11 @@ func (rb *ResultBuilder) SetOutputDirectory(directory string) *ResultBuilder {
 	return rb
 }
 
+func (rb *ResultBuilder) SetErrors(errs []error) *ResultBuilder {
+	rb.result.errors = errs
+	return rb
+}
+
 func (rb *ResultBuilder) Build() *Result {
 	elapsedTime := rb.timeProvider.Since(rb.result.startTime)
 	initialSizeMB := rb.result.initialSize / bytesInMb
@@ -103,18 +109,20 @@ func (rb *ResultBuilder) Build() *Result {
 		sizeDifference:           sizeDifferenceMB,
 		sizeDifferencePercentage: sizeDifferencePercentage,
 		outputDirectory:          rb.result.outputDirectory,
+		errors:                   rb.result.errors,
 	}
 }
 
 func (r *Result) PrintResults(key string) string {
-	result := fmt.Sprintf("Elapsed time: %s\n", r.elapsedTime)
-	result += fmt.Sprintf("Total images: %d\n", r.totalImages)
-	result += fmt.Sprintf("Skipped images: %d\n", r.skippedImages)
-	result += fmt.Sprintf("%s images: %d\n", strings.ToUpper(string(key[0]))+key[1:], r.processedImages)
-	result += fmt.Sprintf("Initial size: %.2f MB\n", r.initialSize)
-	result += fmt.Sprintf("Final size: %.2f MB\n", r.finalSize)
-	result += fmt.Sprintf("Size difference: %.2f MB\n", r.sizeDifference)
-	result += fmt.Sprintf("Size difference percentage: %.2f%%\n", r.sizeDifferencePercentage)
-	result += fmt.Sprintf("Output directory: %s", r.outputDirectory)
-	return result
+	var result strings.Builder
+	fmt.Fprintf(&result, "Elapsed time: %s\n", r.elapsedTime)
+	fmt.Fprintf(&result, "Total images: %d\n", r.totalImages)
+	fmt.Fprintf(&result, "Skipped images: %d\n", r.skippedImages)
+	fmt.Fprintf(&result, "%s images: %d\n", strings.ToUpper(string(key[0]))+key[1:], r.processedImages)
+	fmt.Fprintf(&result, "Initial size: %.2f MB\n", r.initialSize)
+	fmt.Fprintf(&result, "Final size: %.2f MB\n", r.finalSize)
+	fmt.Fprintf(&result, "Size difference: %.2f MB\n", r.sizeDifference)
+	fmt.Fprintf(&result, "Size difference percentage: %.2f%%\n", r.sizeDifferencePercentage)
+	fmt.Fprintf(&result, "Output directory: %s", r.outputDirectory)
+	return result.String()
 }

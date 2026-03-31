@@ -66,6 +66,13 @@ func TestResultBuilder_SetOutputDirectory(t *testing.T) {
 	assert.Equal(t, "output", rb.result.outputDirectory)
 }
 
+func TestResultBuilder_SetErrors(t *testing.T) {
+	rb := NewResultBuilder(mockTimeProvider())
+	errors := []error{assert.AnError, assert.AnError}
+	rb.SetErrors(errors)
+	assert.Equal(t, errors, rb.result.errors)
+}
+
 func TestResultBuilder_Build(t *testing.T) {
 	timeMock := mockTimeProvider()
 	rb := NewResultBuilder(timeMock).
