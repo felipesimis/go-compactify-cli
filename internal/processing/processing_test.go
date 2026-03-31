@@ -71,9 +71,10 @@ func (suite *ProcessingTestSuite) TestProcessFiles() {
 	suite.mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
 	suite.mockProgressBar.On("Increment").Twice()
 
-	ProcessFiles(suite.params)
+	errs := ProcessFiles(suite.params)
 	suite.mockFS.AssertExpectations(suite.T())
 	suite.mockProgressBar.AssertExpectations(suite.T())
+	suite.Empty(errs)
 }
 
 func (suite *ProcessingTestSuite) TestProcessFilesWithError() {
