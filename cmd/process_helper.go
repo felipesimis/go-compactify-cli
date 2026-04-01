@@ -62,7 +62,7 @@ func RunOperation(config OperationConfig) {
 		ProcessorFunc: wrappedProcessor,
 		Concurrency:   concurrency,
 	}
-	processing.ProcessFiles(params)
+	processErrors := processing.ProcessFiles(params)
 
 	progressBar.Finish()
 
@@ -72,7 +72,8 @@ func RunOperation(config OperationConfig) {
 		SetProcessedImages(processedImages).
 		SetOutputDirectory(outputDir).
 		SetInitialSize(float64(initialSize)).
-		SetFinalSize(float64(finalSize))
+		SetFinalSize(float64(finalSize)).
+		SetErrors(processErrors)
 	result := resultBuilder.Build()
 	fmt.Println(result.PrintResults(config.ResultVerb))
 }
