@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -81,7 +82,8 @@ func TestResultBuilder_Build(t *testing.T) {
 		SetTotalImages(10).
 		SetSkippedImages(3).
 		SetProcessedImages(7).
-		SetOutputDirectory("output")
+		SetOutputDirectory("output").
+		SetErrors([]error{assert.AnError})
 	result := rb.Build()
 
 	assert.Equal(t, time.Second, result.elapsedTime)
@@ -93,21 +95,20 @@ func TestResultBuilder_Build(t *testing.T) {
 	assert.Equal(t, 7, int(result.processedImages))
 	assert.Equal(t, 50.0, result.sizeDifferencePercentage)
 	assert.Equal(t, "output", result.outputDirectory)
+	assert.Equal(t, []error{assert.AnError}, result.errors)
 	timeMock.AssertExpectations(t)
 }
 
 func TestResultBuilder_Result_PrintResults(t *testing.T) {
-	timeMock := mockTimeProvider()
-	rb := NewResultBuilder(timeMock).
-		SetInitialSize(10485760). // 10 MB
-		SetFinalSize(5242880).    // 5 MB
-		SetTotalImages(10).
-		SetSkippedImages(3).
-		SetProcessedImages(7).
-		SetOutputDirectory("output")
-	result := rb.Build()
-	printedResult := result.PrintResults("resized")
-	expected := `Elapsed time: 1s
+	tests := []struct {
+		name     string
+		errors   []error
+		expected string
+	}{
+		{
+			name:   "Without errors",
+			errors: nil,
+			expected: `Elapsed time: 1s
 Total images: 10
 Skipped images: 3
 Resized images: 7
@@ -115,10 +116,48 @@ Initial size: 10.00 MB
 Final size: 5.00 MB
 Size difference: -5.00 MB
 Size difference percentage: 50.00%
-Output directory: output`
+Output directory: output`,
+		},
+		{
+			name:   "With errors",
+			errors: []error{fmt.Errorf("file 'fake.jpg': read error")},
+			expected: `Elapsed time: 1s
+Total images: 10
+Skipped images: 3
+Resized images: 7
+Initial size: 10.00 MB
+Final size: 5.00 MB
+Size difference: -5.00 MB
+Size difference percentage: 50.00%
+Output directory: output
+Errors found during processing:
+  ❌ file 'fake.jpg': read error
+`,
+		},
+	}
 
-	assert.Equal(t, expected, printedResult)
-	timeMock.AssertExpectations(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			timeMock := mockTimeProvider()
+
+			rb := NewResultBuilder(timeMock).
+				SetInitialSize(10485760). // 10 MB
+				SetFinalSize(5242880).    // 5 MB
+				SetTotalImages(10).
+				SetSkippedImages(3).
+				SetProcessedImages(7).
+				SetOutputDirectory("output")
+
+			if tt.errors != nil {
+				rb.SetErrors(tt.errors)
+			}
+			result := rb.Build()
+			printedResult := result.PrintResults("resized")
+
+			assert.Equal(t, tt.expected, printedResult)
+			timeMock.AssertExpectations(t)
+		})
+	}
 }
 
 func TestRealTimeProvider_Now(t *testing.T) {

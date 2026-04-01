@@ -124,5 +124,12 @@ func (r *Result) PrintResults(key string) string {
 	fmt.Fprintf(&result, "Size difference: %.2f MB\n", r.sizeDifference)
 	fmt.Fprintf(&result, "Size difference percentage: %.2f%%\n", r.sizeDifferencePercentage)
 	fmt.Fprintf(&result, "Output directory: %s", r.outputDirectory)
+
+	if len(r.errors) > 0 {
+		result.WriteString("\nErrors found during processing:\n")
+		for _, err := range r.errors {
+			fmt.Fprintf(&result, "  ❌ %v\n", err)
+		}
+	}
 	return result.String()
 }
