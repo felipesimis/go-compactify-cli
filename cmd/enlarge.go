@@ -19,8 +19,7 @@ type EnlargeParams struct {
 }
 
 func enlargeRun(cmd *cobra.Command, args []string) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := cmd.Context()
 
 	dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
 	err := dimensionValidation.Validate()

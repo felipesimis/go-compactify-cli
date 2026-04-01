@@ -17,8 +17,7 @@ type ThumbnailParams struct {
 }
 
 func thumbnailRun(cmd *cobra.Command, args []string) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := cmd.Context()
 
 	dimensionValidation := &validation.WidthValidation{Width: width, MinWidth: 50, MaxWidth: 1024}
 	err := dimensionValidation.Validate()

@@ -11,8 +11,7 @@ import (
 )
 
 func flipRun(cmd *cobra.Command, args []string) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := cmd.Context()
 
 	fs := filesystem.NewFileSystem()
 	RunOperation(OperationConfig{

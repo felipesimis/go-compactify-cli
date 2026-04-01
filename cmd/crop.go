@@ -25,8 +25,7 @@ type CropParams struct {
 }
 
 func cropRun(cmd *cobra.Command, args []string) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := cmd.Context()
 
 	dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
 	gravityValidation := &validation.GravityValidation{Gravity: bimg.Gravity(gravity)}
