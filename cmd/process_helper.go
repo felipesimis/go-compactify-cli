@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync/atomic"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/processing"
@@ -37,19 +36,11 @@ func RunOperation(config OperationConfig) {
 		log.Fatal(err)
 	}
 
-	var initialSize, finalSize uint64
-	var skippedImages, processedImages uint32
-
+	stats := &utils.ImageProcessingStats{}
 	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
 	progressBar := progress.NewProgressBar(os.Stdout, len(files), concurrency, config.ProgressBarMessage)
 
 	wrappedProcessor := func(p processing.FileProcessingParams) error {
-		stats := &utils.ImageProcessingStats{
-			InitialSize:     &initialSize,
-			FinalSize:       &finalSize,
-			SkippedImages:   &skippedImages,
-			ProcessedImages: &processedImages,
-		}
 		return config.ProcessorFunc(config.Ctx, p, stats)
 	}
 
@@ -68,11 +59,11 @@ func RunOperation(config OperationConfig) {
 
 	totalImages := uint32(len(files))
 	resultBuilder.SetTotalImages(totalImages).
-		SetSkippedImages(skippedImages).
-		SetProcessedImages(processedImages).
+		SetSkippedImages(stats.SkippedImages.Load()).
+		SetProcessedImages(stats.ProcessedImages.Load()).
 		SetOutputDirectory(outputDir).
-		SetInitialSize(float64(initialSize)).
-		SetFinalSize(float64(finalSize)).
+		SetInitialSize(float64(stats.InitialSize.Load())).
+		SetFinalSize(float64(stats.FinalSize.Load())).
 		SetErrors(processErrors)
 	result := resultBuilder.Build()
 	fmt.Println(result.PrintResults(config.ResultVerb))
@@ -81,21 +72,21 @@ func RunOperation(config OperationConfig) {
 func HandleImageProcessing(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats, processFunc func([]byte) ([]byte, error)) error {
 	select {
 	case <-ctx.Done():
-		atomic.AddUint32(stats.SkippedImages, 1)
+		stats.SkippedImages.Add(1)
 		return ctx.Err()
 	default:
 	}
 
 	img, err := params.FS.ReadFile(params.File.Path)
 	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
+		stats.SkippedImages.Add(1)
 		return err
 	}
 
-	atomic.AddUint64(stats.InitialSize, uint64(params.File.Size))
+	stats.InitialSize.Add(uint64(params.File.Size))
 	newImg, err := processFunc(img)
 	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
+		stats.SkippedImages.Add(1)
 		return err
 	}
 
@@ -113,11 +104,11 @@ func HandleImageProcessing(ctx context.Context, params processing.FileProcessing
 
 	err = params.FS.WriteFile(outputPath, newImg)
 	if err != nil {
-		atomic.AddUint32(stats.SkippedImages, 1)
+		stats.SkippedImages.Add(1)
 		return err
 	}
 
-	atomic.AddUint64(stats.FinalSize, uint64(len(newImg)))
-	atomic.AddUint32(stats.ProcessedImages, 1)
+	stats.FinalSize.Add(uint64(len(newImg)))
+	stats.ProcessedImages.Add(1)
 	return nil
 }

@@ -1,21 +1,27 @@
 package utils
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewImageProcessingStats(t *testing.T) {
-	initialSize := uint64(0)
-	finalSize := uint64(0)
-	skippedImages := uint32(0)
-	processedImages := uint32(0)
+func TestNewImageProcessingStats_ConcurrentUpdates(t *testing.T) {
+	var stats ImageProcessingStats
+	var wg sync.WaitGroup
 
-	stats := NewImageProcessingStats(&initialSize, &finalSize, &skippedImages, &processedImages)
+	processNumber := 10000
 
-	assert.Equal(t, initialSize, *stats.InitialSize)
-	assert.Equal(t, finalSize, *stats.FinalSize)
-	assert.Equal(t, skippedImages, *stats.SkippedImages)
-	assert.Equal(t, processedImages, *stats.ProcessedImages)
+	for range processNumber {
+		wg.Go(func() {
+			stats.ProcessedImages.Add(1)
+			stats.FinalSize.Add(1024)
+		})
+	}
+	wg.Wait()
+
+	assert.Equal(t, uint32(processNumber), stats.ProcessedImages.Load(), "ProcessedImages should be equal to the number of processes")
+	assert.Equal(t, uint64(processNumber*1024), stats.FinalSize.Load(), "FinalSize should be equal to the total size added by all processes")
+	assert.Equal(t, uint32(0), stats.SkippedImages.Load(), "SkippedImages should be 0 as we only incremented ProcessedImages")
 }

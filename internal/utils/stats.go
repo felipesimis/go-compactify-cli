@@ -1,17 +1,10 @@
 package utils
 
-type ImageProcessingStats struct {
-	InitialSize     *uint64
-	FinalSize       *uint64
-	SkippedImages   *uint32
-	ProcessedImages *uint32
-}
+import "sync/atomic"
 
-func NewImageProcessingStats(initialSize, finalSize *uint64, skippedImages, processedImages *uint32) *ImageProcessingStats {
-	return &ImageProcessingStats{
-		InitialSize:     initialSize,
-		FinalSize:       finalSize,
-		SkippedImages:   skippedImages,
-		ProcessedImages: processedImages,
-	}
+type ImageProcessingStats struct {
+	InitialSize     atomic.Uint64
+	FinalSize       atomic.Uint64
+	SkippedImages   atomic.Uint32
+	ProcessedImages atomic.Uint32
 }
