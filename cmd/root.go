@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/h2non/bimg"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,10 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
+	bimg.VipsCacheSetMax(0)
+	bimg.VipsCacheSetMaxMem(0)
+	defer bimg.Shutdown()
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
