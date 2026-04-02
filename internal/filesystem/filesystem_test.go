@@ -130,6 +130,16 @@ func (suite *FileSystemTestSuite) TestOpenFileError() {
 	assert.EqualError(suite.T(), err, expectedErr.Error())
 }
 
+func (suite *FileSystemTestSuite) TestOpenFile() {
+	tmpFile, err := os.CreateTemp(suite.tmpDir, "file*.txt")
+	assert.NoError(suite.T(), err)
+	defer os.Remove(tmpFile.Name())
+	data, err := suite.fs.OpenFile(tmpFile.Name())
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), data)
+	data.Close()
+}
+
 func (suite *FileSystemTestSuite) TestWriteFileError() {
 	invalidPath := "/invalid/path/to/image.png"
 	err := suite.fs.WriteFile(invalidPath, []byte("data"))

@@ -2,6 +2,7 @@ package processing
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
@@ -20,6 +21,14 @@ func (m *MockFileSystem) ReadFile(path string) ([]byte, error) {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]byte), args.Error(1)
+}
+
+func (m *MockFileSystem) OpenFile(path string) (io.ReadCloser, error) {
+	args := m.Called(path)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(io.ReadCloser), args.Error(1)
 }
 
 func (m *MockFileSystem) WriteFile(path string, data []byte) error {
