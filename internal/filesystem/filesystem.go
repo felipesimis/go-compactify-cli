@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 
@@ -9,6 +10,7 @@ import (
 
 type FileReader interface {
 	ReadFile(path string) ([]byte, error)
+	OpenFile(path string) (io.ReadCloser, error)
 }
 
 type FileWriter interface {
@@ -89,6 +91,14 @@ func (fs *FileSystemWrapper) CreateSiblingDir(path, suffix string) (string, erro
 
 func (fs *FileSystemWrapper) ReadFile(path string) ([]byte, error) {
 	file, err := os.ReadFile(path)
+	if err != nil {
+		return nil, &ErrReadFile{Path: path, Err: err}
+	}
+	return file, nil
+}
+
+func (fs *FileSystemWrapper) OpenFile(path string) (io.ReadCloser, error) {
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, &ErrReadFile{Path: path, Err: err}
 	}

@@ -122,6 +122,14 @@ func (suite *FileSystemTestSuite) TestReadFile() {
 	assert.NotNil(suite.T(), data)
 }
 
+func (suite *FileSystemTestSuite) TestOpenFileError() {
+	nonExistentPath := filepath.Join(suite.tmpDir, "nonexistent")
+	data, err := suite.fs.OpenFile(nonExistentPath)
+	expectedErr := &ErrReadFile{Path: nonExistentPath, Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
+	assert.Nil(suite.T(), data)
+	assert.EqualError(suite.T(), err, expectedErr.Error())
+}
+
 func (suite *FileSystemTestSuite) TestWriteFileError() {
 	invalidPath := "/invalid/path/to/image.png"
 	err := suite.fs.WriteFile(invalidPath, []byte("data"))
