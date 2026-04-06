@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func losslessRun(cmd *cobra.Command, args []string) {
+func losslessRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	fs := filesystem.NewFileSystem()
-	RunOperation(OperationConfig{
+	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           directory,
@@ -40,7 +40,7 @@ var losslessCmd = &cobra.Command{
 	Long: `Apply lossless compression to images.
 This command allows you to apply lossless compression to images, preserving the original quality while potentially reducing the file size.
 It can be useful for various image processing tasks, such as optimizing images for storage or transmission.`,
-	Run: losslessRun,
+	RunE: losslessRun,
 }
 
 func init() {

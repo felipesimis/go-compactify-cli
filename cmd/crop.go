@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
@@ -24,7 +23,7 @@ type CropParams struct {
 	Gravity bimg.Gravity
 }
 
-func cropRun(cmd *cobra.Command, args []string) {
+func cropRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
@@ -32,12 +31,13 @@ func cropRun(cmd *cobra.Command, args []string) {
 	validationComposite := validation.ValidationComposite{Validations: []validation.Validation{dimensionValidation, gravityValidation}}
 	err := validationComposite.Validate()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	cmd.SilenceUsage = true
 
 	fs := filesystem.NewFileSystem()
 
-	RunOperation(OperationConfig{
+	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           directory,
@@ -66,7 +66,7 @@ var cropCmd = &cobra.Command{
 This command allows you to change the dimensions of an image by cropping it, which can be useful for optimizing images for 
 different uses, such as web, mobile, or print. You can specify the desired width and height, 
 and the image will be cropped accordingly.`,
-	Run: cropRun,
+	RunE: cropRun,
 }
 
 func init() {

@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func flipRun(cmd *cobra.Command, args []string) {
+func flipRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	fs := filesystem.NewFileSystem()
-	RunOperation(OperationConfig{
+	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           directory,
@@ -40,7 +40,7 @@ var flipCmd = &cobra.Command{
 	Long: `Flip images vertically.
 This command allows you to flip an image along the vertical axis, creating a mirror image.
 It can be useful for various image processing tasks, such as creating reflections or correcting image orientation.`,
-	Run: flipRun,
+	RunE: flipRun,
 }
 
 func init() {

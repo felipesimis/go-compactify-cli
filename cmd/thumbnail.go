@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"log"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
@@ -16,17 +15,18 @@ type ThumbnailParams struct {
 	Width int
 }
 
-func thumbnailRun(cmd *cobra.Command, args []string) {
+func thumbnailRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	dimensionValidation := &validation.WidthValidation{Width: width, MinWidth: 50, MaxWidth: 1024}
 	err := dimensionValidation.Validate()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	cmd.SilenceUsage = true
 
 	fs := filesystem.NewFileSystem()
-	RunOperation(OperationConfig{
+	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           directory,
@@ -52,7 +52,7 @@ var thumbnailCmd = &cobra.Command{
 	Short:   "Create a thumbnail of an image with specified width",
 	Long: `Create a thumbnail of an image with a specified width, maintaining the aspect ratio 4:4.
 This command allows you to generate smaller versions of images, which can be useful for previews or web usage.`,
-	Run: thumbnailRun,
+	RunE: thumbnailRun,
 }
 
 func init() {

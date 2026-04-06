@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func paletteRun(cmd *cobra.Command, args []string) {
+func paletteRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	fs := filesystem.NewFileSystem()
-	RunOperation(OperationConfig{
+	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           directory,
@@ -39,7 +39,7 @@ var paletteCmd = &cobra.Command{
 	Long: `Apply a color palette to images.
 This command enables a color palette on the specified images, which can help reduce the file size by limiting the number of colors used. 
 It is useful for optimizing images for web use, creating artistic effects, and ensuring compatibility with formats that require or benefit from a limited color palette.`,
-	Run: paletteRun,
+	RunE: paletteRun,
 }
 
 func init() {

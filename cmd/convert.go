@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
@@ -19,17 +18,18 @@ type ConvertParams struct {
 	Format string
 }
 
-func convertRun(cmd *cobra.Command, args []string) {
+func convertRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	dimensionValidation := &validation.FormatValidation{Format: format}
 	err := dimensionValidation.Validate()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	cmd.SilenceUsage = true
 
 	fs := filesystem.NewFileSystem()
-	RunOperation(OperationConfig{
+	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           directory,
@@ -58,7 +58,7 @@ var convertCmd = &cobra.Command{
 This command allows you to change the format of images, which can be useful for optimizing images for 
 different uses, such as web, mobile, or print. You can specify the desired format, 
 and the images will be converted accordingly.`,
-	Run: convertRun,
+	RunE: convertRun,
 }
 
 func init() {

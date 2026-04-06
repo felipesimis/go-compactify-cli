@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,15 +33,15 @@ type OperationConfig struct {
 	ResultVerb         string
 }
 
-func RunOperation(config OperationConfig) {
+func RunOperation(config OperationConfig) error {
 	files, err := config.FileSystem.ReadDir(config.InputDir)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	outputDir, err := config.FileSystem.CreateSiblingDir(config.InputDir, config.OutputSuffix)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	stats := &utils.ImageProcessingStats{}
@@ -76,6 +75,8 @@ func RunOperation(config OperationConfig) {
 		SetErrors(processErrors)
 	result := resultBuilder.Build()
 	fmt.Println(result.PrintResults(config.ResultVerb))
+
+	return nil
 }
 
 func HandleImageProcessing(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats, processFunc func([]byte) ([]byte, error)) error {

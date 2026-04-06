@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func grayscaleRun(cmd *cobra.Command, args []string) {
+func grayscaleRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	fs := filesystem.NewFileSystem()
-	RunOperation(OperationConfig{
+	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           directory,
@@ -40,7 +40,7 @@ var grayscaleCmd = &cobra.Command{
 	Long: `Convert images to grayscale.
 This command allows you to convert an image to grayscale, removing all color information and leaving only shades of gray.
 It can be useful for various image processing tasks, such as creating artistic effects or preparing images for printing.`,
-	Run: grayscaleRun,
+	RunE: grayscaleRun,
 }
 
 func init() {

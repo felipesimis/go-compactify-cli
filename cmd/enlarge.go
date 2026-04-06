@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/image"
@@ -18,17 +17,18 @@ type EnlargeParams struct {
 	Height int
 }
 
-func enlargeRun(cmd *cobra.Command, args []string) {
+func enlargeRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
 	err := dimensionValidation.Validate()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	cmd.SilenceUsage = true
 
 	fs := filesystem.NewFileSystem()
-	RunOperation(OperationConfig{
+	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           directory,
@@ -56,7 +56,7 @@ var enlargeCmd = &cobra.Command{
 This command allows you to change the dimensions of an image, which can be useful for optimizing images for 
 different uses, such as web, mobile, or print. You can specify the desired width and height, 
 and the image will be enlarged accordingly, keeping its original aspect ratio.`,
-	Run: enlargeRun,
+	RunE: enlargeRun,
 }
 
 func init() {
