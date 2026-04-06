@@ -21,6 +21,15 @@ func (e *ErrReadDir) Error() string {
 	return fmt.Sprintf("failed to read directory '%s': %v", e.Path, e.Err)
 }
 
+type ErrCreateDir struct {
+	Path string
+	Err  error
+}
+
+func (e *ErrCreateDir) Error() string {
+	return fmt.Sprintf("failed to create directory '%s': %v", e.Path, e.Err)
+}
+
 type ErrCreateSiblingDir struct {
 	Err error
 }

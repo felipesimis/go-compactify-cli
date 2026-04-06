@@ -32,6 +32,10 @@ func (m *MockMkdirer) Mkdir(name string, perm os.FileMode) error {
 	return m.Err
 }
 
+func (m *MockMkdirer) MkdirAll(path string, perm os.FileMode) error {
+	return m.Err
+}
+
 type FileSystemTestSuite struct {
 	suite.Suite
 	fs     FileSystem
@@ -87,14 +91,23 @@ func (suite *FileSystemTestSuite) TestReaddirError() {
 	mockDir.AssertExpectations(suite.T())
 }
 
+func TestFileSystemWrapper_CreateDirError(t *testing.T) {
+	mockMkdirer := &MockMkdirer{Err: errors.New("mock error")}
+	fs := &FileSystemWrapper{Mkdirer: mockMkdirer}
+
+	err := fs.CreateDir("/some/path")
+	expectedErr := &ErrCreateDir{Path: "/some/path", Err: mockMkdirer.Err}
+	assert.EqualError(t, err, expectedErr.Error())
+}
+
 func TestFileSystemWrapper_CreateSiblingDirError(t *testing.T) {
 	mockMkdirer := &MockMkdirer{Err: errors.New("mock error")}
 	fs := &FileSystemWrapper{Mkdirer: mockMkdirer}
 
 	newDir, err := fs.CreateSiblingDir("/some/path", "_suffix")
-	exportedErr := &ErrCreateSiblingDir{Err: mockMkdirer.Err}
+	expectedErr := &ErrCreateSiblingDir{Err: mockMkdirer.Err}
 	assert.Empty(t, newDir)
-	assert.EqualError(t, err, exportedErr.Error())
+	assert.EqualError(t, err, expectedErr.Error())
 }
 
 func (suite *FileSystemTestSuite) TestCreateSiblingDir() {

@@ -19,6 +19,7 @@ type FileWriter interface {
 
 type FileSystem interface {
 	ReadDir(path string) ([]FileInfo, error)
+	CreateDir(name string) error
 	CreateSiblingDir(path, suffix string) (string, error)
 	FileReader
 	FileWriter
@@ -71,12 +72,25 @@ func (fs *FileSystemWrapper) readDir(dir Dir, path string) ([]FileInfo, error) {
 
 type Mkdirer interface {
 	Mkdir(name string, perm os.FileMode) error
+	MkdirAll(path string, perm os.FileMode) error
 }
 
 type OSWrapper struct{}
 
 func (o *OSWrapper) Mkdir(name string, perm os.FileMode) error {
 	return os.Mkdir(name, perm)
+}
+
+func (o *OSWrapper) MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
+}
+
+func (fs *FileSystemWrapper) CreateDir(name string) error {
+	err := fs.Mkdirer.MkdirAll(name, os.ModePerm)
+	if err != nil {
+		return &ErrCreateDir{Path: name, Err: err}
+	}
+	return nil
 }
 
 func (fs *FileSystemWrapper) CreateSiblingDir(path, suffix string) (string, error) {
