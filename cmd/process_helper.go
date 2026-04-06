@@ -1,18 +1,27 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/processing"
 	"github.com/felipesimis/compactify-cli/internal/utils"
 	"github.com/felipesimis/compactify-cli/pkg/progress"
 )
+
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return new(bytes.Buffer)
+	},
+}
 
 type OperationConfig struct {
 	Ctx                context.Context
@@ -77,14 +86,28 @@ func HandleImageProcessing(ctx context.Context, params processing.FileProcessing
 	default:
 	}
 
-	img, err := params.FS.ReadFile(params.File.Path)
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	buf.Grow(int(params.File.Size))
+	defer bufferPool.Put(buf)
+
+	file, err := params.FS.OpenFile(params.File.Path)
+	if err != nil {
+		stats.SkippedImages.Add(1)
+		return err
+	}
+	defer file.Close()
+
+	_, err = io.Copy(buf, file)
 	if err != nil {
 		stats.SkippedImages.Add(1)
 		return err
 	}
 
-	stats.InitialSize.Add(uint64(params.File.Size))
-	newImg, err := processFunc(img)
+	imgBytes := buf.Bytes()
+	stats.InitialSize.Add(uint64(len(imgBytes)))
+
+	newImg, err := processFunc(imgBytes)
 	if err != nil {
 		stats.SkippedImages.Add(1)
 		return err
