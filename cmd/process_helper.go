@@ -113,18 +113,7 @@ func HandleImageProcessing(ctx context.Context, params processing.FileProcessing
 		return err
 	}
 
-	var outputPath string
-	if convertParams, ok := params.ExtraParams.(ConvertParams); ok && convertParams.Format != "" {
-		originalFileName := filepath.Base(params.File.Path)
-		fileExt := filepath.Ext(originalFileName)
-		fileNameWithoutExt := strings.TrimSuffix(originalFileName, fileExt)
-		newFilename := fmt.Sprintf("%s.%s", fileNameWithoutExt, convertParams.Format)
-
-		outputPath = filepath.Join(params.OutputDir, newFilename)
-	} else {
-		outputPath = utils.BuildOutputPath(params.OutputDir, params.File.Path)
-	}
-
+	outputPath := determineOutputPath(params)
 	err = params.FS.WriteFile(outputPath, newImg)
 	if err != nil {
 		stats.SkippedImages.Add(1)
@@ -134,4 +123,17 @@ func HandleImageProcessing(ctx context.Context, params processing.FileProcessing
 	stats.FinalSize.Add(uint64(len(newImg)))
 	stats.ProcessedImages.Add(1)
 	return nil
+}
+
+func determineOutputPath(params processing.FileProcessingParams) string {
+	if convertParams, ok := params.ExtraParams.(ConvertParams); ok && convertParams.Format != "" {
+		originalFileName := filepath.Base(params.File.Path)
+		fileExt := filepath.Ext(originalFileName)
+		fileNameWithoutExt := strings.TrimSuffix(originalFileName, fileExt)
+		newFilename := fmt.Sprintf("%s.%s", fileNameWithoutExt, convertParams.Format)
+
+		return filepath.Join(params.OutputDir, newFilename)
+	}
+
+	return utils.BuildOutputPath(params.OutputDir, params.File.Path)
 }
