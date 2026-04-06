@@ -100,6 +100,12 @@ func TestFileSystemWrapper_CreateDirError(t *testing.T) {
 	assert.EqualError(t, err, expectedErr.Error())
 }
 
+func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateDir() {
+	err := suite.fs.CreateDir(filepath.Join(suite.tmpDir, "newdir"))
+	assert.NoError(suite.T(), err)
+	assert.DirExists(suite.T(), filepath.Join(suite.tmpDir, "newdir"))
+}
+
 func TestFileSystemWrapper_CreateSiblingDirError(t *testing.T) {
 	mockMkdirer := &MockMkdirer{Err: errors.New("mock error")}
 	fs := &FileSystemWrapper{Mkdirer: mockMkdirer}
