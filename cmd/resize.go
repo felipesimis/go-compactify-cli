@@ -12,9 +12,8 @@ import (
 )
 
 var (
-	directory string
-	width     int
-	height    int
+	width  int
+	height int
 )
 
 type ResizeParams struct {
@@ -37,7 +36,7 @@ func resizeRun(cmd *cobra.Command, args []string) error {
 	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           directory,
+		InputDir:           inputDir,
 		OutputSuffix:       "-resized",
 		ProgressBarMessage: "Resizing images",
 		ExtraParams:        ResizeParams{Width: width, Height: height},
@@ -69,11 +68,8 @@ and the image will be resized accordingly.`,
 func init() {
 	rootCmd.AddCommand(resizeCmd)
 
-	resizeCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the images to resize")
 	resizeCmd.Flags().IntVarP(&width, "width", "w", 0, "Desired width of the image")
 	resizeCmd.Flags().IntVarP(&height, "height", "H", 0, "Desired height of the image")
-
-	resizeCmd.MarkFlagRequired("directory")
 	resizeCmd.MarkFlagRequired("width")
 	resizeCmd.MarkFlagRequired("height")
 }

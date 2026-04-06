@@ -32,7 +32,7 @@ func convertRun(cmd *cobra.Command, args []string) error {
 	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           directory,
+		InputDir:           inputDir,
 		OutputSuffix:       fmt.Sprintf("-converted.%s", format),
 		ProgressBarMessage: "Converting images",
 		ExtraParams:        ConvertParams{Format: format},
@@ -64,9 +64,7 @@ and the images will be converted accordingly.`,
 func init() {
 	rootCmd.AddCommand(convertCmd)
 
-	convertCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the images to convert")
 	convertCmd.Flags().StringVarP(&format, "format", "f", "", `Desired format of the images. Available options: webp, jpeg, png`)
 
-	convertCmd.MarkFlagRequired("directory")
 	convertCmd.MarkFlagRequired("format")
 }

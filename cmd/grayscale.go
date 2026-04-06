@@ -17,7 +17,7 @@ func grayscaleRun(cmd *cobra.Command, args []string) error {
 	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           directory,
+		InputDir:           inputDir,
 		OutputSuffix:       "-grayscale",
 		ProgressBarMessage: "Creating grayscale images",
 		ProcessorFunc:      processGrayscaleImage,
@@ -45,7 +45,4 @@ It can be useful for various image processing tasks, such as creating artistic e
 
 func init() {
 	rootCmd.AddCommand(grayscaleCmd)
-
-	grayscaleCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the images to grayscale")
-	grayscaleCmd.MarkFlagRequired("directory")
 }

@@ -17,7 +17,7 @@ func paletteRun(cmd *cobra.Command, args []string) error {
 	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           directory,
+		InputDir:           inputDir,
 		OutputSuffix:       "-palette",
 		ProgressBarMessage: "Enabling palette on images",
 		ProcessorFunc:      processPaletteImage,
@@ -44,7 +44,4 @@ It is useful for optimizing images for web use, creating artistic effects, and e
 
 func init() {
 	rootCmd.AddCommand(paletteCmd)
-
-	paletteCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the images to apply palette")
-	paletteCmd.MarkFlagRequired("directory")
 }

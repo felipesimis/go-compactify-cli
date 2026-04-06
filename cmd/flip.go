@@ -17,7 +17,7 @@ func flipRun(cmd *cobra.Command, args []string) error {
 	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           directory,
+		InputDir:           inputDir,
 		OutputSuffix:       "-flipped",
 		ProgressBarMessage: "Flipping images",
 		ProcessorFunc:      processFlipImage,
@@ -45,7 +45,4 @@ It can be useful for various image processing tasks, such as creating reflection
 
 func init() {
 	rootCmd.AddCommand(flipCmd)
-
-	flipCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the images to flip")
-	flipCmd.MarkFlagRequired("directory")
 }

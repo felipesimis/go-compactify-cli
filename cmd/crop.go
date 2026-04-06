@@ -40,7 +40,7 @@ func cropRun(cmd *cobra.Command, args []string) error {
 	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           directory,
+		InputDir:           inputDir,
 		OutputSuffix:       fmt.Sprintf("-cropped_%dx%d", width, height),
 		ProgressBarMessage: "Cropping images",
 		ExtraParams:        CropParams{Width: width, Height: height, Gravity: bimg.Gravity(gravity)},
@@ -72,7 +72,6 @@ and the image will be cropped accordingly.`,
 func init() {
 	rootCmd.AddCommand(cropCmd)
 
-	cropCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the image to crop")
 	cropCmd.Flags().IntVarP(&width, "width", "w", 0, "Desired width of the image")
 	cropCmd.Flags().IntVarP(&height, "height", "H", 0, "Desired height of the image")
 	cropCmd.Flags().IntVarP(&gravity, "gravity", "g", int(bimg.GravityCentre), `Gravity to use when cropping the image. 
@@ -83,8 +82,6 @@ Available options:
   3 - South
   4 - West
   5 - Smart`)
-
-	cropCmd.MarkFlagRequired("directory")
 	cropCmd.MarkFlagRequired("width")
 	cropCmd.MarkFlagRequired("height")
 }

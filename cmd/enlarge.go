@@ -31,7 +31,7 @@ func enlargeRun(cmd *cobra.Command, args []string) error {
 	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           directory,
+		InputDir:           inputDir,
 		OutputSuffix:       fmt.Sprintf("-enlarged-%dx%d", width, height),
 		ProgressBarMessage: "Enlarging images",
 		ExtraParams:        EnlargeParams{Width: width, Height: height},
@@ -62,11 +62,8 @@ and the image will be enlarged accordingly, keeping its original aspect ratio.`,
 func init() {
 	rootCmd.AddCommand(enlargeCmd)
 
-	enlargeCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the images to enlarge")
 	enlargeCmd.Flags().IntVarP(&width, "width", "w", 0, "Desired width of the image")
 	enlargeCmd.Flags().IntVarP(&height, "height", "H", 0, "Desired height of the image")
-
-	enlargeCmd.MarkFlagRequired("directory")
 	enlargeCmd.MarkFlagRequired("width")
 	enlargeCmd.MarkFlagRequired("height")
 }

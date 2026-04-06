@@ -29,7 +29,7 @@ func thumbnailRun(cmd *cobra.Command, args []string) error {
 	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           directory,
+		InputDir:           inputDir,
 		OutputSuffix:       "-thumbnail",
 		ProgressBarMessage: "Creating thumbnails",
 		ProcessorFunc:      processThumbnailImage,
@@ -58,9 +58,6 @@ This command allows you to generate smaller versions of images, which can be use
 func init() {
 	rootCmd.AddCommand(thumbnailCmd)
 
-	thumbnailCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the images to create thumbnails")
 	thumbnailCmd.Flags().IntVarP(&width, "width", "w", 0, "Desired width of the thumbnail")
-
-	thumbnailCmd.MarkFlagRequired("directory")
 	thumbnailCmd.MarkFlagRequired("width")
 }

@@ -17,7 +17,7 @@ func losslessRun(cmd *cobra.Command, args []string) error {
 	return RunOperation(OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           directory,
+		InputDir:           inputDir,
 		OutputSuffix:       "-lossless",
 		ProgressBarMessage: "Applying lossless compression",
 		ProcessorFunc:      processLosslessImage,
@@ -45,7 +45,4 @@ It can be useful for various image processing tasks, such as optimizing images f
 
 func init() {
 	rootCmd.AddCommand(losslessCmd)
-
-	losslessCmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory containing the images to compress")
-	losslessCmd.MarkFlagRequired("directory")
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +13,7 @@ import (
 
 var (
 	concurrency int
+	inputDir    string
 )
 
 var rootCmd = &cobra.Command{
@@ -19,6 +21,12 @@ var rootCmd = &cobra.Command{
 	Short:         "Compactify: A versatile image compression and manipulation tool",
 	Long:          `Compactify is your complete solution for optimizing images. With fast and intuitive commands, you can easily compress, resize, and convert your images, saving time and space.`,
 	SilenceErrors: true,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if inputDir == "" {
+			return fmt.Errorf("required flag \"input\" (-i) not set")
+		}
+		return nil
+	},
 }
 
 func Execute() error {
@@ -34,4 +42,5 @@ func Execute() error {
 
 func init() {
 	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", 20, "Number of concurrent operations")
+	rootCmd.PersistentFlags().StringVarP(&inputDir, "input", "i", "", "Input directory containing the images to process")
 }
