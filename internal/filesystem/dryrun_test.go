@@ -92,6 +92,12 @@ func (suite *DryRunFileSystemTestSuite) TestCreateDir_IsIgnored() {
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
+func (suite *DryRunFileSystemTestSuite) TestWriteFile_IsIgnored() {
+	err := suite.dryRunFs.WriteFile("test/file.jpg", []byte("file content"))
+	assert.NoError(suite.T(), err)
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
 func TestDryRunFileSystemTestSuite(t *testing.T) {
 	suite.Run(t, new(DryRunFileSystemTestSuite))
 }
