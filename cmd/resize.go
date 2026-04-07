@@ -37,6 +37,7 @@ func resizeRun(cmd *cobra.Command, args []string) error {
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           inputDir,
+		OutputDir:          outputDir,
 		OutputSuffix:       "-resized",
 		ProgressBarMessage: "Resizing images",
 		ExtraParams:        ResizeParams{Width: width, Height: height},

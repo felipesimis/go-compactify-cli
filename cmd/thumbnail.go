@@ -30,6 +30,7 @@ func thumbnailRun(cmd *cobra.Command, args []string) error {
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           inputDir,
+		OutputDir:          outputDir,
 		OutputSuffix:       "-thumbnail",
 		ProgressBarMessage: "Creating thumbnails",
 		ProcessorFunc:      processThumbnailImage,

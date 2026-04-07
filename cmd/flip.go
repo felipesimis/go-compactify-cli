@@ -18,6 +18,7 @@ func flipRun(cmd *cobra.Command, args []string) error {
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           inputDir,
+		OutputDir:          outputDir,
 		OutputSuffix:       "-flipped",
 		ProgressBarMessage: "Flipping images",
 		ProcessorFunc:      processFlipImage,

@@ -18,6 +18,7 @@ func paletteRun(cmd *cobra.Command, args []string) error {
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           inputDir,
+		OutputDir:          outputDir,
 		OutputSuffix:       "-palette",
 		ProgressBarMessage: "Enabling palette on images",
 		ProcessorFunc:      processPaletteImage,

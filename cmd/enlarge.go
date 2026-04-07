@@ -32,6 +32,7 @@ func enlargeRun(cmd *cobra.Command, args []string) error {
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           inputDir,
+		OutputDir:          outputDir,
 		OutputSuffix:       fmt.Sprintf("-enlarged-%dx%d", width, height),
 		ProgressBarMessage: "Enlarging images",
 		ExtraParams:        EnlargeParams{Width: width, Height: height},

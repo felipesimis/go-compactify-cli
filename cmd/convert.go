@@ -33,6 +33,7 @@ func convertRun(cmd *cobra.Command, args []string) error {
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           inputDir,
+		OutputDir:          outputDir,
 		OutputSuffix:       fmt.Sprintf("-converted.%s", format),
 		ProgressBarMessage: "Converting images",
 		ExtraParams:        ConvertParams{Format: format},

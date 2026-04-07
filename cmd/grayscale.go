@@ -18,6 +18,7 @@ func grayscaleRun(cmd *cobra.Command, args []string) error {
 		Ctx:                ctx,
 		FileSystem:         fs,
 		InputDir:           inputDir,
+		OutputDir:          outputDir,
 		OutputSuffix:       "-grayscale",
 		ProgressBarMessage: "Creating grayscale images",
 		ProcessorFunc:      processGrayscaleImage,
