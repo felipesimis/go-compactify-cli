@@ -29,7 +29,7 @@ func (d *DryRunFileSystem) ReadFile(path string) ([]byte, error) {
 }
 
 func (d *DryRunFileSystem) OpenFile(path string) (io.ReadCloser, error) {
-	return nil, nil
+	return d.original.OpenFile(path)
 }
 
 func (d *DryRunFileSystem) WriteFile(path string, data []byte) error {
