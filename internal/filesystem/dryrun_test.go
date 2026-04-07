@@ -71,6 +71,14 @@ func (suite *DryRunFileSystemTestSuite) TestReadDir_IsDelegated() {
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
+func (suite *DryRunFileSystemTestSuite) TestReadFile_IsDelegated() {
+	suite.mockFS.On("ReadFile", "test/file.jpg").Return([]byte("file content"), nil)
+	data, err := suite.dryRunFs.ReadFile("test/file.jpg")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), []byte("file content"), data)
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
 func TestDryRunFileSystemTestSuite(t *testing.T) {
 	suite.Run(t, new(DryRunFileSystemTestSuite))
 }

@@ -25,7 +25,7 @@ func (d *DryRunFileSystem) ReadDir(path string) ([]FileInfo, error) {
 }
 
 func (d *DryRunFileSystem) ReadFile(path string) ([]byte, error) {
-	return nil, nil
+	return d.original.ReadFile(path)
 }
 
 func (d *DryRunFileSystem) OpenFile(path string) (io.ReadCloser, error) {
