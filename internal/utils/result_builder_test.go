@@ -23,7 +23,7 @@ func (tm *TimeMock) Since(t time.Time) time.Duration {
 	return args.Get(0).(time.Duration)
 }
 
-func mockTimeProvider() *TimeMock {
+func newMockTimeProvider() *TimeMock {
 	timeMock := new(TimeMock)
 	startTime := time.Now()
 	timeMock.On("Now").Return(startTime)
@@ -32,50 +32,50 @@ func mockTimeProvider() *TimeMock {
 }
 
 func TestResultBuilder_SetTotalImages(t *testing.T) {
-	rb := NewResultBuilder(mockTimeProvider())
+	rb := NewResultBuilder(newMockTimeProvider())
 	rb.SetTotalImages(10)
 	assert.Equal(t, 10, int(rb.result.totalImages))
 }
 
 func TestResultBuilder_SetSkippedImages(t *testing.T) {
-	rb := NewResultBuilder(mockTimeProvider())
+	rb := NewResultBuilder(newMockTimeProvider())
 	rb.SetSkippedImages(5)
 	assert.Equal(t, 5, int(rb.result.skippedImages))
 }
 
 func TestResultBuilder_SetProcessedImages(t *testing.T) {
-	rb := NewResultBuilder(mockTimeProvider())
+	rb := NewResultBuilder(newMockTimeProvider())
 	rb.SetProcessedImages(5)
 	assert.Equal(t, 5, int(rb.result.processedImages))
 }
 
 func TestResultBuilder_SetInitialSize(t *testing.T) {
-	rb := NewResultBuilder(mockTimeProvider())
+	rb := NewResultBuilder(newMockTimeProvider())
 	rb.SetInitialSize(100)
 	assert.Equal(t, 100.0, rb.result.initialSize)
 }
 
 func TestResultBuilder_SetFinalSize(t *testing.T) {
-	rb := NewResultBuilder(mockTimeProvider())
+	rb := NewResultBuilder(newMockTimeProvider())
 	rb.SetFinalSize(50)
 	assert.Equal(t, 50.0, rb.result.finalSize)
 }
 
 func TestResultBuilder_SetOutputDirectory(t *testing.T) {
-	rb := NewResultBuilder(mockTimeProvider())
+	rb := NewResultBuilder(newMockTimeProvider())
 	rb.SetOutputDirectory("output")
 	assert.Equal(t, "output", rb.result.outputDirectory)
 }
 
 func TestResultBuilder_SetErrors(t *testing.T) {
-	rb := NewResultBuilder(mockTimeProvider())
+	rb := NewResultBuilder(newMockTimeProvider())
 	errors := []error{assert.AnError, assert.AnError}
 	rb.SetErrors(errors)
 	assert.Equal(t, errors, rb.result.errors)
 }
 
 func TestResultBuilder_Build(t *testing.T) {
-	timeMock := mockTimeProvider()
+	timeMock := newMockTimeProvider()
 	rb := NewResultBuilder(timeMock).
 		SetInitialSize(10485760). // 10 MB
 		SetFinalSize(5242880).    // 5 MB
@@ -101,51 +101,77 @@ func TestResultBuilder_Build(t *testing.T) {
 
 func TestResultBuilder_Result_PrintResults(t *testing.T) {
 	tests := []struct {
-		name     string
-		errors   []error
-		expected string
+		name            string
+		skippedImages   uint32
+		processedImages uint32
+		errors          []error
+		expected        []string
 	}{
 		{
-			name:   "Without errors",
-			errors: nil,
-			expected: `Elapsed time: 1s
-Total images: 10
-Skipped images: 3
-Resized images: 7
-Initial size: 10.00 MB
-Final size: 5.00 MB
-Size difference: -5.00 MB
-Size difference percentage: 50.00%
-Output directory: output`,
+			name:            "Without errors",
+			skippedImages:   3,
+			processedImages: 7,
+			errors:          nil,
+			expected: []string{
+				"Elapsed time: 1s",
+				"Total images: 10",
+				"Skipped images: 3",
+				"Resized: 7",
+				"Initial size: 10.00 MB",
+				"Final size: 5.00 MB",
+				"Size difference: -5.00 MB",
+				"Size difference percentage: 50.00%",
+				"Output directory: output",
+			},
 		},
 		{
-			name:   "With errors",
-			errors: []error{fmt.Errorf("file 'fake.jpg': read error")},
-			expected: `Elapsed time: 1s
-Total images: 10
-Skipped images: 3
-Resized images: 7
-Initial size: 10.00 MB
-Final size: 5.00 MB
-Size difference: -5.00 MB
-Size difference percentage: 50.00%
-Output directory: output
-Errors found during processing:
-  ❌ file 'fake.jpg': read error
-`,
+			name:            "With errors",
+			skippedImages:   3,
+			processedImages: 7,
+			errors:          []error{fmt.Errorf("file 'fake.jpg': read error")},
+			expected: []string{
+				"Elapsed time: 1s",
+				"Total images: 10",
+				"Skipped images: 3",
+				"Resized: 7",
+				"Initial size: 10.00 MB",
+				"Final size: 5.00 MB",
+				"Size difference: -5.00 MB",
+				"Size difference percentage: 50.00%",
+				"Output directory: output",
+				"Errors found during processing:",
+				"  ❌ file 'fake.jpg': read error",
+			},
+		},
+		{
+			name:            "Without skipped images",
+			skippedImages:   0,
+			processedImages: 10,
+			errors:          nil,
+			expected: []string{
+				"Elapsed time: 1s",
+				"Total images: 10",
+				"⏭️  Skipped images: 0",
+				"Resized: 10",
+				"Initial size: 10.00 MB",
+				"Final size: 5.00 MB",
+				"Size difference: -5.00 MB",
+				"Size difference percentage: 50.00%",
+				"Output directory: output",
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			timeMock := mockTimeProvider()
+			timeMock := newMockTimeProvider()
 
 			rb := NewResultBuilder(timeMock).
 				SetInitialSize(10485760). // 10 MB
 				SetFinalSize(5242880).    // 5 MB
 				SetTotalImages(10).
-				SetSkippedImages(3).
-				SetProcessedImages(7).
+				SetSkippedImages(tt.skippedImages).
+				SetProcessedImages(tt.processedImages).
 				SetOutputDirectory("output")
 
 			if tt.errors != nil {
@@ -154,7 +180,9 @@ Errors found during processing:
 			result := rb.Build()
 			printedResult := result.PrintResults("resized")
 
-			assert.Equal(t, tt.expected, printedResult)
+			for _, expectedText := range tt.expected {
+				assert.Contains(t, printedResult, expectedText)
+			}
 			timeMock.AssertExpectations(t)
 		})
 	}

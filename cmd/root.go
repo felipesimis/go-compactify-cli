@@ -31,7 +31,7 @@ var rootCmd = &cobra.Command{
 
 		defaultWorkers := runtime.NumCPU()
 		if concurrency > defaultWorkers*2 {
-			fmt.Println("\n\033[1;33m⚠️  WARNING: Concurrency set very high. This may cause high memory usage and slow down your system.\033[0m\n")
+			fmt.Println("\n\033[1;33m⚠️  WARNING: Concurrency set very high. This may cause high memory usage and slow down your system.\033[0m")
 		}
 		return nil
 	},
