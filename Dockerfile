@@ -1,9 +1,10 @@
-FROM golang:1.26-bookworm AS builder
+FROM golang:1.26-alpine AS builder
 
-RUN apt-get update && apt-get install -y \
-  pkg-config \
-  libvips-dev \
-  && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+  pkgconfig \
+  vips-dev \
+  gcc \
+  musl-dev
 
 WORKDIR /app
 
@@ -14,11 +15,9 @@ COPY . .
 
 RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -trimpath -o compactify .
 
-FROM debian:bookworm-slim
+FROM alpine:latest
 
-RUN apt-get update && apt-get install -y \
-  libvips \
-  && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache vips
 
 WORKDIR /workspace
 
