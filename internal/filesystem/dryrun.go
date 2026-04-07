@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"io"
+	"path/filepath"
 )
 
 type DryRunFileSystem struct {
@@ -17,7 +18,9 @@ func (d *DryRunFileSystem) CreateDir(name string) error {
 }
 
 func (d *DryRunFileSystem) CreateSiblingDir(path, suffix string) (string, error) {
-	return "", nil
+	parentDir := filepath.Dir(path)
+	newDir := filepath.Join(parentDir, filepath.Base(path)+suffix)
+	return newDir, nil
 }
 
 func (d *DryRunFileSystem) ReadDir(path string) ([]FileInfo, error) {

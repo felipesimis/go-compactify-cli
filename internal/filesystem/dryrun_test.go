@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"io"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -95,6 +96,13 @@ func (suite *DryRunFileSystemTestSuite) TestCreateDir_IsIgnored() {
 func (suite *DryRunFileSystemTestSuite) TestWriteFile_IsIgnored() {
 	err := suite.dryRunFs.WriteFile("test/file.jpg", []byte("file content"))
 	assert.NoError(suite.T(), err)
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
+func (suite *DryRunFileSystemTestSuite) TestCreateSiblingDir_IsIgnored() {
+	path, err := suite.dryRunFs.CreateSiblingDir("test/input", "-suffix")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test/input-suffix", filepath.ToSlash(path))
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
