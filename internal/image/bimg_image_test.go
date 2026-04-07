@@ -25,16 +25,60 @@ func TestBimgImageWrapper_Size(t *testing.T) {
 	assert.Equal(t, 400, size.Height)
 }
 
-func TestBimgImageWrapper_Resize(t *testing.T) {
+func TestBimgImageWrapper_SizingOperations(t *testing.T) {
 	img := NewBimgImage(mockedImage())
-	resizedImg, err := img.Resize(300, 200)
-	assert.Nil(t, err)
-	assert.NotEmpty(t, resizedImg)
 
-	imgSize, err := NewBimgImage(resizedImg).Size()
-	assert.Nil(t, err)
-	assert.Equal(t, 300, imgSize.Width)
-	assert.Equal(t, 200, imgSize.Height)
+	tests := []struct {
+		name           string
+		operation      func() ([]byte, error)
+		expectedWidth  int
+		expectedHeight int
+	}{
+		{
+			name: "Resize",
+			operation: func() ([]byte, error) {
+				return img.Resize(300, 200)
+			},
+			expectedWidth:  300,
+			expectedHeight: 200,
+		},
+		{
+			name: "Crop",
+			operation: func() ([]byte, error) {
+				return img.Crop(300, 200, bimg.GravitySmart)
+			},
+			expectedWidth:  300,
+			expectedHeight: 200,
+		},
+		{
+			name: "Enlarge",
+			operation: func() ([]byte, error) {
+				return img.Enlarge(1200, 800)
+			},
+			expectedWidth:  1200,
+			expectedHeight: 800,
+		},
+		{
+			name: "Thumbnail",
+			operation: func() ([]byte, error) {
+				return img.Thumbnail(300)
+			},
+			expectedWidth:  300,
+			expectedHeight: 300,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processedImg, err := tt.operation()
+			assert.Nil(t, err)
+			assert.NotEmpty(t, processedImg)
+			size, err := NewBimgImage(processedImg).Size()
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expectedWidth, size.Width)
+			assert.Equal(t, tt.expectedHeight, size.Height)
+		})
+	}
 }
 
 func TestBimgImageWrapper_Convert(t *testing.T) {
@@ -71,18 +115,6 @@ func TestBimgImageWrapper_mapStringToImageType(t *testing.T) {
 	assert.Equal(t, bimg.UNKNOWN, imageType)
 }
 
-func TestBimgImageWrapper_Crop(t *testing.T) {
-	img := NewBimgImage(mockedImage())
-	croppedImg, err := img.Crop(300, 200, bimg.GravitySmart)
-	assert.Nil(t, err)
-	assert.NotEmpty(t, croppedImg)
-
-	size, err := NewBimgImage(croppedImg).Size()
-	assert.Nil(t, err)
-	assert.Equal(t, 300, size.Width)
-	assert.Equal(t, 200, size.Height)
-}
-
 func TestBimgImageWrapper_Flip(t *testing.T) {
 	img := NewBimgImage(mockedImage())
 	flippedImg, err := img.Flip()
@@ -96,30 +128,6 @@ func TestBimgImageWrapper_Flip(t *testing.T) {
 
 	assert.Equal(t, originalSize.Width, flippedImgSize.Width)
 	assert.Equal(t, originalSize.Height, flippedImgSize.Height)
-}
-
-func TestBimgImageWrapper_Enlarge(t *testing.T) {
-	img := NewBimgImage(mockedImage())
-	enlargedImg, err := img.Enlarge(1200, 800)
-	assert.Nil(t, err)
-	assert.NotEmpty(t, enlargedImg)
-
-	enlargedImgSize, err := NewBimgImage(enlargedImg).Size()
-	assert.Nil(t, err)
-	assert.Equal(t, 1200, enlargedImgSize.Width)
-	assert.Equal(t, 800, enlargedImgSize.Height)
-}
-
-func TestBimgImageWrapper_Thumbnail(t *testing.T) {
-	img := NewBimgImage(mockedImage())
-	thumbnailImg, err := img.Thumbnail(300)
-	assert.Nil(t, err)
-	assert.NotEmpty(t, thumbnailImg)
-
-	thumbnailImgSize, err := NewBimgImage(thumbnailImg).Size()
-	assert.Nil(t, err)
-	assert.Equal(t, 300, thumbnailImgSize.Width)
-	assert.Equal(t, 300, thumbnailImgSize.Height)
 }
 
 func TestBimgImageWrapper_Length(t *testing.T) {
