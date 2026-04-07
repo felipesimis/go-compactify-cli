@@ -40,27 +40,19 @@ func RunOperation(config OperationConfig) error {
 		return err
 	}
 
-	var finalOutputDir string
-	if config.OutputDir != "" {
-		finalOutputDir = config.OutputDir
-		if err := config.FileSystem.CreateDir(finalOutputDir); err != nil {
-			return err
-		}
-	} else {
-		finalOutputDir, err = config.FileSystem.CreateSiblingDir(config.InputDir, config.OutputSuffix)
-		if err != nil {
-			return err
-		}
+	finalOutputDir, err := resolveOutputDir(config)
+	if err != nil {
+		return err
 	}
 
 	stats := &utils.ImageProcessingStats{}
 	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
 	progressBar := progress.NewProgressBar(os.Stdout, len(files), concurrency, config.ProgressBarMessage)
+	defer progressBar.Finish()
 
 	wrappedProcessor := func(p processing.FileProcessingParams) error {
 		return config.ProcessorFunc(config.Ctx, p, stats)
 	}
-
 	params := processing.ProcessFilesParams{
 		Files:         files,
 		FS:            config.FileSystem,
@@ -71,9 +63,6 @@ func RunOperation(config OperationConfig) error {
 		Concurrency:   concurrency,
 	}
 	processErrors := processing.ProcessFiles(params)
-
-	progressBar.Finish()
-
 	totalImages := uint32(len(files))
 	resultBuilder.SetTotalImages(totalImages).
 		SetSkippedImages(stats.SkippedImages.Load()).
@@ -133,6 +122,16 @@ func HandleImageProcessing(ctx context.Context, params processing.FileProcessing
 	stats.FinalSize.Add(uint64(len(newImg)))
 	stats.ProcessedImages.Add(1)
 	return nil
+}
+
+func resolveOutputDir(config OperationConfig) (string, error) {
+	if config.OutputDir != "" {
+		if err := config.FileSystem.CreateDir(config.OutputDir); err != nil {
+			return "", err
+		}
+		return config.OutputDir, nil
+	}
+	return config.FileSystem.CreateSiblingDir(config.InputDir, config.OutputSuffix)
 }
 
 func determineOutputPath(params processing.FileProcessingParams) string {
