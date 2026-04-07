@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"github.com/h2non/bimg"
@@ -27,6 +28,11 @@ var rootCmd = &cobra.Command{
 		if inputDir == "" {
 			return fmt.Errorf("required flag \"input\" (-i) not set")
 		}
+
+		defaultWorkers := runtime.NumCPU()
+		if concurrency > defaultWorkers*2 {
+			fmt.Println("\n\033[1;33m⚠️  WARNING: Concurrency set very high. This may cause high memory usage and slow down your system.\033[0m\n")
+		}
 		return nil
 	},
 }
@@ -43,7 +49,8 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", 20, "Number of concurrent operations")
+	defaultWorkers := runtime.NumCPU()
+	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", defaultWorkers, "Number of concurrent operations")
 	rootCmd.PersistentFlags().StringVarP(&inputDir, "input", "i", "", "Input directory containing the images to process")
 	rootCmd.PersistentFlags().StringVarP(&outputDir, "output", "o", "", "Output directory for processed images (default: auto-creates a sibling directory, e.g., '<input>-resized')")
 	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "Perform a dry run without processing images, showing what would be done")
