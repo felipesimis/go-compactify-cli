@@ -15,6 +15,7 @@ var (
 	concurrency int
 	inputDir    string
 	outputDir   string
+	dryRun      bool
 )
 
 var rootCmd = &cobra.Command{
@@ -45,4 +46,5 @@ func init() {
 	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", 20, "Number of concurrent operations")
 	rootCmd.PersistentFlags().StringVarP(&inputDir, "input", "i", "", "Input directory containing the images to process")
 	rootCmd.PersistentFlags().StringVarP(&outputDir, "output", "o", "", "Output directory for processed images (default: auto-creates a sibling directory, e.g., '<input>-resized')")
+	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "Perform a dry run without processing images, showing what would be done")
 }
