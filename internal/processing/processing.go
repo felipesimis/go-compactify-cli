@@ -40,7 +40,7 @@ type ProcessFilesParams struct {
 func ProcessFiles(params ProcessFilesParams) []error {
 	sem := make(chan struct{}, params.Concurrency)
 	var wg sync.WaitGroup
-	var errChan = make(chan error, len(params.Files))
+	errChan := make(chan error, len(params.Files))
 
 	for _, file := range params.Files {
 		wg.Add(1)
@@ -50,18 +50,18 @@ func ProcessFiles(params ProcessFilesParams) []error {
 				<-sem
 				wg.Done()
 			}()
-			fpParams := FileProcessingParams{
+			err := params.ProcessorFunc(FileProcessingParams{
 				File:        file,
 				FS:          params.FS,
 				OutputDir:   params.OutputDir,
 				ProgressBar: params.ProgressBar,
 				ExtraParams: params.ExtraParams,
-			}
-			err := params.ProcessorFunc(fpParams)
+			})
+			params.ProgressBar.Increment()
+
 			if err != nil {
 				errChan <- fmt.Errorf("error processing file '%s': %w", file.Path, err)
 			}
-			fpParams.ProgressBar.Increment()
 		}(file)
 	}
 
@@ -70,11 +70,8 @@ func ProcessFiles(params ProcessFilesParams) []error {
 	close(errChan)
 
 	var processErrors []error
-
 	for err := range errChan {
-		if err != nil {
-			processErrors = append(processErrors, err)
-		}
+		processErrors = append(processErrors, err)
 	}
 	return processErrors
 }
