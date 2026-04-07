@@ -26,6 +26,7 @@ type OperationConfig struct {
 	Ctx                context.Context
 	FileSystem         filesystem.FileSystem
 	InputDir           string
+	OutputDir          string
 	OutputSuffix       string
 	ProgressBarMessage string
 	ExtraParams        interface{}
@@ -39,9 +40,17 @@ func RunOperation(config OperationConfig) error {
 		return err
 	}
 
-	outputDir, err := config.FileSystem.CreateSiblingDir(config.InputDir, config.OutputSuffix)
-	if err != nil {
-		return err
+	var finalOutputDir string
+	if config.OutputDir != "" {
+		finalOutputDir = config.OutputDir
+		if err := config.FileSystem.CreateDir(finalOutputDir); err != nil {
+			return err
+		}
+	} else {
+		finalOutputDir, err = config.FileSystem.CreateSiblingDir(config.InputDir, config.OutputSuffix)
+		if err != nil {
+			return err
+		}
 	}
 
 	stats := &utils.ImageProcessingStats{}
@@ -55,7 +64,7 @@ func RunOperation(config OperationConfig) error {
 	params := processing.ProcessFilesParams{
 		Files:         files,
 		FS:            config.FileSystem,
-		OutputDir:     outputDir,
+		OutputDir:     finalOutputDir,
 		ProgressBar:   progressBar,
 		ExtraParams:   config.ExtraParams,
 		ProcessorFunc: wrappedProcessor,
@@ -69,7 +78,7 @@ func RunOperation(config OperationConfig) error {
 	resultBuilder.SetTotalImages(totalImages).
 		SetSkippedImages(stats.SkippedImages.Load()).
 		SetProcessedImages(stats.ProcessedImages.Load()).
-		SetOutputDirectory(outputDir).
+		SetOutputDirectory(finalOutputDir).
 		SetInitialSize(float64(stats.InitialSize.Load())).
 		SetFinalSize(float64(stats.FinalSize.Load())).
 		SetErrors(processErrors)

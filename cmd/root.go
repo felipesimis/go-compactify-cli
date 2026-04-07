@@ -14,6 +14,7 @@ import (
 var (
 	concurrency int
 	inputDir    string
+	outputDir   string
 )
 
 var rootCmd = &cobra.Command{
@@ -43,4 +44,5 @@ func Execute() error {
 func init() {
 	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", 20, "Number of concurrent operations")
 	rootCmd.PersistentFlags().StringVarP(&inputDir, "input", "i", "", "Input directory containing the images to process")
+	rootCmd.PersistentFlags().StringVarP(&outputDir, "output", "o", "", "Output directory for processed images (default: auto-creates a sibling directory, e.g., '<input>-resized')")
 }
