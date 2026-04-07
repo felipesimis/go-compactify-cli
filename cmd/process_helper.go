@@ -35,6 +35,14 @@ type OperationConfig struct {
 }
 
 func RunOperation(config OperationConfig) error {
+	if dryRun {
+		config.FileSystem = filesystem.NewDryRunFileSystem(config.FileSystem)
+		fmt.Println("\n\033[1;33m============================================================\033[0m")
+		fmt.Println("\033[1;33m⚠️  DRY-RUN MODE: No files will be modified or created on disk.\033[0m")
+		fmt.Println("\033[1;33m============================================================\033[0m")
+		fmt.Println()
+	}
+
 	files, err := config.FileSystem.ReadDir(config.InputDir)
 	if err != nil {
 		return err
