@@ -50,7 +50,12 @@ func processEnlargeImage(ctx context.Context, params processing.FileProcessingPa
 }
 
 var enlargeCmd = &cobra.Command{
-	Use:   "enlarge",
+	Use: "enlarge",
+	Example: `  # Enlarge all images in a folder to 1200x900
+  compactify enlarge -i ./images -w 1200 -H 900
+
+  # Enlarge and save to a specific output directory
+  compactify enlarge -i ./images -o ./enlarged_images -w 1200 -H 900`,
 	Args:  cobra.NoArgs,
 	Short: "Enlarge an image to specified dimensions while maintaining aspect ratio",
 	Long: `Enlarge an image to a specific width and height while maintaining the aspect ratio.

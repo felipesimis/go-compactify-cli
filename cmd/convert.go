@@ -53,8 +53,13 @@ func processConvertImage(ctx context.Context, params processing.FileProcessingPa
 var convertCmd = &cobra.Command{
 	Use:     "convert",
 	Aliases: []string{"conv"},
-	Args:    cobra.NoArgs,
-	Short:   "Convert images to a specified format",
+	Example: `  # Convert all images in a folder to WebP
+  compactify convert -i ./images -f webp
+
+  # Convert and save to a specific output directory
+  compactify convert -i ./images -o ./converted_images -f webp`,
+	Args:  cobra.NoArgs,
+	Short: "Convert images to a specified format",
 	Long: `Convert images in a directory to a specified format.
 This command allows you to change the format of images, which can be useful for optimizing images for 
 different uses, such as web, mobile, or print. You can specify the desired format, 

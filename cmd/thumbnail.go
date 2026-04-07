@@ -50,7 +50,12 @@ var thumbnailCmd = &cobra.Command{
 	Use:     "thumbnail",
 	Args:    cobra.NoArgs,
 	Aliases: []string{"thumb", "preview"},
-	Short:   "Create a thumbnail of an image with specified width",
+	Example: `  # Create thumbnails for all images in a folder
+  compactify thumbnail -i ./images -w 150
+
+	# Create thumbnails and save to a specific output directory
+	compactify thumbnail -i ./images -o ./thumbnails -w 150`,
+	Short: "Create a thumbnail of an image with specified width",
 	Long: `Create a thumbnail of an image with a specified width, maintaining the aspect ratio 4:4.
 This command allows you to generate smaller versions of images, which can be useful for previews or web usage.`,
 	RunE: thumbnailRun,

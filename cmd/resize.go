@@ -57,8 +57,13 @@ func processResizeImage(ctx context.Context, params processing.FileProcessingPar
 var resizeCmd = &cobra.Command{
 	Use:     "resize",
 	Aliases: []string{"scale", "rescale"},
-	Args:    cobra.NoArgs,
-	Short:   "Resize an image to specified dimensions",
+	Example: `  # Resize all images in a folder to 800x600
+  compactify resize -i ./images -w 800 -H 600
+
+  # Resize and save to a specific output directory
+  compactify resize -i ./images -o ./resized_images -w 800 -H 600`,
+	Args:  cobra.NoArgs,
+	Short: "Resize an image to specified dimensions",
 	Long: `Resize an image to a specific width and height.
 This command allows you to change the dimensions of an image, which can be useful for optimizing images for 
 different uses, such as web, mobile, or print. You can specify the desired width and height, 

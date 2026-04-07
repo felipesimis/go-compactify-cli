@@ -61,8 +61,13 @@ func processCropImage(ctx context.Context, params processing.FileProcessingParam
 var cropCmd = &cobra.Command{
 	Use:     "crop",
 	Aliases: []string{"cut"},
-	Args:    cobra.NoArgs,
-	Short:   "Crop an image to specified dimensions",
+	Example: `  # Crop all images in a folder to 800x600 with center gravity
+	compactify crop -i ./images -w 800 -H 600 -g 0
+
+	# Crop and save to a specific output directory with smart gravity
+	compactify crop -i ./images -o ./cropped_images -w 800 -H 600 -g 5`,
+	Args:  cobra.NoArgs,
+	Short: "Crop an image to specified dimensions",
 	Long: `Crop an image to a specific width and height.
 This command allows you to change the dimensions of an image by cropping it, which can be useful for optimizing images for 
 different uses, such as web, mobile, or print. You can specify the desired width and height, 
