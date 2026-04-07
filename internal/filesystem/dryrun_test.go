@@ -86,6 +86,12 @@ func (suite *DryRunFileSystemTestSuite) TestOpenFile_IsDelegated() {
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
+func (suite *DryRunFileSystemTestSuite) TestCreateDir_IsIgnored() {
+	err := suite.dryRunFs.CreateDir("test/newdir")
+	assert.NoError(suite.T(), err)
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
 func TestDryRunFileSystemTestSuite(t *testing.T) {
 	suite.Run(t, new(DryRunFileSystemTestSuite))
 }
