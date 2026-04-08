@@ -26,21 +26,22 @@ func TestValidationComposite_Error(t *testing.T) {
 
 	err := validationStub.Validate()
 	assert.NotNil(t, err)
-	assert.Equal(t, ErrMock, err)
+	assert.Equal(t, ErrMock.Error(), err.Error())
 }
 
 func TestValidationComposite_MultipleErrors(t *testing.T) {
 	validationStub := ValidationComposite{
 		Validations: []Validation{
-			MockValidator{Err: errors.New("any_error")},
-			MockValidator{Err: ErrMock},
+			MockValidator{Err: errors.New("error_one")},
+			MockValidator{Err: errors.New("error_two")},
 		},
 	}
 
 	err := validationStub.Validate()
 	assert.NotNil(t, err)
-	assert.Equal(t, "any_error", err.Error())
-	assert.NotEqual(t, ErrMock, err)
+	assert.Contains(t, err.Error(), "error_one")
+	assert.Contains(t, err.Error(), "error_two")
+	assert.Contains(t, err.Error(), "\n")
 }
 
 func TestValidationComposite_Success(t *testing.T) {
