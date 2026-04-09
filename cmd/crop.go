@@ -20,7 +20,7 @@ var (
 type CropParams struct {
 	Width   int
 	Height  int
-	Gravity bimg.Gravity
+	Gravity image.Gravity
 }
 
 func cropRun(cmd *cobra.Command, args []string) error {
@@ -44,7 +44,7 @@ func cropRun(cmd *cobra.Command, args []string) error {
 		OutputDir:          outputDir,
 		OutputSuffix:       fmt.Sprintf("-cropped_%dx%d", width, height),
 		ProgressBarMessage: "Cropping images",
-		ExtraParams:        CropParams{Width: width, Height: height, Gravity: bimg.Gravity(gravity)},
+		ExtraParams:        CropParams{Width: width, Height: height, Gravity: image.Gravity(gravity)},
 		ProcessorFunc:      processCropImage,
 		ResultVerb:         "cropped",
 	})

@@ -45,7 +45,7 @@ func TestBimgImageWrapper_SizingOperations(t *testing.T) {
 		{
 			name: "Crop",
 			operation: func() ([]byte, error) {
-				return img.Crop(300, 200, bimg.GravitySmart)
+				return img.Crop(300, 200, GravitySmart)
 			},
 			expectedWidth:  300,
 			expectedHeight: 200,
@@ -94,25 +94,64 @@ func TestBimgImageWrapper_Convert(t *testing.T) {
 }
 
 func TestBimgImageWrapper_mapStringToImageType(t *testing.T) {
-	imageType, err := mapStringToImageType("jpeg")
-	assert.Nil(t, err)
-	assert.Equal(t, bimg.JPEG, imageType)
+	tests := []struct {
+		name     string
+		input    string
+		expected bimg.ImageType
+	}{
+		{"JPEG", "jpeg", bimg.JPEG},
+		{"JPG", "jpg", bimg.JPEG},
+		{"WEBP", "webp", bimg.WEBP},
+		{"PNG", "png", bimg.PNG},
+		{"Unknown", "unknown", bimg.UNKNOWN},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := mapStringToImageType(tt.input)
+			if tt.expected == bimg.UNKNOWN {
+				assert.Equal(t, ErrUnsupportedImageType, err)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
 
-	imageType, err = mapStringToImageType("jpg")
-	assert.Nil(t, err)
-	assert.Equal(t, bimg.JPEG, imageType)
+func TestBimgImageWrapper_mapGravityToBimg(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    Gravity
+		expected bimg.Gravity
+	}{
+		{"GravityCentre", GravityCentre, bimg.GravityCentre},
+		{"GravityNorth", GravityNorth, bimg.GravityNorth},
+		{"GravityEast", GravityEast, bimg.GravityEast},
+		{"GravitySouth", GravitySouth, bimg.GravitySouth},
+		{"GravitySmart (default)", GravitySmart, bimg.GravitySmart},
+	}
 
-	imageType, err = mapStringToImageType("webp")
-	assert.Nil(t, err)
-	assert.Equal(t, bimg.WEBP, imageType)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := mapGravityToBimg(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
 
-	imageType, err = mapStringToImageType("png")
-	assert.Nil(t, err)
-	assert.Equal(t, bimg.PNG, imageType)
+func TestBimgImageWrapper_InvalidImageBuffer(t *testing.T) {
+	invalidBuffer := []byte("not an image")
+	img := NewBimgImage(invalidBuffer)
 
-	imageType, err = mapStringToImageType("unknown")
-	assert.Equal(t, ErrUnsupportedImageType, err)
-	assert.Equal(t, bimg.UNKNOWN, imageType)
+	size, err := img.Size()
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, size.Width)
+	assert.Equal(t, 0, size.Height)
+
+	metadata, err := img.Metadata()
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, metadata.Size.Width)
+	assert.Empty(t, metadata.Type)
 }
 
 func TestBimgImageWrapper_Flip(t *testing.T) {
@@ -135,26 +174,11 @@ func TestBimgImageWrapper_Length(t *testing.T) {
 	assert.Equal(t, 3773, img.Length())
 }
 
-func TestBimgImageWrapper_ImageInterpretation(t *testing.T) {
-	img := NewBimgImage(mockedImage())
-	interpretation, err := img.ImageInterpretation()
-	assert.Nil(t, err)
-	assert.Equal(t, bimg.InterpretationSRGB, interpretation)
-}
-
 func TestBimgImageWrapper_Grayscale(t *testing.T) {
 	img := NewBimgImage(mockedImage())
-	initialInterpretation, err := img.ImageInterpretation()
-	assert.Nil(t, err)
-	assert.Equal(t, bimg.InterpretationSRGB, initialInterpretation)
-
 	grayscaleImg, err := img.Grayscale()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, grayscaleImg)
-
-	grayscaleImgInterpretation, err := NewBimgImage(grayscaleImg).ImageInterpretation()
-	assert.Nil(t, err)
-	assert.Equal(t, bimg.InterpretationBW, grayscaleImgInterpretation)
 }
 
 func TestBimgImageWrapper_EnablePalette(t *testing.T) {

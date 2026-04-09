@@ -8,6 +8,17 @@ import (
 
 var ErrUnsupportedImageType = errors.New("unsupported image type")
 
+type Gravity int
+
+const (
+	GravityCentre Gravity = iota
+	GravityNorth
+	GravityEast
+	GravitySouth
+	GravityWest
+	GravitySmart
+)
+
 type Resizeable interface {
 	Resize(width, height int) ([]byte, error)
 	Enlarge(width, height int) ([]byte, error)
@@ -20,7 +31,7 @@ type Convertible interface {
 }
 
 type Croppable interface {
-	Crop(width, height int, gravity bimg.Gravity) ([]byte, error)
+	Crop(width, height int, gravity Gravity) ([]byte, error)
 }
 
 type Flippable interface {
@@ -30,20 +41,29 @@ type Flippable interface {
 type ColorManipulable interface {
 	Grayscale() ([]byte, error)
 	EnablePalette() ([]byte, error)
-	ImageInterpretation() (bimg.Interpretation, error)
+}
+
+type ImageSize struct {
+	Width  int
+	Height int
+}
+
+type ImageMetadata struct {
+	Size ImageSize
+	Type string
 }
 
 type Measurable interface {
-	Size() (bimg.ImageSize, error)
+	Size() (ImageSize, error)
 	Length() int
-	Metadata() (bimg.ImageMetadata, error)
+	Metadata() (ImageMetadata, error)
 }
 
 type Compressionable interface {
 	LosslessCompress() ([]byte, error)
 }
 
-type BimgImage interface {
+type ImageProcessor interface {
 	Resizeable
 	Convertible
 	Croppable
@@ -57,12 +77,16 @@ type BimgImageWrapper struct {
 	image *bimg.Image
 }
 
-func NewBimgImage(buffer []byte) BimgImage {
+func NewBimgImage(buffer []byte) ImageProcessor {
 	return &BimgImageWrapper{image: bimg.NewImage(buffer)}
 }
 
-func (b *BimgImageWrapper) Size() (bimg.ImageSize, error) {
-	return b.image.Size()
+func (b *BimgImageWrapper) Size() (ImageSize, error) {
+	size, err := b.image.Size()
+	if err != nil {
+		return ImageSize{}, err
+	}
+	return ImageSize{Width: size.Width, Height: size.Height}, nil
 }
 
 func (b *BimgImageWrapper) Resize(width, height int) ([]byte, error) {
@@ -81,8 +105,8 @@ func (b *BimgImageWrapper) ImageType() string {
 	return b.image.Type()
 }
 
-func (b *BimgImageWrapper) Crop(width, height int, gravity bimg.Gravity) ([]byte, error) {
-	return b.image.Crop(width, height, gravity)
+func (b *BimgImageWrapper) Crop(width, height int, gravity Gravity) ([]byte, error) {
+	return b.image.Crop(width, height, mapGravityToBimg(gravity))
 }
 
 func mapStringToImageType(format string) (bimg.ImageType, error) {
@@ -98,6 +122,21 @@ func mapStringToImageType(format string) (bimg.ImageType, error) {
 	}
 }
 
+func mapGravityToBimg(g Gravity) bimg.Gravity {
+	switch g {
+	case GravityCentre:
+		return bimg.GravityCentre
+	case GravityNorth:
+		return bimg.GravityNorth
+	case GravityEast:
+		return bimg.GravityEast
+	case GravitySouth:
+		return bimg.GravitySouth
+	default:
+		return bimg.GravitySmart
+	}
+}
+
 func (b *BimgImageWrapper) Flip() ([]byte, error) {
 	return b.image.Flip()
 }
@@ -108,10 +147,6 @@ func (b *BimgImageWrapper) Enlarge(width, height int) ([]byte, error) {
 
 func (b *BimgImageWrapper) Thumbnail(width int) ([]byte, error) {
 	return b.image.Thumbnail(width)
-}
-
-func (b *BimgImageWrapper) ImageInterpretation() (bimg.Interpretation, error) {
-	return b.image.Interpretation()
 }
 
 func (b *BimgImageWrapper) Grayscale() ([]byte, error) {
@@ -130,6 +165,13 @@ func (b *BimgImageWrapper) LosslessCompress() ([]byte, error) {
 	return b.image.Process(bimg.Options{Lossless: true})
 }
 
-func (b *BimgImageWrapper) Metadata() (bimg.ImageMetadata, error) {
-	return b.image.Metadata()
+func (b *BimgImageWrapper) Metadata() (ImageMetadata, error) {
+	size, err := b.Size()
+	if err != nil {
+		return ImageMetadata{}, err
+	}
+	return ImageMetadata{
+		Size: size,
+		Type: b.ImageType(),
+	}, nil
 }
