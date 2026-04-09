@@ -19,30 +19,6 @@ const (
 	GravitySmart
 )
 
-type Resizeable interface {
-	Resize(width, height int) ([]byte, error)
-	Enlarge(width, height int) ([]byte, error)
-	Thumbnail(width int) ([]byte, error)
-}
-
-type Convertible interface {
-	Convert(format string) ([]byte, error)
-	ImageType() string
-}
-
-type Croppable interface {
-	Crop(width, height int, gravity Gravity) ([]byte, error)
-}
-
-type Flippable interface {
-	Flip() ([]byte, error)
-}
-
-type ColorManipulable interface {
-	Grayscale() ([]byte, error)
-	EnablePalette() ([]byte, error)
-}
-
 type ImageSize struct {
 	Width  int
 	Height int
@@ -53,31 +29,11 @@ type ImageMetadata struct {
 	Type string
 }
 
-type Measurable interface {
-	Size() (ImageSize, error)
-	Length() int
-	Metadata() (ImageMetadata, error)
-}
-
-type Compressionable interface {
-	LosslessCompress() ([]byte, error)
-}
-
-type ImageProcessor interface {
-	Resizeable
-	Convertible
-	Croppable
-	Flippable
-	ColorManipulable
-	Measurable
-	Compressionable
-}
-
 type BimgImageWrapper struct {
 	image *bimg.Image
 }
 
-func NewBimgImage(buffer []byte) ImageProcessor {
+func NewBimgImage(buffer []byte) *BimgImageWrapper {
 	return &BimgImageWrapper{image: bimg.NewImage(buffer)}
 }
 
