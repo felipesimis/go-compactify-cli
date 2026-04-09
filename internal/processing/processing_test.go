@@ -75,11 +75,14 @@ func (suite *ProcessingTestSuite) SetupTest() {
 	}
 }
 
-func (suite *ProcessingTestSuite) TestProcessFiles() {
+func (suite *ProcessingTestSuite) setupSuccessMocks() {
 	suite.mockFS.On("ReadFile", "image1.jpg").Return([]byte("content1"), nil)
 	suite.mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
 	suite.mockProgressBar.On("Increment").Twice()
+}
 
+func (suite *ProcessingTestSuite) TestProcessFiles() {
+	suite.setupSuccessMocks()
 	errs := ProcessFiles(suite.params)
 	suite.mockFS.AssertExpectations(suite.T())
 	suite.mockProgressBar.AssertExpectations(suite.T())
@@ -98,6 +101,16 @@ func (suite *ProcessingTestSuite) TestProcessFilesWithError() {
 	suite.Len(errs, 1, "Expected one error")
 	suite.Contains(errs[0].Error(), "read error", "Expected error message to contain 'read error'")
 	suite.Contains(errs[0].Error(), "image1.jpg", "Expected error message to contain 'error processing file image1.jpg'")
+}
+
+func (suite *ProcessingTestSuite) TestProcessFilesWithZeroConcurrency() {
+	suite.params.Concurrency = 0
+	suite.setupSuccessMocks()
+
+	errs := ProcessFiles(suite.params)
+	suite.mockFS.AssertExpectations(suite.T())
+	suite.mockProgressBar.AssertExpectations(suite.T())
+	suite.Empty(errs)
 }
 
 func TestProcessingTestSuite(t *testing.T) {

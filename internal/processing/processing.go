@@ -38,7 +38,12 @@ type ProcessFilesParams struct {
 }
 
 func ProcessFiles(params ProcessFilesParams) []error {
-	sem := make(chan struct{}, params.Concurrency)
+	concurrency := params.Concurrency
+	if concurrency <= 0 {
+		concurrency = 1
+	}
+
+	sem := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(params.Files))
 
