@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
 type TimeMock struct {
@@ -31,52 +32,55 @@ func newMockTimeProvider() *TimeMock {
 	return timeMock
 }
 
-func TestResultBuilder_SetTotalImages(t *testing.T) {
-	rb := NewResultBuilder(newMockTimeProvider())
-	rb.SetTotalImages(10)
-	assert.Equal(t, 10, int(rb.result.totalImages))
+type ResultBuilderTestSuite struct {
+	suite.Suite
+	mockTimeProvider *TimeMock
+	rb               *ResultBuilder
 }
 
-func TestResultBuilder_SetSkippedImages(t *testing.T) {
-	rb := NewResultBuilder(newMockTimeProvider())
-	rb.SetSkippedImages(5)
-	assert.Equal(t, 5, int(rb.result.skippedImages))
+func (suite *ResultBuilderTestSuite) SetupTest() {
+	suite.mockTimeProvider = newMockTimeProvider()
+	suite.rb = NewResultBuilder(suite.mockTimeProvider)
 }
 
-func TestResultBuilder_SetProcessedImages(t *testing.T) {
-	rb := NewResultBuilder(newMockTimeProvider())
-	rb.SetProcessedImages(5)
-	assert.Equal(t, 5, int(rb.result.processedImages))
+func (suite *ResultBuilderTestSuite) TestResultBuilder_SetTotalImages() {
+	suite.rb.SetTotalImages(10)
+	suite.Equal(10, int(suite.rb.result.totalImages))
 }
 
-func TestResultBuilder_SetInitialSize(t *testing.T) {
-	rb := NewResultBuilder(newMockTimeProvider())
-	rb.SetInitialSize(100)
-	assert.Equal(t, 100.0, rb.result.initialSize)
+func (suite *ResultBuilderTestSuite) TestResultBuilder_SetSkippedImages() {
+	suite.rb.SetSkippedImages(5)
+	suite.Equal(5, int(suite.rb.result.skippedImages))
 }
 
-func TestResultBuilder_SetFinalSize(t *testing.T) {
-	rb := NewResultBuilder(newMockTimeProvider())
-	rb.SetFinalSize(50)
-	assert.Equal(t, 50.0, rb.result.finalSize)
+func (suite *ResultBuilderTestSuite) TestResultBuilder_SetProcessedImages() {
+	suite.rb.SetProcessedImages(5)
+	suite.Equal(5, int(suite.rb.result.processedImages))
 }
 
-func TestResultBuilder_SetOutputDirectory(t *testing.T) {
-	rb := NewResultBuilder(newMockTimeProvider())
-	rb.SetOutputDirectory("output")
-	assert.Equal(t, "output", rb.result.outputDirectory)
+func (suite *ResultBuilderTestSuite) TestResultBuilder_SetInitialSize() {
+	suite.rb.SetInitialSize(100)
+	suite.Equal(100.0, suite.rb.result.initialSize)
 }
 
-func TestResultBuilder_SetErrors(t *testing.T) {
-	rb := NewResultBuilder(newMockTimeProvider())
+func (suite *ResultBuilderTestSuite) TestResultBuilder_SetFinalSize() {
+	suite.rb.SetFinalSize(50)
+	suite.Equal(50.0, suite.rb.result.finalSize)
+}
+
+func (suite *ResultBuilderTestSuite) TestResultBuilder_SetOutputDirectory() {
+	suite.rb.SetOutputDirectory("output")
+	suite.Equal("output", suite.rb.result.outputDirectory)
+}
+
+func (suite *ResultBuilderTestSuite) TestResultBuilder_SetErrors() {
 	errors := []error{assert.AnError, assert.AnError}
-	rb.SetErrors(errors)
-	assert.Equal(t, errors, rb.result.errors)
+	suite.rb.SetErrors(errors)
+	suite.Equal(errors, suite.rb.result.errors)
 }
 
-func TestResultBuilder_Build(t *testing.T) {
-	timeMock := newMockTimeProvider()
-	rb := NewResultBuilder(timeMock).
+func (suite *ResultBuilderTestSuite) TestResultBuilder_Build() {
+	suite.rb.
 		SetInitialSize(10485760). // 10 MB
 		SetFinalSize(5242880).    // 5 MB
 		SetTotalImages(10).
@@ -84,22 +88,22 @@ func TestResultBuilder_Build(t *testing.T) {
 		SetProcessedImages(7).
 		SetOutputDirectory("output").
 		SetErrors([]error{assert.AnError})
-	result := rb.Build()
+	result := suite.rb.Build()
 
-	assert.Equal(t, time.Second, result.elapsedTime)
-	assert.Equal(t, 10.0, result.initialSize)
-	assert.Equal(t, 5.0, result.finalSize)
-	assert.Equal(t, -5.0, result.sizeDifference)
-	assert.Equal(t, 10, int(result.totalImages))
-	assert.Equal(t, 3, int(result.skippedImages))
-	assert.Equal(t, 7, int(result.processedImages))
-	assert.Equal(t, 50.0, result.sizeDifferencePercentage)
-	assert.Equal(t, "output", result.outputDirectory)
-	assert.Equal(t, []error{assert.AnError}, result.errors)
-	timeMock.AssertExpectations(t)
+	suite.Equal(time.Second, result.elapsedTime)
+	suite.Equal(10.0, result.initialSize)
+	suite.Equal(5.0, result.finalSize)
+	suite.Equal(-5.0, result.sizeDifference)
+	suite.Equal(10, int(result.totalImages))
+	suite.Equal(3, int(result.skippedImages))
+	suite.Equal(7, int(result.processedImages))
+	suite.Equal(50.0, result.sizeDifferencePercentage)
+	suite.Equal("output", result.outputDirectory)
+	suite.Equal([]error{assert.AnError}, result.errors)
+	suite.mockTimeProvider.AssertExpectations(suite.T())
 }
 
-func TestResultBuilder_Result_PrintResults(t *testing.T) {
+func (suite *ResultBuilderTestSuite) TestResultBuilder_Result_PrintResults() {
 	tests := []struct {
 		name            string
 		skippedImages   uint32
@@ -163,10 +167,8 @@ func TestResultBuilder_Result_PrintResults(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			timeMock := newMockTimeProvider()
-
-			rb := NewResultBuilder(timeMock).
+		suite.Run(tt.name, func() {
+			suite.rb.
 				SetInitialSize(10485760). // 10 MB
 				SetFinalSize(5242880).    // 5 MB
 				SetTotalImages(10).
@@ -175,32 +177,36 @@ func TestResultBuilder_Result_PrintResults(t *testing.T) {
 				SetOutputDirectory("output")
 
 			if tt.errors != nil {
-				rb.SetErrors(tt.errors)
+				suite.rb.SetErrors(tt.errors)
 			}
-			result := rb.Build()
+			result := suite.rb.Build()
 			printedResult := result.PrintResults("resized")
 
 			for _, expectedText := range tt.expected {
-				assert.Contains(t, printedResult, expectedText)
+				suite.Contains(printedResult, expectedText)
 			}
-			timeMock.AssertExpectations(t)
+			suite.mockTimeProvider.AssertExpectations(suite.T())
 		})
 	}
 }
 
-func TestRealTimeProvider_Now(t *testing.T) {
+func (suite *ResultBuilderTestSuite) TestRealTimeProvider_Now() {
 	rtp := RealTimeProvider{}
 	now := time.Now()
 	rtpNow := rtp.Now()
 
-	assert.WithinDuration(t, now, rtpNow, time.Second)
+	suite.WithinDuration(now, rtpNow, time.Second)
 }
 
-func TestRealTimeProvider_Since(t *testing.T) {
+func (suite *ResultBuilderTestSuite) TestRealTimeProvider_Since() {
 	rtp := RealTimeProvider{}
 	startTime := time.Now()
 	time.Sleep(100 * time.Millisecond)
 	elapsed := rtp.Since(startTime)
 
-	assert.InDelta(t, 100*time.Millisecond, elapsed, float64(time.Millisecond))
+	suite.InDelta(100*time.Millisecond, elapsed, float64(time.Millisecond))
+}
+
+func TestResultBuilderTestSuite(t *testing.T) {
+	suite.Run(t, new(ResultBuilderTestSuite))
 }

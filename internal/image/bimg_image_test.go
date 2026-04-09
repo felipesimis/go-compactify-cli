@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/h2non/bimg"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -32,9 +31,9 @@ func (suite *BimgImageTestSuite) SetupTest() {
 
 func (suite *BimgImageTestSuite) TestSize() {
 	size, err := suite.img.Size()
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), suite.originalWidth, size.Width)
-	assert.Equal(suite.T(), suite.originalHeight, size.Height)
+	suite.NoError(err)
+	suite.Equal(suite.originalWidth, size.Width)
+	suite.Equal(suite.originalHeight, size.Height)
 }
 
 func (suite *BimgImageTestSuite) TestSizingOperations() {
@@ -81,13 +80,13 @@ func (suite *BimgImageTestSuite) TestSizingOperations() {
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			processedImg, err := tt.operation()
-			assert.NoError(suite.T(), err)
-			assert.NotEmpty(suite.T(), processedImg)
+			suite.NoError(err)
+			suite.NotEmpty(processedImg)
 
 			size, err := NewBimgImage(processedImg).Size()
-			assert.NoError(suite.T(), err)
-			assert.Equal(suite.T(), tt.expectedWidth, size.Width)
-			assert.Equal(suite.T(), tt.expectedHeight, size.Height)
+			suite.NoError(err)
+			suite.Equal(tt.expectedWidth, size.Width)
+			suite.Equal(tt.expectedHeight, size.Height)
 		})
 	}
 }
@@ -95,15 +94,15 @@ func (suite *BimgImageTestSuite) TestSizingOperations() {
 func (suite *BimgImageTestSuite) TestConvert() {
 	suite.Run("Convert to PNG", func() {
 		convertedImg, err := suite.img.Convert("png")
-		assert.NoError(suite.T(), err)
-		assert.NotEmpty(suite.T(), convertedImg)
-		assert.Equal(suite.T(), "png", NewBimgImage(convertedImg).ImageType())
+		suite.NoError(err)
+		suite.NotEmpty(convertedImg)
+		suite.Equal("png", NewBimgImage(convertedImg).ImageType())
 	})
 
 	suite.Run("Error on unsupported type", func() {
 		convertedImg, err := suite.img.Convert("invalid_format")
-		assert.ErrorIs(suite.T(), err, ErrUnsupportedImageType)
-		assert.Empty(suite.T(), convertedImg)
+		suite.ErrorIs(err, ErrUnsupportedImageType)
+		suite.Empty(convertedImg)
 	})
 }
 
@@ -123,10 +122,10 @@ func (suite *BimgImageTestSuite) TestMapStringToImageType() {
 		suite.Run(tt.name, func() {
 			result, err := mapStringToImageType(tt.input)
 			if tt.expected == bimg.UNKNOWN {
-				assert.Equal(suite.T(), ErrUnsupportedImageType, err)
+				suite.Equal(ErrUnsupportedImageType, err)
 			} else {
-				assert.NoError(suite.T(), err)
-				assert.Equal(suite.T(), tt.expected, result)
+				suite.NoError(err)
+				suite.Equal(tt.expected, result)
 			}
 		})
 	}
@@ -148,7 +147,7 @@ func (suite *BimgImageTestSuite) TestMapGravityToBimg() {
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			result := mapGravityToBimg(tt.input)
-			assert.Equal(suite.T(), tt.expected, result)
+			suite.Equal(tt.expected, result)
 		})
 	}
 }
@@ -158,68 +157,67 @@ func (suite *BimgImageTestSuite) TestInvalidImageBuffer() {
 	img := NewBimgImage(invalidBuffer)
 
 	_, err := img.Size()
-	assert.Error(suite.T(), err)
+	suite.Error(err)
 
 	metadata, err := img.Metadata()
-	assert.Error(suite.T(), err)
-	assert.Empty(suite.T(), metadata.Type)
+	suite.Error(err)
+	suite.Empty(metadata.Type)
 }
 
 func (suite *BimgImageTestSuite) TestFlip() {
 	flippedImg, err := suite.img.Flip()
-	assert.NoError(suite.T(), err)
-	assert.NotEmpty(suite.T(), flippedImg)
+	suite.NoError(err)
+	suite.NotEmpty(flippedImg)
 
 	originalSize, err := suite.img.Size()
-	assert.NoError(suite.T(), err)
+	suite.NoError(err)
 	flippedImgSize, err := NewBimgImage(flippedImg).Size()
-	assert.NoError(suite.T(), err)
+	suite.NoError(err)
 
-	assert.Equal(suite.T(), originalSize.Width, flippedImgSize.Width)
-	assert.Equal(suite.T(), originalSize.Height, flippedImgSize.Height)
+	suite.Equal(originalSize.Width, flippedImgSize.Width)
+	suite.Equal(originalSize.Height, flippedImgSize.Height)
 }
 
 func (suite *BimgImageTestSuite) TestLength() {
-	assert.Equal(suite.T(), suite.originalLength, suite.img.Length())
+	suite.Equal(suite.originalLength, suite.img.Length())
 }
 
 func (suite *BimgImageTestSuite) TestGrayscale() {
 	grayscaleImg, err := suite.img.Grayscale()
-	assert.NoError(suite.T(), err)
-	assert.NotEmpty(suite.T(), grayscaleImg)
+	suite.NoError(err)
+	suite.NotEmpty(grayscaleImg)
 }
 
 func (suite *BimgImageTestSuite) TestEnablePalette() {
 	initialImgLength := suite.img.Length()
 
 	paletteImg, err := suite.img.EnablePalette()
-	assert.NoError(suite.T(), err)
-	assert.NotEmpty(suite.T(), paletteImg)
+	suite.NoError(err)
+	suite.NotEmpty(paletteImg)
 
 	paletteImgLength := NewBimgImage(paletteImg).Length()
-	assert.NotZero(suite.T(), paletteImgLength)
-	assert.NotEqual(suite.T(), initialImgLength, paletteImgLength, "Expected image data to change after applying palette")
+	suite.NotZero(paletteImgLength)
+	suite.NotEqual(initialImgLength, paletteImgLength, "Expected image data to change after applying palette")
 }
 
 func (suite *BimgImageTestSuite) TestLosslessCompress_Integrity() {
 	compressedImg, err := suite.img.LosslessCompress()
-	assert.NoError(suite.T(), err)
-	assert.NotEmpty(suite.T(), compressedImg)
+	suite.NoError(err)
+	suite.NotEmpty(compressedImg)
 
 	metadata, err := NewBimgImage(compressedImg).Metadata()
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), suite.originalWidth, metadata.Size.Width)
-	assert.Equal(suite.T(), suite.originalHeight, metadata.Size.Height)
+	suite.NoError(err)
+	suite.Equal(suite.originalWidth, metadata.Size.Width)
+	suite.Equal(suite.originalHeight, metadata.Size.Height)
 }
 
 func (suite *BimgImageTestSuite) TestMetadata() {
 	metadata, err := suite.img.Metadata()
-	assert.NoError(suite.T(), err)
-	assert.NotEmpty(suite.T(), metadata)
-
-	assert.Equal(suite.T(), suite.originalWidth, metadata.Size.Width)
-	assert.Equal(suite.T(), suite.originalHeight, metadata.Size.Height)
-	assert.Equal(suite.T(), "jpeg", metadata.Type)
+	suite.NoError(err)
+	suite.NotEmpty(metadata)
+	suite.Equal(suite.originalWidth, metadata.Size.Width)
+	suite.Equal(suite.originalHeight, metadata.Size.Height)
+	suite.Equal("jpeg", metadata.Type)
 }
 
 func TestBimgImageTestSuite(t *testing.T) {

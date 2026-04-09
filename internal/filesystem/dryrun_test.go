@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -67,42 +66,42 @@ func (suite *DryRunFileSystemTestSuite) SetupTest() {
 func (suite *DryRunFileSystemTestSuite) TestReadDir_IsDelegated() {
 	suite.mockFS.On("ReadDir", "test/path").Return([]FileInfo{{Path: "image.jpg"}}, nil)
 	files, err := suite.dryRunFs.ReadDir("test/path")
-	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), files, 1)
+	suite.NoError(err)
+	suite.Len(files, 1)
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *DryRunFileSystemTestSuite) TestReadFile_IsDelegated() {
 	suite.mockFS.On("ReadFile", "test/file.jpg").Return([]byte("file content"), nil)
 	data, err := suite.dryRunFs.ReadFile("test/file.jpg")
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), []byte("file content"), data)
+	suite.NoError(err)
+	suite.Equal([]byte("file content"), data)
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *DryRunFileSystemTestSuite) TestOpenFile_IsDelegated() {
 	suite.mockFS.On("OpenFile", "test/file.jpg").Return(nil, nil)
 	_, err := suite.dryRunFs.OpenFile("test/file.jpg")
-	assert.NoError(suite.T(), err)
+	suite.NoError(err)
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *DryRunFileSystemTestSuite) TestCreateDir_IsIgnored() {
 	err := suite.dryRunFs.CreateDir("test/newdir")
-	assert.NoError(suite.T(), err)
+	suite.NoError(err)
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *DryRunFileSystemTestSuite) TestWriteFile_IsIgnored() {
 	err := suite.dryRunFs.WriteFile("test/file.jpg", []byte("file content"))
-	assert.NoError(suite.T(), err)
+	suite.NoError(err)
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *DryRunFileSystemTestSuite) TestCreateSiblingDir_IsIgnored() {
 	path, err := suite.dryRunFs.CreateSiblingDir("test/input", "-suffix")
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "test/input-suffix", filepath.ToSlash(path))
+	suite.NoError(err)
+	suite.Equal("test/input-suffix", filepath.ToSlash(path))
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
