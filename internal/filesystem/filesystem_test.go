@@ -2,175 +2,167 @@ package filesystem
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
-type MockDir struct {
-	mock.Mock
-}
-
-func (m *MockDir) Readdir(count int) ([]os.FileInfo, error) {
-	args := m.Called(count)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]os.FileInfo), args.Error(1)
-}
-
-type MockMkdirer struct {
-	Err error
-}
-
-func (m *MockMkdirer) Mkdir(name string, perm os.FileMode) error {
-	return m.Err
-}
-
-func (m *MockMkdirer) MkdirAll(path string, perm os.FileMode) error {
-	return m.Err
-}
-
-type FileSystemTestSuite struct {
-	suite.Suite
-	fs     FileSystem
-	tmpDir string
-}
-
 func (suite *FileSystemTestSuite) SetupTest() {
-	suite.fs = NewFileSystem()
-	var err error
-	suite.tmpDir, err = os.MkdirTemp("", "test")
-	assert.NoError(suite.T(), err)
+	suite.mockOS = new(MockOSOperations)
+	suite.fs = &FileSystemWrapper{os: suite.mockOS}
+	suite.mockFile = new(MockFile)
+	suite.path = "/mock/dir"
 }
 
-func (suite *FileSystemTestSuite) TearDownTest() {
-	defer os.RemoveAll(suite.tmpDir)
+func (suite *FileSystemTestSuite) TestNewFileSystem() {
+	fs := NewFileSystem()
+	assert.NotNil(suite.T(), fs)
+	_, ok := fs.(*FileSystemWrapper)
+	assert.True(suite.T(), ok)
 }
 
 func (suite *FileSystemTestSuite) TestReadDir() {
-	imageFiles := []string{"image1.jpg", "image2.jpeg", "image3.png", "image4.webp"}
-	files := append(imageFiles, "file1.txt", "file2.pdf", "file3.doc")
-	for _, file := range files {
-		tmpFile, err := os.Create(filepath.Join(suite.tmpDir, file))
-		assert.NoError(suite.T(), err)
-		tmpFile.Close()
+	files := []os.FileInfo{
+		FakeFileInfo{name: "image1.jpg", size: 1024, isDir: false},
+		FakeFileInfo{name: "image2.jpeg", size: 2048, isDir: false},
+		FakeFileInfo{name: "image3.png", size: 4096, isDir: false},
+		FakeFileInfo{name: "image4.webp", size: 8192, isDir: false},
+		FakeFileInfo{name: "file1.txt", size: 2048, isDir: false},
+		FakeFileInfo{name: "subdir", size: 0, isDir: true},
 	}
 
-	result, err := suite.fs.ReadDir(suite.tmpDir)
+	suite.mockOS.On("Open", suite.path).Return(suite.mockFile, nil)
+	suite.mockFile.On("Readdir", -1).Return(files, nil)
+	suite.mockFile.On("Close").Return(nil)
+
+	result, err := suite.fs.ReadDir(suite.path)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), result, 4)
-
 	for _, file := range result {
-		assert.Contains(suite.T(), files, filepath.Base(file.Path))
+		assert.Contains(suite.T(), []string{"image1.jpg", "image2.jpeg", "image3.png", "image4.webp"}, filepath.Base(file.Path))
 	}
+	suite.mockOS.AssertExpectations(suite.T())
+	suite.mockFile.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestOpenError() {
-	nonExistentPath := filepath.Join(suite.tmpDir, "nonexistent")
-	files, err := suite.fs.ReadDir(nonExistentPath)
-	expectedErr := &ErrOpenDir{Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
-	assert.Nil(suite.T(), files)
+func (suite *FileSystemTestSuite) TestReaddir_OpenError() {
+	suite.mockOS.On("Open", suite.path).Return(nil, errors.New("simulated open error"))
+
+	result, err := suite.fs.ReadDir(suite.path)
+	expectedErr := &ErrOpenDir{Err: errors.New("simulated open error")}
+	assert.Nil(suite.T(), result)
 	assert.EqualError(suite.T(), err, expectedErr.Error())
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestReaddirError() {
-	mockDir := new(MockDir)
-	mockDir.On("Readdir", -1).Return(nil, errors.New("simulated readdir error"))
+func (suite *FileSystemTestSuite) TestReaddir_ReadDirError() {
+	suite.mockOS.On("Open", suite.path).Return(suite.mockFile, nil)
+	suite.mockFile.On("Readdir", -1).Return(nil, errors.New("simulated readdir error"))
+	suite.mockFile.On("Close").Return(nil)
 
-	files, err := suite.fs.(*FileSystemWrapper).readDir(mockDir, "/mock/path")
-	expectedErr := &ErrReadDir{Path: "/mock/path", Err: errors.New("simulated readdir error")}
-	assert.Nil(suite.T(), files)
+	result, err := suite.fs.ReadDir(suite.path)
+	expectedErr := &ErrReadDir{Path: suite.path, Err: errors.New("simulated readdir error")}
+	assert.Nil(suite.T(), result)
 	assert.EqualError(suite.T(), err, expectedErr.Error())
-
-	mockDir.AssertExpectations(suite.T())
+	suite.mockOS.AssertExpectations(suite.T())
+	suite.mockFile.AssertExpectations(suite.T())
 }
 
-func TestFileSystemWrapper_CreateDirError(t *testing.T) {
-	mockMkdirer := &MockMkdirer{Err: errors.New("mock error")}
-	fs := &FileSystemWrapper{Mkdirer: mockMkdirer}
+func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateDirError() {
+	suite.mockOS.On("MkdirAll", suite.path, os.ModePerm).Return(errors.New("mock error"))
 
-	err := fs.CreateDir("/some/path")
-	expectedErr := &ErrCreateDir{Path: "/some/path", Err: mockMkdirer.Err}
-	assert.EqualError(t, err, expectedErr.Error())
+	err := suite.fs.CreateDir(suite.path)
+	expectedErr := &ErrCreateDir{Path: suite.path, Err: errors.New("mock error")}
+	assert.EqualError(suite.T(), err, expectedErr.Error())
 }
 
 func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateDir() {
-	err := suite.fs.CreateDir(filepath.Join(suite.tmpDir, "newdir"))
+	suite.mockOS.On("MkdirAll", suite.path, os.ModePerm).Return(nil)
+
+	err := suite.fs.CreateDir(suite.path)
 	assert.NoError(suite.T(), err)
-	assert.DirExists(suite.T(), filepath.Join(suite.tmpDir, "newdir"))
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func TestFileSystemWrapper_CreateSiblingDirError(t *testing.T) {
-	mockMkdirer := &MockMkdirer{Err: errors.New("mock error")}
-	fs := &FileSystemWrapper{Mkdirer: mockMkdirer}
+func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateSiblingDirError() {
+	expectedPath := suite.path + "-suffix"
+	expectedErr := &ErrCreateSiblingDir{Err: errors.New("mock error")}
+	suite.mockOS.On("Mkdir", expectedPath, os.ModePerm).Return(errors.New("mock error"))
 
-	newDir, err := fs.CreateSiblingDir("/some/path", "_suffix")
-	expectedErr := &ErrCreateSiblingDir{Err: mockMkdirer.Err}
-	assert.Empty(t, newDir)
-	assert.EqualError(t, err, expectedErr.Error())
+	newDir, err := suite.fs.CreateSiblingDir(suite.path, "-suffix")
+	assert.Empty(suite.T(), newDir)
+	assert.EqualError(suite.T(), err, expectedErr.Error())
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestCreateSiblingDir() {
-	newDir, err := suite.fs.CreateSiblingDir(suite.tmpDir, "_suffix")
+func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateSiblingDir() {
+	expectedPath := suite.path + "-suffix"
+	suite.mockOS.On("Mkdir", expectedPath, os.ModePerm).Return(nil)
+
+	newDir, err := suite.fs.CreateSiblingDir(suite.path, "-suffix")
 	assert.NoError(suite.T(), err)
-	assert.DirExists(suite.T(), newDir)
-	assert.Contains(suite.T(), newDir, "_suffix")
+	assert.Equal(suite.T(), expectedPath, newDir)
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
 func (suite *FileSystemTestSuite) TestReadFileError() {
-	nonExistentPath := filepath.Join(suite.tmpDir, "nonexistent")
-	data, err := suite.fs.ReadFile(nonExistentPath)
-	expectedErr := &ErrReadFile{Path: nonExistentPath, Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
+	expectedErr := &ErrReadFile{Path: suite.path, Err: errors.New("mock error")}
+	suite.mockOS.On("ReadFile", suite.path).Return(nil, expectedErr.Err)
+
+	data, err := suite.fs.ReadFile(suite.path)
 	assert.Nil(suite.T(), data)
 	assert.EqualError(suite.T(), err, expectedErr.Error())
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
 func (suite *FileSystemTestSuite) TestReadFile() {
-	tmpFile, err := os.CreateTemp(suite.tmpDir, "file*.txt")
-	assert.NoError(suite.T(), err)
-	defer os.Remove(tmpFile.Name())
+	expectedData := []byte("file content")
+	suite.mockOS.On("ReadFile", suite.path).Return(expectedData, nil)
 
-	data, err := suite.fs.ReadFile(tmpFile.Name())
+	data, err := suite.fs.ReadFile(suite.path)
 	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), data)
+	assert.Equal(suite.T(), expectedData, data)
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
 func (suite *FileSystemTestSuite) TestOpenFileError() {
-	nonExistentPath := filepath.Join(suite.tmpDir, "nonexistent")
-	data, err := suite.fs.OpenFile(nonExistentPath)
-	expectedErr := &ErrReadFile{Path: nonExistentPath, Err: fmt.Errorf("open %s: no such file or directory", nonExistentPath)}
-	assert.Nil(suite.T(), data)
+	expectedErr := &ErrReadFile{Path: suite.path, Err: errors.New("mock error")}
+	suite.mockOS.On("Open", suite.path).Return(nil, expectedErr.Err)
+
+	file, err := suite.fs.OpenFile(suite.path)
+	assert.Nil(suite.T(), file)
 	assert.EqualError(suite.T(), err, expectedErr.Error())
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
 func (suite *FileSystemTestSuite) TestOpenFile() {
-	tmpFile, err := os.CreateTemp(suite.tmpDir, "file*.txt")
+	suite.mockOS.On("Open", suite.path).Return(suite.mockFile, nil)
+
+	file, err := suite.fs.OpenFile(suite.path)
 	assert.NoError(suite.T(), err)
-	defer os.Remove(tmpFile.Name())
-	data, err := suite.fs.OpenFile(tmpFile.Name())
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), data)
-	data.Close()
+	assert.Equal(suite.T(), suite.mockFile, file)
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
 func (suite *FileSystemTestSuite) TestWriteFileError() {
-	invalidPath := "/invalid/path/to/image.png"
-	err := suite.fs.WriteFile(invalidPath, []byte("data"))
-	expectedErr := &ErrWriteFile{Path: invalidPath, Err: fmt.Errorf("open %s: no such file or directory", invalidPath)}
+	expectedErr := &ErrWriteFile{Path: suite.path, Err: errors.New("mock error")}
+	suite.mockOS.On("WriteFile", suite.path, []byte("data"), os.FileMode(0644)).Return(expectedErr.Err)
+
+	err := suite.fs.WriteFile(suite.path, []byte("data"))
 	assert.EqualError(suite.T(), err, expectedErr.Error())
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
 func (suite *FileSystemTestSuite) TestWriteFile() {
-	tmpFile := filepath.Join(suite.tmpDir, "image.png")
-	err := suite.fs.WriteFile(tmpFile, []byte("data"))
+	data := []byte("data")
+	suite.mockOS.On("WriteFile", suite.path, data, os.FileMode(0644)).Return(nil)
+
+	err := suite.fs.WriteFile(suite.path, data)
 	assert.NoError(suite.T(), err)
-	assert.FileExists(suite.T(), tmpFile)
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
 func TestFileSystemTestSuite(t *testing.T) {

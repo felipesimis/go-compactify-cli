@@ -25,13 +25,26 @@ type FileSystem interface {
 	FileWriter
 }
 
+type File interface {
+	io.ReadCloser
+	Readdir(count int) ([]os.FileInfo, error)
+}
+
 type FileInfo struct {
 	Path string
 	Size int64
 }
 
+type OSOperations interface {
+	Mkdir(name string, perm os.FileMode) error
+	MkdirAll(path string, perm os.FileMode) error
+	Open(name string) (File, error)
+	ReadFile(name string) ([]byte, error)
+	WriteFile(name string, data []byte, perm os.FileMode) error
+}
+
 type FileSystemWrapper struct {
-	Mkdirer Mkdirer
+	os OSOperations
 }
 
 type Dir interface {
@@ -39,11 +52,11 @@ type Dir interface {
 }
 
 func NewFileSystem() FileSystem {
-	return &FileSystemWrapper{Mkdirer: &OSWrapper{}}
+	return &FileSystemWrapper{os: &OSWrapper{}}
 }
 
 func (fs *FileSystemWrapper) ReadDir(path string) ([]FileInfo, error) {
-	dir, err := os.Open(path)
+	dir, err := fs.os.Open(path)
 	if err != nil {
 		return nil, &ErrOpenDir{Err: err}
 	}
@@ -70,11 +83,6 @@ func (fs *FileSystemWrapper) readDir(dir Dir, path string) ([]FileInfo, error) {
 	return files, nil
 }
 
-type Mkdirer interface {
-	Mkdir(name string, perm os.FileMode) error
-	MkdirAll(path string, perm os.FileMode) error
-}
-
 type OSWrapper struct{}
 
 func (o *OSWrapper) Mkdir(name string, perm os.FileMode) error {
@@ -85,8 +93,20 @@ func (o *OSWrapper) MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
 }
 
+func (o *OSWrapper) Open(name string) (File, error) {
+	return os.Open(name)
+}
+
+func (o *OSWrapper) ReadFile(name string) ([]byte, error) {
+	return os.ReadFile(name)
+}
+
+func (o *OSWrapper) WriteFile(name string, data []byte, perm os.FileMode) error {
+	return os.WriteFile(name, data, perm)
+}
+
 func (fs *FileSystemWrapper) CreateDir(name string) error {
-	err := fs.Mkdirer.MkdirAll(name, os.ModePerm)
+	err := fs.os.MkdirAll(name, os.ModePerm)
 	if err != nil {
 		return &ErrCreateDir{Path: name, Err: err}
 	}
@@ -96,7 +116,7 @@ func (fs *FileSystemWrapper) CreateDir(name string) error {
 func (fs *FileSystemWrapper) CreateSiblingDir(path, suffix string) (string, error) {
 	parentDir := filepath.Dir(path)
 	newDir := filepath.Join(parentDir, filepath.Base(path)+suffix)
-	err := fs.Mkdirer.Mkdir(newDir, os.ModePerm)
+	err := fs.os.Mkdir(newDir, os.ModePerm)
 	if err != nil {
 		return "", &ErrCreateSiblingDir{Err: err}
 	}
@@ -104,7 +124,7 @@ func (fs *FileSystemWrapper) CreateSiblingDir(path, suffix string) (string, erro
 }
 
 func (fs *FileSystemWrapper) ReadFile(path string) ([]byte, error) {
-	file, err := os.ReadFile(path)
+	file, err := fs.os.ReadFile(path)
 	if err != nil {
 		return nil, &ErrReadFile{Path: path, Err: err}
 	}
@@ -112,7 +132,7 @@ func (fs *FileSystemWrapper) ReadFile(path string) ([]byte, error) {
 }
 
 func (fs *FileSystemWrapper) OpenFile(path string) (io.ReadCloser, error) {
-	file, err := os.Open(path)
+	file, err := fs.os.Open(path)
 	if err != nil {
 		return nil, &ErrReadFile{Path: path, Err: err}
 	}
@@ -120,7 +140,7 @@ func (fs *FileSystemWrapper) OpenFile(path string) (io.ReadCloser, error) {
 }
 
 func (fs *FileSystemWrapper) WriteFile(name string, data []byte) error {
-	err := os.WriteFile(name, data, 0644)
+	err := fs.os.WriteFile(name, data, 0644)
 	if err != nil {
 		return &ErrWriteFile{Path: name, Err: err}
 	}
