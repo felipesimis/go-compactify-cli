@@ -55,6 +55,11 @@ func (m *MockOSOperations) WriteFile(name string, data []byte, perm os.FileMode)
 	return args.Error(0)
 }
 
+func (m *MockOSOperations) Walk(root string, walkFn func(path string, d os.DirEntry, err error) error) error {
+	args := m.Called(root, walkFn)
+	return args.Error(0)
+}
+
 type MockFile struct {
 	mock.Mock
 }

@@ -19,6 +19,7 @@ type FileWriter interface {
 
 type FileSystem interface {
 	ReadDir(path string) ([]FileInfo, error)
+	Walk(root string, walkFn func(path string, info FileInfo) error) error
 	CreateDir(name string) error
 	CreateSiblingDir(path, suffix string) (string, error)
 	FileReader
@@ -41,6 +42,7 @@ type OSOperations interface {
 	Open(name string) (File, error)
 	ReadFile(name string) ([]byte, error)
 	WriteFile(name string, data []byte, perm os.FileMode) error
+	Walk(root string, walkFn func(path string, d os.DirEntry, err error) error) error
 }
 
 type FileSystemWrapper struct {
@@ -105,6 +107,10 @@ func (o *OSWrapper) WriteFile(name string, data []byte, perm os.FileMode) error 
 	return os.WriteFile(name, data, perm)
 }
 
+func (o *OSWrapper) Walk(root string, walkFn func(path string, d os.DirEntry, err error) error) error {
+	return filepath.WalkDir(root, walkFn)
+}
+
 func (fs *FileSystemWrapper) CreateDir(name string) error {
 	err := fs.os.MkdirAll(name, os.ModePerm)
 	if err != nil {
@@ -145,4 +151,20 @@ func (fs *FileSystemWrapper) WriteFile(name string, data []byte) error {
 		return &ErrWriteFile{Path: name, Err: err}
 	}
 	return nil
+}
+
+func (fs *FileSystemWrapper) Walk(root string, walkFn func(path string, info FileInfo) error) error {
+	return fs.os.Walk(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && utils.IsValidImage(d.Name()) {
+			info, err := d.Info()
+			if err != nil {
+				return err
+			}
+			return walkFn(path, FileInfo{Path: path, Size: info.Size()})
+		}
+		return nil
+	})
 }

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -153,6 +154,22 @@ func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnNoError_WhenWriteSuc
 
 	err := suite.fs.WriteFile(suite.path, data)
 	suite.NoError(err)
+}
+
+func (suite *FileSystemTestSuite) TestWalk_CallbackError() {
+	expectedErr := errors.New("callback error")
+	suite.mockOS.On("Walk", suite.path, mock.Anything).
+		Return(expectedErr).
+		Run(func(args mock.Arguments) {
+			walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+			_ = walkFn(suite.path+"/file.jpg", nil, expectedErr)
+		})
+
+	err := suite.fs.Walk(suite.path, func(path string, info FileInfo) error {
+		return nil
+	})
+	suite.ErrorIs(err, expectedErr)
+	suite.mockOS.AssertExpectations(suite.T())
 }
 
 func TestFileSystemTestSuite(t *testing.T) {

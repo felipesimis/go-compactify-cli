@@ -52,6 +52,11 @@ func (m *MockFileSystem) WriteFile(path string, data []byte) error {
 	return args.Error(0)
 }
 
+func (m *MockFileSystem) Walk(root string, walkFn func(path string, info FileInfo) error) error {
+	args := m.Called(root, walkFn)
+	return args.Error(0)
+}
+
 type DryRunFileSystemTestSuite struct {
 	suite.Suite
 	dryRunFs FileSystem
