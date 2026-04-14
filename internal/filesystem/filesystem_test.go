@@ -173,25 +173,46 @@ func (suite *FileSystemTestSuite) TestWalk_CallbackError() {
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestWalk_IgnoresDirectory() {
-	suite.mockOS.On("Walk", suite.path, mock.Anything).
-		Return(nil).
-		Run(func(args mock.Arguments) {
-			walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
-			suite.mockDir.On("IsDir").Return(true)
-			suite.mockDir.On("Name").Return("subdir")
-			_ = walkFn(suite.path+"/subdir", suite.mockDir, nil)
+func (suite *FileSystemTestSuite) TestWalk_IgnoresInvalidEntries() {
+	tests := []struct {
+		name     string
+		isDir    bool
+		fileName string
+	}{
+		{"IgnoresDirectory", true, "subdir"},
+		{"IgnoresNonImageFiles", false, "file.txt"},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			localMockOS := new(MockOSOperations)
+			localMockDir := new(MockDir)
+			localFS := &FileSystemWrapper{os: localMockOS}
+
+			localMockOS.On("Walk", suite.path, mock.Anything).
+				Return(nil).
+				Run(func(args mock.Arguments) {
+					walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+
+					localMockDir.On("IsDir").Return(tt.isDir).Once()
+					if !tt.isDir {
+						localMockDir.On("Name").Return(tt.fileName).Once()
+					}
+					_ = walkFn(suite.path+"/"+tt.fileName, localMockDir, nil)
+				}).Once()
+
+			called := false
+			err := localFS.Walk(suite.path, func(path string, info FileInfo) error {
+				called = true
+				return nil
+			})
+
+			suite.NoError(err)
+			suite.False(called, "Callback should not be called for: "+tt.name)
+			localMockOS.AssertExpectations(suite.T())
+			localMockDir.AssertExpectations(suite.T())
 		})
-
-	called := false
-	err := suite.fs.Walk(suite.path, func(path string, info FileInfo) error {
-		called = true
-		return nil
-	})
-
-	suite.NoError(err)
-	suite.False(called, "Callback should not be called for directories")
-	suite.mockOS.AssertExpectations(suite.T())
+	}
 }
 
 func TestFileSystemTestSuite(t *testing.T) {
