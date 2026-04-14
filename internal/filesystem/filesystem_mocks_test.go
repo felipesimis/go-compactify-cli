@@ -20,6 +20,29 @@ func (m *MockDir) Readdir(count int) ([]os.FileInfo, error) {
 	return args.Get(0).([]os.FileInfo), args.Error(1)
 }
 
+func (m *MockDir) Name() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+func (m *MockDir) IsDir() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
+func (m *MockDir) Info() (os.FileInfo, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(os.FileInfo), args.Error(1)
+}
+
+func (m *MockDir) Type() os.FileMode {
+	args := m.Called()
+	return args.Get(0).(os.FileMode)
+}
+
 type MockOSOperations struct {
 	mock.Mock
 }
@@ -99,6 +122,7 @@ type FileSystemTestSuite struct {
 	suite.Suite
 	fs       *FileSystemWrapper
 	mockOS   *MockOSOperations
+	mockDir  *MockDir
 	mockFile *MockFile
 	path     string
 }

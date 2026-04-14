@@ -12,6 +12,7 @@ import (
 
 func (suite *FileSystemTestSuite) SetupTest() {
 	suite.mockOS = new(MockOSOperations)
+	suite.mockDir = new(MockDir)
 	suite.fs = &FileSystemWrapper{os: suite.mockOS}
 	suite.mockFile = new(MockFile)
 	suite.path = "/mock/dir"
@@ -169,6 +170,27 @@ func (suite *FileSystemTestSuite) TestWalk_CallbackError() {
 		return nil
 	})
 	suite.ErrorIs(err, expectedErr)
+	suite.mockOS.AssertExpectations(suite.T())
+}
+
+func (suite *FileSystemTestSuite) TestWalk_IgnoresDirectory() {
+	suite.mockOS.On("Walk", suite.path, mock.Anything).
+		Return(nil).
+		Run(func(args mock.Arguments) {
+			walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+			suite.mockDir.On("IsDir").Return(true)
+			suite.mockDir.On("Name").Return("subdir")
+			_ = walkFn(suite.path+"/subdir", suite.mockDir, nil)
+		})
+
+	called := false
+	err := suite.fs.Walk(suite.path, func(path string, info FileInfo) error {
+		called = true
+		return nil
+	})
+
+	suite.NoError(err)
+	suite.False(called, "Callback should not be called for directories")
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
