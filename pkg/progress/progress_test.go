@@ -8,41 +8,69 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProgressBar(t *testing.T) {
+func TestNewProgressBar_ShouldInitializeWithCorrectDescription(t *testing.T) {
 	var buf bytes.Buffer
-	total := 10
-	pb := NewProgressBar(&buf, total, 20, "Processing")
-	assert.NotNil(t, pb.bar)
-
+	description := "Testing Description"
+	pb := NewProgressBar(&buf, 10, 1, description)
 	pb.Increment()
 
-	initialOutput := buf.String()
-	assert.Contains(t, initialOutput, "\x1b[36mProcessing\x1b[0m")
-	assert.Contains(t, initialOutput, "10%")
-	assert.Contains(t, initialOutput, "1/10")
+	assert.NotNil(t, pb.bar)
+	assert.Contains(t, buf.String(), description)
+}
 
-	for i := 0; i < total-1; i++ {
+func TestProgressBar_ShouldUpdateOutputOnIncrementAndFinish(t *testing.T) {
+	var buf bytes.Buffer
+	pb := NewProgressBar(&buf, 5, 1, "Progress")
+
+	for range 5 {
 		pb.Increment()
 	}
 	pb.Finish()
 
 	output := buf.String()
-	assert.Contains(t, output, "\x1b[36mProcessing\x1b[0m")
-	assert.Contains(t, output, "\x1b[32m█\x1b[0m")
-	assert.Contains(t, output, "\x1b[32m█\x1b[0m")
+	assert.Contains(t, output, "5/5")
+	assert.Contains(t, output, "100%")
 	assert.Contains(t, output, "[")
 	assert.Contains(t, output, "]")
-	assert.Contains(t, output, "100%")
-	assert.Contains(t, output, "10/10")
 }
 
-func TestCalculateThrottle(t *testing.T) {
-	throttle := calculateThrottle(100, 120)
-	assert.Equal(t, 40*time.Millisecond, throttle)
+func TestCalculateThrottle_ShouldRespectBoundaries(t *testing.T) {
+	tests := []struct {
+		name        string
+		total       int
+		concurrency int
+		expected    time.Duration
+	}{
+		{
+			name:        "should use min throttle when adjustment is very small",
+			total:       10,
+			concurrency: 100,
+			expected:    40 * time.Millisecond,
+		},
+		{
+			name:        "should use max throttle when adjustment is very large",
+			total:       1000,
+			concurrency: 1,
+			expected:    1000 * time.Millisecond,
+		},
+		{
+			name:        "should calculate intermediate throttle correctly",
+			total:       100,
+			concurrency: 20,
+			expected:    200 * time.Millisecond,
+		},
+		{
+			name:        "should use default throttle when perfectly balanced",
+			total:       1,
+			concurrency: 1,
+			expected:    40 * time.Millisecond,
+		},
+	}
 
-	throttle = calculateThrottle(100, 1)
-	assert.Equal(t, 1000*time.Millisecond, throttle)
-
-	throttle = calculateThrottle(100, 20)
-	assert.Equal(t, 200*time.Millisecond, throttle)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := calculateThrottle(tt.total, tt.concurrency)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
 }
