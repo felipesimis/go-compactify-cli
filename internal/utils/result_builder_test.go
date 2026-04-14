@@ -43,43 +43,43 @@ func (suite *ResultBuilderTestSuite) SetupTest() {
 	suite.rb = NewResultBuilder(suite.mockTimeProvider)
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_SetTotalImages() {
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreTotalImages() {
 	suite.rb.SetTotalImages(10)
 	suite.Equal(10, int(suite.rb.result.totalImages))
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_SetSkippedImages() {
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreSkippedImages() {
 	suite.rb.SetSkippedImages(5)
 	suite.Equal(5, int(suite.rb.result.skippedImages))
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_SetProcessedImages() {
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreProcessedImages() {
 	suite.rb.SetProcessedImages(5)
 	suite.Equal(5, int(suite.rb.result.processedImages))
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_SetInitialSize() {
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreInitialSize() {
 	suite.rb.SetInitialSize(100)
 	suite.Equal(100.0, suite.rb.result.initialSize)
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_SetFinalSize() {
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreFinalSize() {
 	suite.rb.SetFinalSize(50)
 	suite.Equal(50.0, suite.rb.result.finalSize)
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_SetOutputDirectory() {
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreOutputDirectory() {
 	suite.rb.SetOutputDirectory("output")
 	suite.Equal("output", suite.rb.result.outputDirectory)
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_SetErrors() {
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreErrors() {
 	errors := []error{assert.AnError, assert.AnError}
 	suite.rb.SetErrors(errors)
 	suite.Equal(errors, suite.rb.result.errors)
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_Build() {
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldBuildCorrectResult() {
 	suite.rb.
 		SetInitialSize(10485760). // 10 MB
 		SetFinalSize(5242880).    // 5 MB
@@ -88,6 +88,7 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_Build() {
 		SetProcessedImages(7).
 		SetOutputDirectory("output").
 		SetErrors([]error{assert.AnError})
+
 	result := suite.rb.Build()
 
 	suite.Equal(time.Second, result.elapsedTime)
@@ -103,7 +104,7 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_Build() {
 	suite.mockTimeProvider.AssertExpectations(suite.T())
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_Result_PrintResults() {
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldPrintFormattedResults() {
 	tests := []struct {
 		name            string
 		skippedImages   uint32
@@ -112,7 +113,7 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_Result_PrintResults() {
 		expected        []string
 	}{
 		{
-			name:            "Without errors",
+			name:            "without errors",
 			skippedImages:   3,
 			processedImages: 7,
 			errors:          nil,
@@ -129,7 +130,7 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_Result_PrintResults() {
 			},
 		},
 		{
-			name:            "With errors",
+			name:            "with errors",
 			skippedImages:   3,
 			processedImages: 7,
 			errors:          []error{fmt.Errorf("file 'fake.jpg': read error")},
@@ -148,7 +149,7 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_Result_PrintResults() {
 			},
 		},
 		{
-			name:            "Without skipped images",
+			name:            "without skipped images",
 			skippedImages:   0,
 			processedImages: 10,
 			errors:          nil,
@@ -190,21 +191,21 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_Result_PrintResults() {
 	}
 }
 
-func (suite *ResultBuilderTestSuite) TestRealTimeProvider_Now() {
+func TestRealTimeProvider_Now(t *testing.T) {
 	rtp := RealTimeProvider{}
 	now := time.Now()
 	rtpNow := rtp.Now()
 
-	suite.WithinDuration(now, rtpNow, time.Second)
+	assert.WithinDuration(t, now, rtpNow, time.Second)
 }
 
-func (suite *ResultBuilderTestSuite) TestRealTimeProvider_Since() {
+func TestRealTimeProvider_Since(t *testing.T) {
 	rtp := RealTimeProvider{}
 	startTime := time.Now()
 	time.Sleep(100 * time.Millisecond)
 	elapsed := rtp.Since(startTime)
 
-	suite.InDelta(100*time.Millisecond, elapsed, float64(time.Millisecond))
+	assert.InDelta(t, 100*time.Millisecond, elapsed, float64(time.Millisecond))
 }
 
 func TestResultBuilderTestSuite(t *testing.T) {

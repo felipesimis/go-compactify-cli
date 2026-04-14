@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBuildOutputPath(t *testing.T) {
+func TestBuildOutputPath_ShouldReturnCorrectPath(t *testing.T) {
 	tests := []struct {
 		name string
 		outputDir string
@@ -14,19 +14,19 @@ func TestBuildOutputPath(t *testing.T) {
 		expected string
 	}{
 		{
-		name: "File in root directory",
+		name: "should return path in root directory",
 		outputDir: "output",
 		relativePath: "image.jpg",
 		expected: "output/image.jpg",
 		},
 		{
-		name: "File in subdirectory",
+		name: "should return path in subdirectory",
 		outputDir: "output",
 		relativePath: "subdir/image.jpg",
 		expected: "output/subdir/image.jpg",
 		},
 		{
-		name: "File with nested subdirectories",
+		name: "should return path with nested subdirectories",
 		outputDir: "output",
 		relativePath: "subdir/nested/a/b/image.jpg",
 		expected: "output/subdir/nested/a/b/image.jpg",
