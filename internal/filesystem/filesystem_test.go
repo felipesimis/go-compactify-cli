@@ -192,12 +192,11 @@ func (suite *FileSystemTestSuite) TestWalk_IgnoresInvalidEntries() {
 			localMockOS.On("Walk", suite.path, mock.Anything).
 				Return(nil).
 				Run(func(args mock.Arguments) {
-					walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
-
 					localMockDir.On("IsDir").Return(tt.isDir).Once()
 					if !tt.isDir {
 						localMockDir.On("Name").Return(tt.fileName).Once()
 					}
+					walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
 					_ = walkFn(suite.path+"/"+tt.fileName, localMockDir, nil)
 				}).Once()
 
@@ -213,6 +212,29 @@ func (suite *FileSystemTestSuite) TestWalk_IgnoresInvalidEntries() {
 			localMockDir.AssertExpectations(suite.T())
 		})
 	}
+}
+
+func (suite *FileSystemTestSuite) TestWalk_InfoError() {
+	expectedErr := errors.New("info error")
+	localMockOS := new(MockOSOperations)
+	localMockDir := new(MockDir)
+	localFS := &FileSystemWrapper{os: localMockOS}
+	localMockOS.On("Walk", suite.path, mock.Anything).
+		Return(expectedErr).
+		Run(func(args mock.Arguments) {
+			walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+			localMockDir.On("IsDir").Return(false)
+			localMockDir.On("Name").Return("image.jpg")
+			localMockDir.On("Info").Return(nil, expectedErr)
+			_ = walkFn(suite.path+"/image.jpg", localMockDir, nil)
+		})
+
+	err := localFS.Walk(suite.path, func(path string, info FileInfo) error {
+		return nil
+	})
+	suite.ErrorIs(err, expectedErr)
+	localMockOS.AssertExpectations(suite.T())
+	localMockDir.AssertExpectations(suite.T())
 }
 
 func TestFileSystemTestSuite(t *testing.T) {
