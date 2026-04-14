@@ -3,23 +3,36 @@ package validation
 import (
 	"testing"
 
+	"github.com/h2non/bimg"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGravityValidation_Validate_Error(t *testing.T) {
-	v := &GravityValidation{Gravity: -5}
+func TestGravityValidation_ShouldReturnError_WhenGravityIsBelowCentre(t *testing.T) {
+	v := &GravityValidation{Gravity: bimg.GravityCentre - 1}
 	err := v.Validate()
-	v2 := &GravityValidation{Gravity: 10}
-	err2 := v2.Validate()
-	assert.Equal(t, ErrInvalidGravity, err)
-	assert.Equal(t, ErrInvalidGravity, err2)
+	assert.ErrorIs(t, err, ErrInvalidGravity)
 }
 
-func TestGravityValidation_Validate_Success(t *testing.T) {
-	v := &GravityValidation{Gravity: 0}
+func TestGravityValidation_ShouldReturnError_WhenGravityIsAboveSmart(t *testing.T) {
+	v := &GravityValidation{Gravity: bimg.GravitySmart + 1}
 	err := v.Validate()
-	v2 := &GravityValidation{Gravity: 5}
-	err2 := v2.Validate()
-	assert.Nil(t, err)
-	assert.Nil(t, err2)
+	assert.ErrorIs(t, err, ErrInvalidGravity)
+}
+
+func TestGravityValidation_ShouldSucceed_WhenGravityIsAtCentre(t *testing.T) {
+	v := &GravityValidation{Gravity: bimg.GravityCentre}
+	err := v.Validate()
+	assert.NoError(t, err)
+}
+
+func TestGravityValidation_ShouldSucceed_WhenGravityIsAtSmart(t *testing.T) {
+	v := &GravityValidation{Gravity: bimg.GravitySmart}
+	err := v.Validate()
+	assert.NoError(t, err)
+}
+
+func TestGravityValidation_ShouldSucceed_WhenGravityIsSomewhereInBetween(t *testing.T) {
+	v := &GravityValidation{Gravity: bimg.GravityCentre + 1}
+	err := v.Validate()
+	assert.NoError(t, err)
 }

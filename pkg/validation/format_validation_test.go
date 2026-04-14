@@ -6,20 +6,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFormatValidation_Validate_EmptyFormat(t *testing.T) {
+func TestFormatValidation_ShouldReturnError_WhenFormatIsEmpty(t *testing.T) {
 	f := FormatValidation{Format: ""}
 	err := f.Validate()
-	assert.Equal(t, ErrFormatRequired, err)
+	assert.ErrorIs(t, err, ErrFormatRequired)
 }
 
-func TestFormatValidation_Validate_InvalidFormat(t *testing.T) {
-	f := FormatValidation{Format: "invalid"}
+func TestFormatValidation_ShouldReturnError_WhenFormatIsNotSupported(t *testing.T) {
+	f := FormatValidation{Format: "gif"}
 	err := f.Validate()
-	assert.Equal(t, ErrInvalidFormat, err)
+	assert.ErrorIs(t, err, ErrInvalidFormat)
 }
 
-func TestFormatValidation_Validate_Success(t *testing.T) {
-	f := FormatValidation{Format: "jpg"}
+func TestFormatValidation_ShouldSucceed_WhenFormatIsSupported(t *testing.T) {
+	f := FormatValidation{Format: "webp"}
 	err := f.Validate()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
