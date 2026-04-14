@@ -16,14 +16,14 @@ func (suite *FileSystemTestSuite) SetupTest() {
 	suite.path = "/mock/dir"
 }
 
-func (suite *FileSystemTestSuite) TestNewFileSystem() {
+func (suite *FileSystemTestSuite) TestNewFileSystem_ShouldReturnFileSystemWrapper() {
 	fs := NewFileSystem()
 	suite.NotNil(fs)
 	_, ok := fs.(*FileSystemWrapper)
 	suite.True(ok)
 }
 
-func (suite *FileSystemTestSuite) TestReadDir() {
+func (suite *FileSystemTestSuite) TestReadDir_ShouldReturnFiles_WhenDirectoryIsValid() {
 	files := []os.FileInfo{
 		FakeFileInfo{name: "image1.jpg", size: 1024, isDir: false},
 		FakeFileInfo{name: "image2.jpeg", size: 2048, isDir: false},
@@ -47,7 +47,7 @@ func (suite *FileSystemTestSuite) TestReadDir() {
 	suite.mockFile.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestReaddir_OpenError() {
+func (suite *FileSystemTestSuite) TestReadDir_ShouldReturnErrOpenDir_WhenOpenFails() {
 	suite.mockOS.On("Open", suite.path).Return(nil, errors.New("simulated open error"))
 
 	result, err := suite.fs.ReadDir(suite.path)
@@ -57,7 +57,7 @@ func (suite *FileSystemTestSuite) TestReaddir_OpenError() {
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestReaddir_ReadDirError() {
+func (suite *FileSystemTestSuite) TestReadDir_ShouldReturnErrReadDir_WhenReaddirFails() {
 	suite.mockOS.On("Open", suite.path).Return(suite.mockFile, nil)
 	suite.mockFile.On("Readdir", -1).Return(nil, errors.New("simulated readdir error"))
 	suite.mockFile.On("Close").Return(nil)
@@ -70,7 +70,7 @@ func (suite *FileSystemTestSuite) TestReaddir_ReadDirError() {
 	suite.mockFile.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateDirError() {
+func (suite *FileSystemTestSuite) TestCreateDir_ShouldReturnErrCreateDir_WhenMkdirAllFails() {
 	suite.mockOS.On("MkdirAll", suite.path, os.ModePerm).Return(errors.New("mock error"))
 
 	err := suite.fs.CreateDir(suite.path)
@@ -78,7 +78,7 @@ func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateDirError() {
 	suite.EqualError(err, expectedErr.Error())
 }
 
-func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateDir() {
+func (suite *FileSystemTestSuite) TestCreateDir_ShouldReturnNoError_WhenMkdirAllSucceeds() {
 	suite.mockOS.On("MkdirAll", suite.path, os.ModePerm).Return(nil)
 
 	err := suite.fs.CreateDir(suite.path)
@@ -86,7 +86,7 @@ func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateDir() {
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateSiblingDirError() {
+func (suite *FileSystemTestSuite) TestCreateSiblingDir_ShouldReturnErrCreateSiblingDir_WhenMkdirFails() {
 	expectedPath := suite.path + "-suffix"
 	expectedErr := &ErrCreateSiblingDir{Err: errors.New("mock error")}
 	suite.mockOS.On("Mkdir", expectedPath, os.ModePerm).Return(errors.New("mock error"))
@@ -97,7 +97,7 @@ func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateSiblingDirError() 
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateSiblingDir() {
+func (suite *FileSystemTestSuite) TestCreateSiblingDir_ShouldReturnNewPath_WhenMkdirSucceeds() {
 	expectedPath := suite.path + "-suffix"
 	suite.mockOS.On("Mkdir", expectedPath, os.ModePerm).Return(nil)
 
@@ -107,7 +107,7 @@ func (suite *FileSystemTestSuite) TestFileSystemWrapper_CreateSiblingDir() {
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestReadFileError() {
+func (suite *FileSystemTestSuite) TestReadFile_ShouldReturnErrReadFile_WhenReadFails() {
 	expectedErr := &ErrReadFile{Path: suite.path, Err: errors.New("mock error")}
 	suite.mockOS.On("ReadFile", suite.path).Return(nil, expectedErr.Err)
 
@@ -117,7 +117,7 @@ func (suite *FileSystemTestSuite) TestReadFileError() {
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestReadFile() {
+func (suite *FileSystemTestSuite) TestReadFile_ShouldReturnContent_WhenReadSucceeds() {
 	expectedData := []byte("file content")
 	suite.mockOS.On("ReadFile", suite.path).Return(expectedData, nil)
 
@@ -127,7 +127,7 @@ func (suite *FileSystemTestSuite) TestReadFile() {
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestOpenFileError() {
+func (suite *FileSystemTestSuite) TestOpenFile_ShouldReturnErrReadFile_WhenOpenFails() {
 	expectedErr := &ErrReadFile{Path: suite.path, Err: errors.New("mock error")}
 	suite.mockOS.On("Open", suite.path).Return(nil, expectedErr.Err)
 
@@ -137,7 +137,7 @@ func (suite *FileSystemTestSuite) TestOpenFileError() {
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestOpenFile() {
+func (suite *FileSystemTestSuite) TestOpenFile_ShouldReturnFile_WhenOpenSucceeds() {
 	suite.mockOS.On("Open", suite.path).Return(suite.mockFile, nil)
 
 	file, err := suite.fs.OpenFile(suite.path)
@@ -146,7 +146,7 @@ func (suite *FileSystemTestSuite) TestOpenFile() {
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestWriteFileError() {
+func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnErrWriteFile_WhenWriteFails() {
 	expectedErr := &ErrWriteFile{Path: suite.path, Err: errors.New("mock error")}
 	suite.mockOS.On("WriteFile", suite.path, []byte("data"), os.FileMode(0644)).Return(expectedErr.Err)
 
@@ -155,7 +155,7 @@ func (suite *FileSystemTestSuite) TestWriteFileError() {
 	suite.mockOS.AssertExpectations(suite.T())
 }
 
-func (suite *FileSystemTestSuite) TestWriteFile() {
+func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnNoError_WhenWriteSucceeds() {
 	data := []byte("data")
 	suite.mockOS.On("WriteFile", suite.path, data, os.FileMode(0644)).Return(nil)
 
