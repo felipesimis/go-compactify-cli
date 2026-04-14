@@ -108,6 +108,15 @@ func (suite *DryRunFileSystemTestSuite) TestCreateSiblingDir_ShouldReturnNewPath
 	suite.Equal("test/input-suffix", filepath.ToSlash(path))
 }
 
+func (suite *DryRunFileSystemTestSuite) TestWalk_IsDelegated() {
+	suite.mockFS.On("Walk", "test/root", mock.Anything).Return(nil)
+	err := suite.dryRunFs.Walk("test/root", func(path string, info FileInfo) error {
+		return nil
+	})
+	suite.NoError(err)
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
 func TestDryRunFileSystemTestSuite(t *testing.T) {
 	suite.Run(t, new(DryRunFileSystemTestSuite))
 }
