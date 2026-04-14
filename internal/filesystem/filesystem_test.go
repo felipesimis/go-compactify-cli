@@ -237,6 +237,33 @@ func (suite *FileSystemTestSuite) TestWalk_InfoError() {
 	localMockDir.AssertExpectations(suite.T())
 }
 
+func (suite *FileSystemTestSuite) TestWalk_Success() {
+	expectedPath := suite.path + "/image.jpg"
+	expectedSize := int64(1024)
+
+	suite.mockOS.On("Walk", suite.path, mock.Anything).
+		Return(nil).
+		Run(func(args mock.Arguments) {
+			walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+			suite.mockDir.On("IsDir").Return(false)
+			suite.mockDir.On("Name").Return("image.jpg")
+			suite.mockDir.On("Info").Return(FakeFileInfo{size: expectedSize}, nil)
+			_ = walkFn(expectedPath, suite.mockDir, nil)
+		})
+
+	var capturedInfo FileInfo
+	err := suite.fs.Walk(suite.path, func(path string, info FileInfo) error {
+		capturedInfo = info
+		return nil
+	})
+
+	suite.NoError(err)
+	suite.Equal(expectedPath, capturedInfo.Path)
+	suite.Equal(expectedSize, capturedInfo.Size)
+	suite.mockOS.AssertExpectations(suite.T())
+	suite.mockDir.AssertExpectations(suite.T())
+}
+
 func TestFileSystemTestSuite(t *testing.T) {
 	suite.Run(t, new(FileSystemTestSuite))
 }
