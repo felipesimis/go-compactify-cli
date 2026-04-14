@@ -15,6 +15,7 @@ type ProgressBarInterface interface {
 type FileProcessingParams struct {
 	File        filesystem.FileInfo
 	FS          FileReaderWriter
+	InputDir    string
 	OutputDir   string
 	ProgressBar ProgressBarInterface
 	ExtraParams interface{}
@@ -30,6 +31,7 @@ type FileReaderWriter interface {
 type ProcessFilesParams struct {
 	Files         []filesystem.FileInfo
 	FS            FileReaderWriter
+	InputDir      string
 	OutputDir     string
 	ProgressBar   ProgressBarInterface
 	ExtraParams   interface{}
@@ -58,6 +60,7 @@ func ProcessFiles(params ProcessFilesParams) []error {
 			err := params.ProcessorFunc(FileProcessingParams{
 				File:        file,
 				FS:          params.FS,
+				InputDir:    params.InputDir,
 				OutputDir:   params.OutputDir,
 				ProgressBar: params.ProgressBar,
 				ExtraParams: params.ExtraParams,

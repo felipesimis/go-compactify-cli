@@ -68,6 +68,7 @@ func RunOperation(config OperationConfig) error {
 	params := processing.ProcessFilesParams{
 		Files:         files,
 		FS:            config.FileSystem,
+		InputDir:      config.InputDir,
 		OutputDir:     finalOutputDir,
 		ProgressBar:   progressBar,
 		ExtraParams:   config.ExtraParams,
@@ -156,5 +157,10 @@ func determineOutputPath(params processing.FileProcessingParams) string {
 		return filepath.Join(params.OutputDir, newFilename)
 	}
 
-	return utils.BuildOutputPath(params.OutputDir, params.File.Path)
+	relativePath, err := filepath.Rel(params.InputDir, params.File.Path)
+	if err != nil {
+		relativePath = filepath.Base(params.File.Path)
+	}
+
+	return utils.BuildOutputPath(params.OutputDir, relativePath)
 }
