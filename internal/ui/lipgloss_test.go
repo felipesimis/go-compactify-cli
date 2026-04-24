@@ -5,43 +5,54 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestWarn(t *testing.T) {
-	tests := []struct {
-		name    string
-		message string
+type CalloutTestSuite struct {
+	suite.Suite
+}
+
+func (s *CalloutTestSuite) TestCallouts() {
+	components := []struct {
+		name   string
+		render func(string) string
+		icon   string
 	}{
-		{
-			name:    "should render warning with message",
-			message: "This is a warning",
-		},
-		{
-			name:    "should handle empty message",
-			message: "",
-		},
-		{
-			name:    "should handle message with leading and trailing spaces",
-			message: "  This is a warning with spaces   ",
-		},
+		{"Warn", Warn, "⚠️"},
+		{"Error", Error, "❌"},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := Warn(tt.message)
-			cleanResult := lipgloss.Sprint(result)
-
-			assert.Contains(t, cleanResult, "⚠️")
-			assert.Contains(t, cleanResult, tt.message)
-			assert.Contains(t, cleanResult, "┃")
-
-			iconIndex := strings.Index(cleanResult, "⚠️")
-			borderIndex := strings.Index(cleanResult, tt.message)
-
-			if tt.message != "" {
-				assert.True(t, iconIndex < borderIndex, "Icon should be before the message in the output")
-			}
-		})
+	scenarios := []struct {
+		name  string
+		input string
+	}{
+		{"should render callout with message", "This is a message"},
+		{"should handle empty message", ""},
+		{"should handle message with leading and trailing spaces", "  This is a message with spaces   "},
 	}
+
+	for _, comp := range components {
+		for _, sc := range scenarios {
+			testName := comp.name + "_" + sc.name
+			s.Run(testName, func() {
+				result := comp.render(sc.input)
+				cleanResult := lipgloss.Sprint(result)
+
+				s.Contains(cleanResult, comp.icon)
+				s.Contains(cleanResult, sc.input)
+				s.Contains(cleanResult, "┃")
+
+				iconIndex := strings.Index(cleanResult, comp.icon)
+				msgIndex := strings.Index(cleanResult, sc.input)
+
+				if sc.input != "" {
+					s.True(iconIndex < msgIndex, "Icon should be before the message in the output")
+				}
+			})
+		}
+	}
+}
+
+func TestCalloutTestSuite(t *testing.T) {
+	suite.Run(t, new(CalloutTestSuite))
 }
