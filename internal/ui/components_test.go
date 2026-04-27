@@ -74,6 +74,16 @@ func (s *PanelTestSuite) TestRenderPanel_ShouldIncludeAllText_WhenProvidedWithVa
 	s.Contains(cleanResult, "Value")
 }
 
+func (s *PanelTestSuite) TestRenderPanel_ShouldHighlightValue_WhenItemIsHighlighted() {
+	panel := Panel{
+		Title: "Test Title",
+		Items: []Item{{"Label", "Value", true}},
+	}
+
+	rawResult := RenderPanel(panel)
+	s.Contains(rawResult, styleHero.Render("Value"), "Highlighted value should be rendered with hero style")
+}
+
 func TestPanelTestSuite(t *testing.T) {
 	suite.Run(t, new(PanelTestSuite))
 }
