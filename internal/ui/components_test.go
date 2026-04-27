@@ -162,6 +162,24 @@ func (s *DashboardTestSuite) TestRenderDashboard_ShouldRenderFooter_WhenFooterTi
 	s.Contains(cleanResult, footerLine, "Footer line should be present in the output")
 }
 
+func (s *DashboardTestSuite) TestRenderDashboard_ShouldApplyFooterStyles_WhenFooterIsProvided() {
+	left := Panel{Title: "L"}
+	right := Panel{Title: "R"}
+	footerTitle := "Footer Title"
+	footerLine := "Footer Line"
+
+	rawResult := RenderDashboard(left, right, footerTitle, footerLine)
+	cleanResult := lipgloss.Sprint(rawResult)
+
+	s.Contains(cleanResult, "─", "Footer should contain a horizontal divider line")
+
+	expectedTitle := styleFooterTitle.Render(footerTitle)
+	s.Contains(rawResult, strings.TrimSpace(expectedTitle), "Footer title should have correct ANSI styles")
+
+	s.Contains(cleanResult, footerTitle, "Footer title should be present in the output")
+	s.Contains(cleanResult, footerLine, "Footer line should be present in the output")
+}
+
 func TestDashboardTestSuite(t *testing.T) {
 	suite.Run(t, new(DashboardTestSuite))
 }
