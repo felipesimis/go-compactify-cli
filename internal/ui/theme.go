@@ -29,6 +29,10 @@ var (
 	styleValue = lipgloss.NewStyle().Foreground(colorWhiteText).Bold(true)
 	styleHero  = lipgloss.NewStyle().Foreground(colorAccent).Bold(true)
 
+	styleDivider     = lipgloss.NewStyle().Foreground(colorSubtle)
+	styleFooterTitle = styleTitle.MarginTop(1)
+	styleFooterLine  = lipgloss.NewStyle().Foreground(colorDimText)
+
 	styleBox = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(colorSubtle).
