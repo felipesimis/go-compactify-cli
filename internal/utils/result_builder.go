@@ -2,8 +2,9 @@ package utils
 
 import (
 	"fmt"
-	"strings"
 	"time"
+
+	"github.com/felipesimis/compactify-cli/internal/ui"
 )
 
 const (
@@ -114,41 +115,30 @@ func (rb *ResultBuilder) Build() *Result {
 }
 
 func (r *Result) PrintResults(key string) string {
-	const (
-		Reset  = "\033[0m"
-		Red    = "\033[1;31m"
-		Green  = "\033[1;32m"
-		Yellow = "\033[1;33m"
-		Cyan   = "\033[1;36m"
-		Bold   = "\033[1m"
-	)
-
-	var result strings.Builder
-	fmt.Fprintf(&result, "\n%s============================================================%s\n", Bold, Reset)
-	fmt.Fprintf(&result, "⏱️  Elapsed time: %s\n", r.elapsedTime)
-	fmt.Fprintf(&result, "📁 Output directory: %s\n", r.outputDirectory)
-	fmt.Fprintf(&result, "🖼️  Total images: %d\n", r.totalImages)
-
-	if r.skippedImages > 0 {
-		fmt.Fprintf(&result, "%s⏭️  Skipped images: %d%s\n", Yellow, r.skippedImages, Reset)
-	} else {
-		fmt.Fprintf(&result, "⏭️  Skipped images: %d\n", r.skippedImages)
+	left := ui.Panel{
+		Title: "OPERATION",
+		Items: []ui.Item{
+			{Label: "Elapsed time", Value: r.elapsedTime.Round(time.Millisecond).String(), IsHighlighted: false},
+			{Label: "Total", Value: fmt.Sprintf("%d images", r.totalImages), IsHighlighted: false},
+			{Label: "Skipped", Value: fmt.Sprintf("%d", r.skippedImages), IsHighlighted: false},
+			{Label: "Processed", Value: fmt.Sprintf("%d", r.processedImages), IsHighlighted: false},
+		},
 	}
 
-	processedLabel := strings.ToUpper(string(key[0])) + key[1:]
-	fmt.Fprintf(&result, "%s✅ %s: %d%s\n", Green, processedLabel, r.processedImages, Reset)
-	fmt.Fprintf(&result, "\n📦 Initial size: %.2f MB\n", float64(r.originalBytes)/bytesInMb)
-	fmt.Fprintf(&result, "📦 Final size: %.2f MB\n", float64(r.processedBytes)/bytesInMb)
-	fmt.Fprintf(&result, "%s💾 Size difference: %.2f MB%s\n", Cyan, float64(r.savedBytes)/bytesInMb, Reset)
-	fmt.Fprintf(&result, "%s📉 Size difference percentage: %.2f%%%s\n", Cyan, r.reductionRatio, Reset)
-
-	if len(r.errors) > 0 {
-		fmt.Fprintf(&result, "\n%s⚠️  Errors found during processing:%s\n", Red, Reset)
-		for _, err := range r.errors {
-			fmt.Fprintf(&result, "%s  ❌ %v%s\n", Red, err, Reset)
-		}
+	toMB := func(b int64) float64 { return float64(b) / 1024 / 1024 }
+	right := ui.Panel{
+		Title: "IMPACT",
+		Items: []ui.Item{
+			{Label: "Original", Value: fmt.Sprintf("%.2f MB", toMB(r.originalBytes)), IsHighlighted: false},
+			{Label: "After", Value: fmt.Sprintf("%.2f MB", toMB(r.processedBytes)), IsHighlighted: false},
+			{Label: "", Value: ""},
+			{Label: "Saved", Value: fmt.Sprintf("%.2f MB", toMB(r.savedBytes)), IsHighlighted: true},
+			{Label: "Reduction", Value: fmt.Sprintf("%.2f%%", r.reductionRatio), IsHighlighted: true},
+		},
 	}
-	fmt.Fprintf(&result, "%s============================================================%s", Bold, Reset)
 
-	return result.String()
+	dashboard := ui.RenderDashboard(left, right, "OUTPUT DIRECTORY", fmt.Sprintf("📂 %s", r.outputDirectory))
+	errors := ui.RenderErrorList(r.errors)
+
+	return "\n" + dashboard + errors + "\n"
 }

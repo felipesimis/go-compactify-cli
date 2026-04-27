@@ -111,58 +111,36 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldPrintFormattedResul
 		processedImages uint32
 		errors          []error
 		expected        []string
+		notExpected     []string
 	}{
 		{
 			name:            "without errors",
-			skippedImages:   3,
-			processedImages: 7,
+			skippedImages:   0,
+			processedImages: 10,
 			errors:          nil,
 			expected: []string{
-				"Elapsed time: 1s",
-				"Total images: 10",
-				"Skipped images: 3",
-				"Resized: 7",
-				"Initial size: 10.00 MB",
-				"Final size: 5.00 MB",
-				"Size difference: 5.00 MB",
-				"Size difference percentage: 50.00%",
-				"Output directory: output",
+				"OPERATION", "IMPACT", "OUTPUT DIRECTORY",
+				"10 images", "0", "10",
+				"10.00 MB", "5.00 MB", "50.00%",
+				"output",
+			},
+			notExpected: []string{
+				"ERRORS DETECTED",
 			},
 		},
 		{
 			name:            "with errors",
 			skippedImages:   3,
 			processedImages: 7,
-			errors:          []error{fmt.Errorf("file 'fake.jpg': read error")},
-			expected: []string{
-				"Elapsed time: 1s",
-				"Total images: 10",
-				"Skipped images: 3",
-				"Resized: 7",
-				"Initial size: 10.00 MB",
-				"Final size: 5.00 MB",
-				"Size difference: 5.00 MB",
-				"Size difference percentage: 50.00%",
-				"Output directory: output",
-				"Errors found during processing:",
-				"  ❌ file 'fake.jpg': read error",
+			errors: []error{
+				fmt.Errorf("file 'fake.jpg': read error"),
+				fmt.Errorf("permission denied"),
 			},
-		},
-		{
-			name:            "without skipped images",
-			skippedImages:   0,
-			processedImages: 10,
-			errors:          nil,
 			expected: []string{
-				"Elapsed time: 1s",
-				"Total images: 10",
-				"⏭️  Skipped images: 0",
-				"Resized: 10",
-				"Initial size: 10.00 MB",
-				"Final size: 5.00 MB",
-				"Size difference: 5.00 MB",
-				"Size difference percentage: 50.00%",
-				"Output directory: output",
+				"2 ERRORS DETECTED",
+				"fake.jpg",
+				"read error",
+				"permission denied",
 			},
 		},
 	}
@@ -185,6 +163,9 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldPrintFormattedResul
 
 			for _, expectedText := range tt.expected {
 				suite.Contains(printedResult, expectedText)
+			}
+			for _, notExpectedText := range tt.notExpected {
+				suite.NotContains(printedResult, notExpectedText)
 			}
 			suite.mockTimeProvider.AssertExpectations(suite.T())
 		})
