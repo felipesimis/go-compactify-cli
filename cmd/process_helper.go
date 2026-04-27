@@ -170,14 +170,24 @@ func determineOutputPath(params processing.FileProcessingParams) string {
 }
 
 func RenderProcessSummary(r *utils.Result) string {
+	items := []ui.Item{
+		{Label: "Time", Value: r.ElapsedTime.Round(time.Millisecond).String()},
+		{Label: "Total", Value: fmt.Sprintf("%d images", r.TotalImages)},
+	}
+
+	if r.SkippedImages > 0 {
+		items = append(items, ui.Item{
+			Label: "Skipped",
+			Value: fmt.Sprintf("%d", r.SkippedImages),
+		})
+	}
+
 	left := ui.Panel{
 		Title: "OPERATION",
-		Items: []ui.Item{
-			{Label: "Time", Value: r.ElapsedTime.Round(time.Millisecond).String(), IsHighlighted: false},
-			{Label: "Total", Value: fmt.Sprintf("%d images", r.TotalImages), IsHighlighted: false},
-			{Label: "Skipped", Value: fmt.Sprintf("%d", r.SkippedImages), IsHighlighted: false},
-			{Label: "Processed", Value: fmt.Sprintf("%d", r.ProcessedImages), IsHighlighted: false},
-		},
+		Items: append(items, ui.Item{
+			Label: "Processed",
+			Value: fmt.Sprintf("%d", r.ProcessedImages),
+		}),
 	}
 
 	toMB := func(b int64) float64 { return float64(b) / bytesInMb }

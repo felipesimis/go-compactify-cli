@@ -80,7 +80,7 @@ func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.
 		notExpected     []string
 	}{
 		{
-			name:            "without errors",
+			name:            "ShouldHideSkippedRow_WhenSkippedImagesIsZero",
 			skippedImages:   0,
 			processedImages: 10,
 			errors:          nil,
@@ -92,10 +92,11 @@ func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.
 			},
 			notExpected: []string{
 				"ERRORS DETECTED",
+				"Skipped",
 			},
 		},
 		{
-			name:            "with errors",
+			name:            "ShouldRenderErrorInfo_WhenErrorsArePresent",
 			skippedImages:   3,
 			processedImages: 7,
 			errors: []error{
@@ -107,6 +108,18 @@ func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.
 				"fake.jpg",
 				"read error",
 				"permission denied",
+			},
+		},
+		{
+			name:            "ShouldShowSkippedRow_WhenSkippedImagesIsGreaterThanZero",
+			skippedImages:   2,
+			processedImages: 5,
+			errors:          nil,
+			expected: []string{
+				"OPERATION",
+				"Skipped",
+				"2",
+				"5",
 			},
 		},
 	}
