@@ -58,14 +58,14 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreProcessedImage
 	suite.Equal(5, int(suite.rb.result.processedImages))
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreInitialSize() {
-	suite.rb.SetInitialSize(100)
-	suite.Equal(100.0, suite.rb.result.initialSize)
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreOriginalBytes() {
+	suite.rb.SetOriginalBytes(100)
+	suite.Equal(int64(100), suite.rb.result.originalBytes)
 }
 
-func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreFinalSize() {
-	suite.rb.SetFinalSize(50)
-	suite.Equal(50.0, suite.rb.result.finalSize)
+func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreProcessedBytes() {
+	suite.rb.SetProcessedBytes(50)
+	suite.Equal(int64(50), suite.rb.result.processedBytes)
 }
 
 func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreOutputDirectory() {
@@ -81,8 +81,8 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreErrors() {
 
 func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldBuildCorrectResult() {
 	suite.rb.
-		SetInitialSize(10485760). // 10 MB
-		SetFinalSize(5242880).    // 5 MB
+		SetOriginalBytes(10485760). // 10 MB
+		SetProcessedBytes(5242880). // 5 MB
 		SetTotalImages(10).
 		SetSkippedImages(3).
 		SetProcessedImages(7).
@@ -92,13 +92,13 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldBuildCorrectResult(
 	result := suite.rb.Build()
 
 	suite.Equal(time.Second, result.elapsedTime)
-	suite.Equal(10.0, result.initialSize)
-	suite.Equal(5.0, result.finalSize)
-	suite.Equal(-5.0, result.sizeDifference)
-	suite.Equal(10, int(result.totalImages))
-	suite.Equal(3, int(result.skippedImages))
-	suite.Equal(7, int(result.processedImages))
-	suite.Equal(50.0, result.sizeDifferencePercentage)
+	suite.Equal(int64(10485760), result.originalBytes)
+	suite.Equal(int64(5242880), result.processedBytes)
+	suite.Equal(int64(5242880), result.savedBytes)
+	suite.Equal(uint32(10), result.totalImages)
+	suite.Equal(uint32(3), result.skippedImages)
+	suite.Equal(uint32(7), result.processedImages)
+	suite.Equal(50.0, result.reductionRatio)
 	suite.Equal("output", result.outputDirectory)
 	suite.Equal([]error{assert.AnError}, result.errors)
 	suite.mockTimeProvider.AssertExpectations(suite.T())
@@ -124,7 +124,7 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldPrintFormattedResul
 				"Resized: 7",
 				"Initial size: 10.00 MB",
 				"Final size: 5.00 MB",
-				"Size difference: -5.00 MB",
+				"Size difference: 5.00 MB",
 				"Size difference percentage: 50.00%",
 				"Output directory: output",
 			},
@@ -141,7 +141,7 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldPrintFormattedResul
 				"Resized: 7",
 				"Initial size: 10.00 MB",
 				"Final size: 5.00 MB",
-				"Size difference: -5.00 MB",
+				"Size difference: 5.00 MB",
 				"Size difference percentage: 50.00%",
 				"Output directory: output",
 				"Errors found during processing:",
@@ -160,7 +160,7 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldPrintFormattedResul
 				"Resized: 10",
 				"Initial size: 10.00 MB",
 				"Final size: 5.00 MB",
-				"Size difference: -5.00 MB",
+				"Size difference: 5.00 MB",
 				"Size difference percentage: 50.00%",
 				"Output directory: output",
 			},
@@ -170,8 +170,8 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldPrintFormattedResul
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			suite.rb.
-				SetInitialSize(10485760). // 10 MB
-				SetFinalSize(5242880).    // 5 MB
+				SetOriginalBytes(10485760). // 10 MB
+				SetProcessedBytes(5242880). // 5 MB
 				SetTotalImages(10).
 				SetSkippedImages(tt.skippedImages).
 				SetProcessedImages(tt.processedImages).

@@ -26,17 +26,17 @@ func (RealTimeProvider) Since(t time.Time) time.Duration {
 }
 
 type Result struct {
-	startTime                time.Time
-	elapsedTime              time.Duration
-	totalImages              uint32
-	skippedImages            uint32
-	processedImages          uint32
-	initialSize              float64
-	finalSize                float64
-	sizeDifference           float64
-	sizeDifferencePercentage float64
-	outputDirectory          string
-	errors                   []error
+	startTime       time.Time
+	elapsedTime     time.Duration
+	totalImages     uint32
+	skippedImages   uint32
+	processedImages uint32
+	originalBytes   int64
+	processedBytes  int64
+	savedBytes      int64
+	reductionRatio  float64
+	outputDirectory string
+	errors          []error
 }
 
 type ResultBuilder struct {
@@ -68,13 +68,13 @@ func (rb *ResultBuilder) SetProcessedImages(resized uint32) *ResultBuilder {
 	return rb
 }
 
-func (rb *ResultBuilder) SetInitialSize(size float64) *ResultBuilder {
-	rb.result.initialSize = size
+func (rb *ResultBuilder) SetOriginalBytes(size uint64) *ResultBuilder {
+	rb.result.originalBytes = int64(size)
 	return rb
 }
 
-func (rb *ResultBuilder) SetFinalSize(size float64) *ResultBuilder {
-	rb.result.finalSize = size
+func (rb *ResultBuilder) SetProcessedBytes(size uint64) *ResultBuilder {
+	rb.result.processedBytes = int64(size)
 	return rb
 }
 
@@ -90,26 +90,26 @@ func (rb *ResultBuilder) SetErrors(errs []error) *ResultBuilder {
 
 func (rb *ResultBuilder) Build() *Result {
 	elapsedTime := rb.timeProvider.Since(rb.result.startTime)
-	initialSizeMB := rb.result.initialSize / bytesInMb
-	finalSizeMB := rb.result.finalSize / bytesInMb
-	sizeDifferenceMB := initialSizeMB - finalSizeMB
-	sizeDifferencePercentage := (sizeDifferenceMB / initialSizeMB) * 100
+	originalBytes := rb.result.originalBytes
+	processedBytes := rb.result.processedBytes
+	savedBytes := originalBytes - processedBytes
+	var reductionRatio float64
 
-	if finalSizeMB < initialSizeMB {
-		sizeDifferenceMB = -sizeDifferenceMB
+	if originalBytes > 0 {
+		reductionRatio = (float64(savedBytes) / float64(originalBytes)) * 100
 	}
 
 	return &Result{
-		elapsedTime:              elapsedTime,
-		totalImages:              rb.result.totalImages,
-		skippedImages:            rb.result.skippedImages,
-		processedImages:          rb.result.processedImages,
-		initialSize:              initialSizeMB,
-		finalSize:                finalSizeMB,
-		sizeDifference:           sizeDifferenceMB,
-		sizeDifferencePercentage: sizeDifferencePercentage,
-		outputDirectory:          rb.result.outputDirectory,
-		errors:                   rb.result.errors,
+		elapsedTime:     elapsedTime,
+		totalImages:     rb.result.totalImages,
+		skippedImages:   rb.result.skippedImages,
+		processedImages: rb.result.processedImages,
+		originalBytes:   originalBytes,
+		processedBytes:  processedBytes,
+		savedBytes:      savedBytes,
+		reductionRatio:  reductionRatio,
+		outputDirectory: rb.result.outputDirectory,
+		errors:          rb.result.errors,
 	}
 }
 
@@ -137,10 +137,10 @@ func (r *Result) PrintResults(key string) string {
 
 	processedLabel := strings.ToUpper(string(key[0])) + key[1:]
 	fmt.Fprintf(&result, "%s✅ %s: %d%s\n", Green, processedLabel, r.processedImages, Reset)
-	fmt.Fprintf(&result, "\n📦 Initial size: %.2f MB\n", r.initialSize)
-	fmt.Fprintf(&result, "📦 Final size: %.2f MB\n", r.finalSize)
-	fmt.Fprintf(&result, "%s💾 Size difference: %.2f MB%s\n", Cyan, r.sizeDifference, Reset)
-	fmt.Fprintf(&result, "%s📉 Size difference percentage: %.2f%%%s\n", Cyan, r.sizeDifferencePercentage, Reset)
+	fmt.Fprintf(&result, "\n📦 Initial size: %.2f MB\n", float64(r.originalBytes)/bytesInMb)
+	fmt.Fprintf(&result, "📦 Final size: %.2f MB\n", float64(r.processedBytes)/bytesInMb)
+	fmt.Fprintf(&result, "%s💾 Size difference: %.2f MB%s\n", Cyan, float64(r.savedBytes)/bytesInMb, Reset)
+	fmt.Fprintf(&result, "%s📉 Size difference percentage: %.2f%%%s\n", Cyan, r.reductionRatio, Reset)
 
 	if len(r.errors) > 0 {
 		fmt.Fprintf(&result, "\n%s⚠️  Errors found during processing:%s\n", Red, Reset)

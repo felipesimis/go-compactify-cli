@@ -12,6 +12,7 @@ import (
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/processing"
+	"github.com/felipesimis/compactify-cli/internal/ui"
 	"github.com/felipesimis/compactify-cli/internal/utils"
 	"github.com/felipesimis/compactify-cli/pkg/progress"
 )
@@ -37,10 +38,8 @@ type OperationConfig struct {
 func RunOperation(config OperationConfig) error {
 	if dryRun {
 		config.FileSystem = filesystem.NewDryRunFileSystem(config.FileSystem)
-		fmt.Println("\n\033[1;33m============================================================\033[0m")
-		fmt.Println("\033[1;33m⚠️  DRY-RUN MODE: No files will be modified or created on disk.\033[0m")
-		fmt.Println("\033[1;33m============================================================\033[0m")
-		fmt.Println()
+
+		fmt.Println(ui.Warn("DRY-RUN MODE: No files will be modified or created on disk."))
 	}
 
 	files, err := config.FileSystem.ReadDir(config.InputDir)
@@ -81,8 +80,8 @@ func RunOperation(config OperationConfig) error {
 		SetSkippedImages(stats.SkippedImages.Load()).
 		SetProcessedImages(stats.ProcessedImages.Load()).
 		SetOutputDirectory(finalOutputDir).
-		SetInitialSize(float64(stats.InitialSize.Load())).
-		SetFinalSize(float64(stats.FinalSize.Load())).
+		SetOriginalBytes(stats.InitialSize.Load()).
+		SetProcessedBytes(stats.FinalSize.Load()).
 		SetErrors(processErrors)
 	result := resultBuilder.Build()
 	fmt.Println(result.PrintResults(config.ResultVerb))
