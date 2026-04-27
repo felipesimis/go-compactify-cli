@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/processing"
 	"github.com/felipesimis/compactify-cli/internal/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkHandleImageProcessing(b *testing.B) {
@@ -66,4 +68,72 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 			}
 		}
 	})
+}
+
+func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.T) {
+	tests := []struct {
+		name            string
+		skippedImages   uint32
+		processedImages uint32
+		errors          []error
+		expected        []string
+		notExpected     []string
+	}{
+		{
+			name:            "without errors",
+			skippedImages:   0,
+			processedImages: 10,
+			errors:          nil,
+			expected: []string{
+				"OPERATION", "IMPACT", "OUTPUT DIRECTORY",
+				"10 images", "0", "10",
+				"10.00 MB", "5.00 MB", "50.00%",
+				"output",
+			},
+			notExpected: []string{
+				"ERRORS DETECTED",
+			},
+		},
+		{
+			name:            "with errors",
+			skippedImages:   3,
+			processedImages: 7,
+			errors: []error{
+				fmt.Errorf("file 'fake.jpg': read error"),
+				fmt.Errorf("permission denied"),
+			},
+			expected: []string{
+				"2 ERRORS DETECTED",
+				"fake.jpg",
+				"read error",
+				"permission denied",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rb := utils.NewResultBuilder(utils.RealTimeProvider{})
+			rb.
+				SetOriginalBytes(10485760). // 10 MB
+				SetProcessedBytes(5242880). // 5 MB
+				SetTotalImages(10).
+				SetSkippedImages(tt.skippedImages).
+				SetProcessedImages(tt.processedImages).
+				SetOutputDirectory("output")
+
+			if tt.errors != nil {
+				rb.SetErrors(tt.errors)
+			}
+			result := rb.Build()
+			printedResult := RenderProcessSummary(result)
+
+			for _, expectedText := range tt.expected {
+				assert.Contains(t, printedResult, expectedText)
+			}
+			for _, notExpectedText := range tt.notExpected {
+				assert.NotContains(t, printedResult, notExpectedText)
+			}
+		})
+	}
 }

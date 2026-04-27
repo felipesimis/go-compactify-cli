@@ -1,14 +1,7 @@
 package utils
 
 import (
-	"fmt"
 	"time"
-
-	"github.com/felipesimis/compactify-cli/internal/ui"
-)
-
-const (
-	bytesInMb = 1024 * 1024
 )
 
 type TimeProvider interface {
@@ -27,17 +20,17 @@ func (RealTimeProvider) Since(t time.Time) time.Duration {
 }
 
 type Result struct {
-	startTime       time.Time
-	elapsedTime     time.Duration
-	totalImages     uint32
-	skippedImages   uint32
-	processedImages uint32
-	originalBytes   int64
-	processedBytes  int64
-	savedBytes      int64
-	reductionRatio  float64
-	outputDirectory string
-	errors          []error
+	StartTime       time.Time
+	ElapsedTime     time.Duration
+	TotalImages     uint32
+	SkippedImages   uint32
+	ProcessedImages uint32
+	OriginalBytes   int64
+	ProcessedBytes  int64
+	SavedBytes      int64
+	ReductionRatio  float64
+	OutputDirectory string
+	Errors          []error
 }
 
 type ResultBuilder struct {
@@ -48,51 +41,51 @@ type ResultBuilder struct {
 func NewResultBuilder(tp TimeProvider) *ResultBuilder {
 	return &ResultBuilder{
 		result: &Result{
-			startTime: tp.Now(),
+			StartTime: tp.Now(),
 		},
 		timeProvider: tp,
 	}
 }
 
 func (rb *ResultBuilder) SetTotalImages(total uint32) *ResultBuilder {
-	rb.result.totalImages = total
+	rb.result.TotalImages = total
 	return rb
 }
 
 func (rb *ResultBuilder) SetSkippedImages(skipped uint32) *ResultBuilder {
-	rb.result.skippedImages = skipped
+	rb.result.SkippedImages = skipped
 	return rb
 }
 
 func (rb *ResultBuilder) SetProcessedImages(resized uint32) *ResultBuilder {
-	rb.result.processedImages = resized
+	rb.result.ProcessedImages = resized
 	return rb
 }
 
 func (rb *ResultBuilder) SetOriginalBytes(size uint64) *ResultBuilder {
-	rb.result.originalBytes = int64(size)
+	rb.result.OriginalBytes = int64(size)
 	return rb
 }
 
 func (rb *ResultBuilder) SetProcessedBytes(size uint64) *ResultBuilder {
-	rb.result.processedBytes = int64(size)
+	rb.result.ProcessedBytes = int64(size)
 	return rb
 }
 
 func (rb *ResultBuilder) SetOutputDirectory(directory string) *ResultBuilder {
-	rb.result.outputDirectory = directory
+	rb.result.OutputDirectory = directory
 	return rb
 }
 
 func (rb *ResultBuilder) SetErrors(errs []error) *ResultBuilder {
-	rb.result.errors = errs
+	rb.result.Errors = errs
 	return rb
 }
 
 func (rb *ResultBuilder) Build() *Result {
-	elapsedTime := rb.timeProvider.Since(rb.result.startTime)
-	originalBytes := rb.result.originalBytes
-	processedBytes := rb.result.processedBytes
+	elapsedTime := rb.timeProvider.Since(rb.result.StartTime)
+	originalBytes := rb.result.OriginalBytes
+	processedBytes := rb.result.ProcessedBytes
 	savedBytes := originalBytes - processedBytes
 	var reductionRatio float64
 
@@ -101,44 +94,15 @@ func (rb *ResultBuilder) Build() *Result {
 	}
 
 	return &Result{
-		elapsedTime:     elapsedTime,
-		totalImages:     rb.result.totalImages,
-		skippedImages:   rb.result.skippedImages,
-		processedImages: rb.result.processedImages,
-		originalBytes:   originalBytes,
-		processedBytes:  processedBytes,
-		savedBytes:      savedBytes,
-		reductionRatio:  reductionRatio,
-		outputDirectory: rb.result.outputDirectory,
-		errors:          rb.result.errors,
+		ElapsedTime:     elapsedTime,
+		TotalImages:     rb.result.TotalImages,
+		SkippedImages:   rb.result.SkippedImages,
+		ProcessedImages: rb.result.ProcessedImages,
+		OriginalBytes:   originalBytes,
+		ProcessedBytes:  processedBytes,
+		SavedBytes:      savedBytes,
+		ReductionRatio:  reductionRatio,
+		OutputDirectory: rb.result.OutputDirectory,
+		Errors:          rb.result.Errors,
 	}
-}
-
-func (r *Result) PrintResults(key string) string {
-	left := ui.Panel{
-		Title: "OPERATION",
-		Items: []ui.Item{
-			{Label: "Elapsed time", Value: r.elapsedTime.Round(time.Millisecond).String(), IsHighlighted: false},
-			{Label: "Total", Value: fmt.Sprintf("%d images", r.totalImages), IsHighlighted: false},
-			{Label: "Skipped", Value: fmt.Sprintf("%d", r.skippedImages), IsHighlighted: false},
-			{Label: "Processed", Value: fmt.Sprintf("%d", r.processedImages), IsHighlighted: false},
-		},
-	}
-
-	toMB := func(b int64) float64 { return float64(b) / 1024 / 1024 }
-	right := ui.Panel{
-		Title: "IMPACT",
-		Items: []ui.Item{
-			{Label: "Original", Value: fmt.Sprintf("%.2f MB", toMB(r.originalBytes)), IsHighlighted: false},
-			{Label: "After", Value: fmt.Sprintf("%.2f MB", toMB(r.processedBytes)), IsHighlighted: false},
-			{Label: "", Value: ""},
-			{Label: "Saved", Value: fmt.Sprintf("%.2f MB", toMB(r.savedBytes)), IsHighlighted: true},
-			{Label: "Reduction", Value: fmt.Sprintf("%.2f%%", r.reductionRatio), IsHighlighted: true},
-		},
-	}
-
-	dashboard := ui.RenderDashboard(left, right, "OUTPUT DIRECTORY", fmt.Sprintf("📂 %s", r.outputDirectory))
-	errors := ui.RenderErrorList(r.errors)
-
-	return "\n" + dashboard + errors + "\n"
 }

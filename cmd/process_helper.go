@@ -9,12 +9,17 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/felipesimis/compactify-cli/internal/filesystem"
 	"github.com/felipesimis/compactify-cli/internal/processing"
 	"github.com/felipesimis/compactify-cli/internal/ui"
 	"github.com/felipesimis/compactify-cli/internal/utils"
 	"github.com/felipesimis/compactify-cli/pkg/progress"
+)
+
+const (
+	bytesInMb = 1024 * 1024
 )
 
 var bufferPool = sync.Pool{
@@ -84,7 +89,7 @@ func RunOperation(config OperationConfig) error {
 		SetProcessedBytes(stats.FinalSize.Load()).
 		SetErrors(processErrors)
 	result := resultBuilder.Build()
-	fmt.Println(result.PrintResults(config.ResultVerb))
+	fmt.Println(RenderProcessSummary(result))
 
 	return nil
 }
@@ -162,4 +167,33 @@ func determineOutputPath(params processing.FileProcessingParams) string {
 	}
 
 	return utils.BuildOutputPath(params.OutputDir, relativePath)
+}
+
+func RenderProcessSummary(r *utils.Result) string {
+	left := ui.Panel{
+		Title: "OPERATION",
+		Items: []ui.Item{
+			{Label: "Time", Value: r.ElapsedTime.Round(time.Millisecond).String(), IsHighlighted: false},
+			{Label: "Total", Value: fmt.Sprintf("%d images", r.TotalImages), IsHighlighted: false},
+			{Label: "Skipped", Value: fmt.Sprintf("%d", r.SkippedImages), IsHighlighted: false},
+			{Label: "Processed", Value: fmt.Sprintf("%d", r.ProcessedImages), IsHighlighted: false},
+		},
+	}
+
+	toMB := func(b int64) float64 { return float64(b) / bytesInMb }
+	right := ui.Panel{
+		Title: "IMPACT",
+		Items: []ui.Item{
+			{Label: "Original", Value: fmt.Sprintf("%.2f MB", toMB(r.OriginalBytes)), IsHighlighted: false},
+			{Label: "After", Value: fmt.Sprintf("%.2f MB", toMB(r.ProcessedBytes)), IsHighlighted: false},
+			{Label: "", Value: ""},
+			{Label: "Saved", Value: fmt.Sprintf("%.2f MB", toMB(r.SavedBytes)), IsHighlighted: true},
+			{Label: "Reduction", Value: fmt.Sprintf("%.2f%%", r.ReductionRatio), IsHighlighted: true},
+		},
+	}
+
+	dashboard := ui.RenderDashboard(left, right, "OUTPUT DIRECTORY", fmt.Sprintf("📂 %s", r.OutputDirectory))
+	errors := ui.RenderErrorList(r.Errors)
+
+	return "\n" + dashboard + errors + "\n"
 }

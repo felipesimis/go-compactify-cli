@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -45,38 +44,38 @@ func (suite *ResultBuilderTestSuite) SetupTest() {
 
 func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreTotalImages() {
 	suite.rb.SetTotalImages(10)
-	suite.Equal(10, int(suite.rb.result.totalImages))
+	suite.Equal(10, int(suite.rb.result.TotalImages))
 }
 
 func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreSkippedImages() {
 	suite.rb.SetSkippedImages(5)
-	suite.Equal(5, int(suite.rb.result.skippedImages))
+	suite.Equal(5, int(suite.rb.result.SkippedImages))
 }
 
 func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreProcessedImages() {
 	suite.rb.SetProcessedImages(5)
-	suite.Equal(5, int(suite.rb.result.processedImages))
+	suite.Equal(5, int(suite.rb.result.ProcessedImages))
 }
 
 func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreOriginalBytes() {
 	suite.rb.SetOriginalBytes(100)
-	suite.Equal(int64(100), suite.rb.result.originalBytes)
+	suite.Equal(int64(100), suite.rb.result.OriginalBytes)
 }
 
 func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreProcessedBytes() {
 	suite.rb.SetProcessedBytes(50)
-	suite.Equal(int64(50), suite.rb.result.processedBytes)
+	suite.Equal(int64(50), suite.rb.result.ProcessedBytes)
 }
 
 func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreOutputDirectory() {
 	suite.rb.SetOutputDirectory("output")
-	suite.Equal("output", suite.rb.result.outputDirectory)
+	suite.Equal("output", suite.rb.result.OutputDirectory)
 }
 
 func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldStoreErrors() {
 	errors := []error{assert.AnError, assert.AnError}
 	suite.rb.SetErrors(errors)
-	suite.Equal(errors, suite.rb.result.errors)
+	suite.Equal(errors, suite.rb.result.Errors)
 }
 
 func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldBuildCorrectResult() {
@@ -91,85 +90,17 @@ func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldBuildCorrectResult(
 
 	result := suite.rb.Build()
 
-	suite.Equal(time.Second, result.elapsedTime)
-	suite.Equal(int64(10485760), result.originalBytes)
-	suite.Equal(int64(5242880), result.processedBytes)
-	suite.Equal(int64(5242880), result.savedBytes)
-	suite.Equal(uint32(10), result.totalImages)
-	suite.Equal(uint32(3), result.skippedImages)
-	suite.Equal(uint32(7), result.processedImages)
-	suite.Equal(50.0, result.reductionRatio)
-	suite.Equal("output", result.outputDirectory)
-	suite.Equal([]error{assert.AnError}, result.errors)
+	suite.Equal(time.Second, result.ElapsedTime)
+	suite.Equal(int64(10485760), result.OriginalBytes)
+	suite.Equal(int64(5242880), result.ProcessedBytes)
+	suite.Equal(int64(5242880), result.SavedBytes)
+	suite.Equal(uint32(10), result.TotalImages)
+	suite.Equal(uint32(3), result.SkippedImages)
+	suite.Equal(uint32(7), result.ProcessedImages)
+	suite.Equal(50.0, result.ReductionRatio)
+	suite.Equal("output", result.OutputDirectory)
+	suite.Equal([]error{assert.AnError}, result.Errors)
 	suite.mockTimeProvider.AssertExpectations(suite.T())
-}
-
-func (suite *ResultBuilderTestSuite) TestResultBuilder_ShouldPrintFormattedResults() {
-	tests := []struct {
-		name            string
-		skippedImages   uint32
-		processedImages uint32
-		errors          []error
-		expected        []string
-		notExpected     []string
-	}{
-		{
-			name:            "without errors",
-			skippedImages:   0,
-			processedImages: 10,
-			errors:          nil,
-			expected: []string{
-				"OPERATION", "IMPACT", "OUTPUT DIRECTORY",
-				"10 images", "0", "10",
-				"10.00 MB", "5.00 MB", "50.00%",
-				"output",
-			},
-			notExpected: []string{
-				"ERRORS DETECTED",
-			},
-		},
-		{
-			name:            "with errors",
-			skippedImages:   3,
-			processedImages: 7,
-			errors: []error{
-				fmt.Errorf("file 'fake.jpg': read error"),
-				fmt.Errorf("permission denied"),
-			},
-			expected: []string{
-				"2 ERRORS DETECTED",
-				"fake.jpg",
-				"read error",
-				"permission denied",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			suite.rb.
-				SetOriginalBytes(10485760). // 10 MB
-				SetProcessedBytes(5242880). // 5 MB
-				SetTotalImages(10).
-				SetSkippedImages(tt.skippedImages).
-				SetProcessedImages(tt.processedImages).
-				SetOutputDirectory("output")
-
-			if tt.errors != nil {
-				suite.rb.SetErrors(tt.errors)
-			}
-			result := suite.rb.Build()
-			printedResult := result.PrintResults("resized")
-
-			for _, expectedText := range tt.expected {
-				suite.Contains(printedResult, expectedText)
-			}
-			for _, notExpectedText := range tt.notExpected {
-				suite.NotContains(printedResult, notExpectedText)
-			}
-			suite.mockTimeProvider.AssertExpectations(suite.T())
-		})
-	}
 }
 
 func TestRealTimeProvider_Now(t *testing.T) {
