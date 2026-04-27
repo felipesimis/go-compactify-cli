@@ -128,6 +128,16 @@ func (s *DashboardTestSuite) TestRenderDashboard_ShouldAlignPanelsHorizontally_W
 	s.True(foundRightInSameLine, "Right panel title should be on the same line as the left panel")
 }
 
+func (s *DashboardTestSuite) TestRenderDashboard_ShouldApplyBoxStyle_WhenRendered() {
+	left := Panel{Title: "L"}
+	right := Panel{Title: "R"}
+
+	raw := RenderDashboard(left, right, "")
+
+	s.Contains(raw, "╭", "Output should contain box style top-left corner")
+	s.Contains(raw, "╯", "Output should contain box style bottom-right corner")
+}
+
 func TestDashboardTestSuite(t *testing.T) {
 	suite.Run(t, new(DashboardTestSuite))
 }

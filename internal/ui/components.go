@@ -53,5 +53,5 @@ func RenderDashboard(left Panel, right Panel, footer string) string {
 	rightSide := RenderPanel(right)
 
 	dashboard := lipgloss.JoinHorizontal(lipgloss.Top, leftSide, rightSide)
-	return dashboard
+	return styleBox.Render(dashboard)
 }
