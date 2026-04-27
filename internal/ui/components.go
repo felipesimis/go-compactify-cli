@@ -70,3 +70,10 @@ func renderFooter(footerTitle, footerLine string, width int) string {
 	line := styleFooterLine.Render(footerLine)
 	return strings.Join([]string{divider, title, line}, "\n")
 }
+
+func RenderErrorList(errs []error) string {
+	if len(errs) == 0 {
+		return ""
+	}
+	return "errors"
+}

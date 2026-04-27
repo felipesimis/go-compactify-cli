@@ -183,3 +183,15 @@ func (s *DashboardTestSuite) TestRenderDashboard_ShouldApplyFooterStyles_WhenFoo
 func TestDashboardTestSuite(t *testing.T) {
 	suite.Run(t, new(DashboardTestSuite))
 }
+
+type ErrorListTestSuite struct {
+	suite.Suite
+}
+
+func (s *ErrorListTestSuite) TestRenderErrorList_ShouldReturnEmpty_WhenNoErrors() {
+	s.Empty(RenderErrorList([]error{}))
+}
+
+func TestErrorListTestSuite(t *testing.T) {
+	suite.Run(t, new(ErrorListTestSuite))
+}
