@@ -52,7 +52,7 @@ func RunOperation(config OperationConfig) error {
 		return err
 	}
 	if len(files) == 0 {
-		fmt.Printf("\n\033[1;33mNo files found in directory: %s\033[0m\n", config.InputDir)
+		fmt.Println(ui.Warn(fmt.Sprintf("No files found in directory: %s", config.InputDir)))
 		return nil
 	}
 

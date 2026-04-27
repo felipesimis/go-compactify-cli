@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"syscall"
 
+	"github.com/felipesimis/compactify-cli/internal/ui"
 	"github.com/h2non/bimg"
 	"github.com/spf13/cobra"
 )
@@ -26,12 +27,12 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if inputDir == "" {
-			return fmt.Errorf("required flag \"input\" (-i) not set")
+			return fmt.Errorf(ui.Error("required flag \"input\" (-i) not set"))
 		}
 
 		defaultWorkers := runtime.NumCPU()
 		if concurrency > defaultWorkers*2 {
-			fmt.Println("\n\033[1;33m⚠️  WARNING: Concurrency set very high. This may cause high memory usage and slow down your system.\033[0m")
+			fmt.Println(ui.Warn("⚠️  WARNING: Concurrency set very high. This may cause high memory usage and slow down your system."))
 		}
 		return nil
 	},
