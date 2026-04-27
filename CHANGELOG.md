@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0] - 2026-04-27
+
+### 🐳 Docker & Infrastructure
+- **Containerized Environment**: Added a multi-stage Dockerfile for isolated execution and consistent builds across different OS.
+- **Optimized Image**: Final runtime image based on Alpine Linux, including only the necessary `libvips` shared libraries.
+- **Build Efficiency**: Improved Docker layer caching by separating dependency downloads from source code copying.
+
 ## [1.2.0] - 2026-04-27
 
 ### 🎨 User Interface & Experience
