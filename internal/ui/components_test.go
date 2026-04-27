@@ -84,6 +84,15 @@ func (s *PanelTestSuite) TestRenderPanel_ShouldHighlightValue_WhenItemIsHighligh
 	s.Contains(rawResult, styleHero.Render("Value"), "Highlighted value should be rendered with hero style")
 }
 
+func (s *PanelTestSuite) TestRenderPanel_ShouldApplyValueStyle_WhenItemIsNotHighlighted() {
+	panel := Panel{
+		Items: []Item{{"Label", "Value", false}},
+	}
+
+	rawResult := RenderPanel(panel)
+	s.Contains(rawResult, styleValue.Render("Value"), "Non-highlighted value should be rendered with value style")
+}
+
 func TestPanelTestSuite(t *testing.T) {
 	suite.Run(t, new(PanelTestSuite))
 }
