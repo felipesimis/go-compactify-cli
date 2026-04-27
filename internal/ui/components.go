@@ -47,3 +47,11 @@ func RenderPanel(p Panel) string {
 	}
 	return lipgloss.NewStyle().Width(30).Render(strings.Join(lines, "\n"))
 }
+
+func RenderDashboard(left Panel, right Panel, footer string) string {
+	leftSide := RenderPanel(left)
+	rightSide := RenderPanel(right)
+
+	dashboard := lipgloss.JoinHorizontal(lipgloss.Top, leftSide, rightSide)
+	return dashboard
+}

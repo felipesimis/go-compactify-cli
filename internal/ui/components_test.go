@@ -96,3 +96,38 @@ func (s *PanelTestSuite) TestRenderPanel_ShouldApplyValueStyle_WhenItemIsNotHigh
 func TestPanelTestSuite(t *testing.T) {
 	suite.Run(t, new(PanelTestSuite))
 }
+
+type DashboardTestSuite struct {
+	suite.Suite
+}
+
+func (s *DashboardTestSuite) TestRenderDashboard_ShouldAlignPanelsHorizontally_WhenTwoPanelsAreProvided() {
+	left := Panel{Title: "Left Panel", Items: []Item{{"L1", "Value1", false}}}
+	right := Panel{Title: "Right Panel", Items: []Item{{"R1", "Value2", false}}}
+
+	rawResult := RenderDashboard(left, right, "")
+	cleanResult := lipgloss.Sprint(rawResult)
+
+	s.Contains(cleanResult, "Left Panel")
+	s.Contains(cleanResult, "Right Panel")
+
+	lines := strings.Split(cleanResult, "\n")
+	foundLeft := false
+	foundRightInSameLine := false
+
+	for _, line := range lines {
+		if strings.Contains(line, "Left Panel") {
+			foundLeft = true
+			if strings.Contains(line, "Right Panel") {
+				foundRightInSameLine = true
+			}
+		}
+	}
+
+	s.True(foundLeft, "Left panel title should be present in the output")
+	s.True(foundRightInSameLine, "Right panel title should be on the same line as the left panel")
+}
+
+func TestDashboardTestSuite(t *testing.T) {
+	suite.Run(t, new(DashboardTestSuite))
+}
