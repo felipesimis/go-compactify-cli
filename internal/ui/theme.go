@@ -39,4 +39,6 @@ var (
 			Padding(1, 2)
 
 	styleErrorHeader = lipgloss.NewStyle().Background(colorErrBg).Foreground(colorWhiteText).Bold(true).Padding(0, 1).Margin(1, 0, 0, 2)
+	styleErrorSymbol = lipgloss.NewStyle().Foreground(colorBorderError).Margin(0, 1, 0, 4)
+	styleErrorMsg    = lipgloss.NewStyle().Foreground(colorWhiteText).Bold(true)
 )

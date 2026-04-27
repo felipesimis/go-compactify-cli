@@ -204,6 +204,21 @@ func (s *ErrorListTestSuite) TestRenderErrorList_ShouldIncludeStyledHeader_WhenE
 	s.Contains(rawResult, expectedHeader, "Header should have correct styles applied")
 }
 
+func (s *ErrorListTestSuite) TestRenderErrorList_ShouldIncludeErrorItems_WhenMultipleErrorsExist() {
+	errors := []error{
+		errors.New("error 1"),
+		errors.New("error 2"),
+	}
+
+	rawResult := RenderErrorList(errors)
+	cleanResult := lipgloss.Sprint(rawResult)
+
+	s.Contains(cleanResult, "❌ error 1")
+	s.Contains(cleanResult, "❌ error 2")
+	expectedSymbol := styleErrorSymbol.Render("❌")
+	s.Contains(rawResult, expectedSymbol, "Each error item should have the error symbol with correct styles")
+}
+
 func TestErrorListTestSuite(t *testing.T) {
 	suite.Run(t, new(ErrorListTestSuite))
 }
