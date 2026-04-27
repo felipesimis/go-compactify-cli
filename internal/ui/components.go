@@ -79,13 +79,22 @@ func RenderErrorList(errs []error) string {
 	}
 
 	var sb strings.Builder
-
 	headerText := fmt.Sprintf(" %d ERRORS DETECTED ", errCount)
 	sb.WriteString(styleErrorHeader.Render(headerText) + "\n")
 
 	for _, err := range errs {
-		line := lipgloss.JoinHorizontal(lipgloss.Left, styleErrorSymbol.Render("❌"), styleErrorMsg.Render(err.Error()))
-		sb.WriteString(line + "\n")
+		msg := err.Error()
+		parts := strings.SplitN(msg, ": ", 2)
+
+		var formattedMsg string
+		if len(parts) == 2 {
+			formattedMsg = styleErrorPath.Render(parts[0]) + ": " + styleErrorMsg.Render(parts[1])
+		} else {
+			formattedMsg = styleErrorMsg.Render(msg)
+		}
+
+		line := lipgloss.JoinHorizontal(lipgloss.Left, styleErrorSymbol.Render("❌"), formattedMsg)
+		sb.WriteString(styleErrorItem.Render(line) + "\n")
 	}
 	return sb.String()
 }

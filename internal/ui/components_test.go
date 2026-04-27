@@ -219,6 +219,20 @@ func (s *ErrorListTestSuite) TestRenderErrorList_ShouldIncludeErrorItems_WhenMul
 	s.Contains(rawResult, expectedSymbol, "Each error item should have the error symbol with correct styles")
 }
 
+func (s *ErrorListTestSuite) TestRenderErrorList_ShouldApplyHierarchy_WhenPathIsPresent() {
+	errors := []error{
+		errors.New("path/to/file: error message"),
+	}
+
+	rawResult := RenderErrorList(errors)
+
+	expectedPath := styleErrorPath.Render("path/to/file")
+	s.Contains(rawResult, expectedPath, "Error path should have correct styles applied")
+
+	expectedErrorMsg := styleErrorMsg.Render("error message")
+	s.Contains(rawResult, expectedErrorMsg, "Error message should have correct styles applied")
+}
+
 func TestErrorListTestSuite(t *testing.T) {
 	suite.Run(t, new(ErrorListTestSuite))
 }
