@@ -37,4 +37,6 @@ var (
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(colorSubtle).
 			Padding(1, 2)
+
+	styleErrorHeader = lipgloss.NewStyle().Background(colorErrBg).Foreground(colorWhiteText).Bold(true).Padding(0, 1).Margin(1, 0, 0, 2)
 )

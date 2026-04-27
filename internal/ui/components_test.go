@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -190,6 +191,17 @@ type ErrorListTestSuite struct {
 
 func (s *ErrorListTestSuite) TestRenderErrorList_ShouldReturnEmpty_WhenNoErrors() {
 	s.Empty(RenderErrorList([]error{}))
+}
+
+func (s *ErrorListTestSuite) TestRenderErrorList_ShouldIncludeStyledHeader_WhenErrorsExist() {
+	errors := []error{errors.New("Error 1")}
+
+	rawResult := RenderErrorList(errors)
+	cleanResult := lipgloss.Sprint(rawResult)
+
+	expectedHeader := styleErrorHeader.Render(" 1 ERRORS DETECTED ")
+	s.Contains(cleanResult, "1 ERRORS DETECTED", "Header should indicate the number of errors detected")
+	s.Contains(rawResult, expectedHeader, "Header should have correct styles applied")
 }
 
 func TestErrorListTestSuite(t *testing.T) {

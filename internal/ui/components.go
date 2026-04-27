@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"image/color"
 	"strings"
 
@@ -72,8 +73,11 @@ func renderFooter(footerTitle, footerLine string, width int) string {
 }
 
 func RenderErrorList(errs []error) string {
-	if len(errs) == 0 {
+	errCount := len(errs)
+	if errCount == 0 {
 		return ""
 	}
-	return "errors"
+
+	headerText := fmt.Sprintf(" %d ERRORS DETECTED ", errCount)
+	return styleErrorHeader.Render(headerText) + "\n"
 }
