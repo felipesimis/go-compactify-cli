@@ -142,13 +142,24 @@ func (s *DashboardTestSuite) TestRenderDashboard_ShouldRenderPanelsInBox_WhenNoF
 	left := Panel{Title: "L"}
 	right := Panel{Title: "R"}
 
-	rawResult := RenderDashboard(left, right, "", "Footer line")
-	cleanResult := lipgloss.Sprint(rawResult)
+	cleanResult := lipgloss.Sprint(RenderDashboard(left, right, "", "Footer line"))
 
 	s.Contains(cleanResult, "L", "Left panel content should be present in the output")
 	s.Contains(cleanResult, "R", "Right panel content should be present in the output")
 
 	s.NotContains(cleanResult, "Footer line", "Footer line should not be present when footer title is empty")
+}
+
+func (s *DashboardTestSuite) TestRenderDashboard_ShouldRenderFooter_WhenFooterTitleProvided() {
+	left := Panel{Title: "L"}
+	right := Panel{Title: "R"}
+	footerTitle := "Footer Title"
+	footerLine := "Footer Line"
+
+	cleanResult := lipgloss.Sprint(RenderDashboard(left, right, footerTitle, footerLine))
+
+	s.Contains(cleanResult, footerTitle, "Footer title should be present in the output")
+	s.Contains(cleanResult, footerLine, "Footer line should be present in the output")
 }
 
 func TestDashboardTestSuite(t *testing.T) {
