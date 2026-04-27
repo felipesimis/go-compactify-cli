@@ -48,10 +48,25 @@ func RenderPanel(p Panel) string {
 	return lipgloss.NewStyle().Width(30).Render(strings.Join(lines, "\n"))
 }
 
-func RenderDashboard(left Panel, right Panel, footer string) string {
-	leftSide := RenderPanel(left)
-	rightSide := RenderPanel(right)
+func RenderDashboard(left Panel, right Panel, footerTitle, footerLine string) string {
+	body := lipgloss.JoinHorizontal(lipgloss.Top, RenderPanel(left), RenderPanel(right))
+	if footerTitle == "" {
+		return styleBox.Render(body)
+	}
 
-	dashboard := lipgloss.JoinHorizontal(lipgloss.Top, leftSide, rightSide)
-	return styleBox.Render(dashboard)
+	width := lipgloss.Width(body)
+	content := strings.Join([]string{
+		body,
+		"",
+		renderFooter(footerTitle, footerLine, width),
+	}, "\n")
+
+	return styleBox.Render(content)
+}
+
+func renderFooter(footerTitle, footerLine string, width int) string {
+	divider := styleDivider.Render(strings.Repeat("─", width))
+	title := styleFooterTitle.Render(footerTitle)
+	line := styleFooterLine.Render(footerLine)
+	return strings.Join([]string{divider, title, line}, "\n")
 }

@@ -105,7 +105,7 @@ func (s *DashboardTestSuite) TestRenderDashboard_ShouldAlignPanelsHorizontally_W
 	left := Panel{Title: "Left Panel", Items: []Item{{"L1", "Value1", false}}}
 	right := Panel{Title: "Right Panel", Items: []Item{{"R1", "Value2", false}}}
 
-	rawResult := RenderDashboard(left, right, "")
+	rawResult := RenderDashboard(left, right, "", "")
 	cleanResult := lipgloss.Sprint(rawResult)
 
 	s.Contains(cleanResult, "Left Panel")
@@ -132,10 +132,23 @@ func (s *DashboardTestSuite) TestRenderDashboard_ShouldApplyBoxStyle_WhenRendere
 	left := Panel{Title: "L"}
 	right := Panel{Title: "R"}
 
-	raw := RenderDashboard(left, right, "")
+	rawResult := RenderDashboard(left, right, "", "")
 
-	s.Contains(raw, "╭", "Output should contain box style top-left corner")
-	s.Contains(raw, "╯", "Output should contain box style bottom-right corner")
+	s.Contains(rawResult, "╭", "Output should contain box style top-left corner")
+	s.Contains(rawResult, "╯", "Output should contain box style bottom-right corner")
+}
+
+func (s *DashboardTestSuite) TestRenderDashboard_ShouldRenderPanelsInBox_WhenNoFooterProvided() {
+	left := Panel{Title: "L"}
+	right := Panel{Title: "R"}
+
+	rawResult := RenderDashboard(left, right, "", "Footer line")
+	cleanResult := lipgloss.Sprint(rawResult)
+
+	s.Contains(cleanResult, "L", "Left panel content should be present in the output")
+	s.Contains(cleanResult, "R", "Right panel content should be present in the output")
+
+	s.NotContains(cleanResult, "Footer line", "Footer line should not be present when footer title is empty")
 }
 
 func TestDashboardTestSuite(t *testing.T) {
