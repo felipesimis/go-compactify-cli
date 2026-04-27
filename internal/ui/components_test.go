@@ -35,8 +35,8 @@ func (s *CalloutTestSuite) TestCallouts() {
 		for _, sc := range scenarios {
 			testName := comp.name + "_" + sc.name
 			s.Run(testName, func() {
-				result := comp.render(sc.input)
-				cleanResult := lipgloss.Sprint(result)
+				rawResult := comp.render(sc.input)
+				cleanResult := lipgloss.Sprint(rawResult)
 
 				s.Contains(cleanResult, comp.icon)
 				s.Contains(cleanResult, sc.input)
@@ -55,4 +55,25 @@ func (s *CalloutTestSuite) TestCallouts() {
 
 func TestCalloutTestSuite(t *testing.T) {
 	suite.Run(t, new(CalloutTestSuite))
+}
+
+type PanelTestSuite struct {
+	suite.Suite
+}
+
+func (s *PanelTestSuite) TestRenderPanel_ShouldIncludeAllText_WhenProvidedWithValidPanel() {
+	panel := Panel{
+		Title: "Test Title",
+		Items: []Item{{"Label", "Value", false}},
+	}
+
+	cleanResult := lipgloss.Sprint(RenderPanel(panel))
+
+	s.Contains(cleanResult, "Test Title")
+	s.Contains(cleanResult, "Label")
+	s.Contains(cleanResult, "Value")
+}
+
+func TestPanelTestSuite(t *testing.T) {
+	suite.Run(t, new(PanelTestSuite))
 }

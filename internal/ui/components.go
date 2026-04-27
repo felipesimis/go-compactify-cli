@@ -2,37 +2,48 @@ package ui
 
 import (
 	"image/color"
+	"strings"
 
 	"charm.land/lipgloss/v2"
 )
 
-var (
-	warningBorderColor = lipgloss.Color("#F59E0B")
-	warningTextColor   = lipgloss.Color("#FEF3C7")
-
-	errorBorderColor = lipgloss.Color("#EF4444")
-	errorTextColor   = lipgloss.Color("#FEE2E2")
-
-	calloutStyle = lipgloss.NewStyle().
-			Border(lipgloss.ThickBorder(), false, false, false, true).
-			Padding(0, 2).Margin(1, 0)
-
-	iconStyle    = lipgloss.NewStyle().Bold(true).MarginRight(2)
-	contentStyle = lipgloss.NewStyle()
-)
-
 func renderCallout(icon string, message string, borderColor color.Color, textColor color.Color) string {
-	style := calloutStyle.BorderForeground(borderColor)
-	iconPart := iconStyle.Foreground(textColor).Render(icon)
-	contentPart := contentStyle.Foreground(textColor).Render(message)
+	style := styleCalloutBase.BorderForeground(borderColor)
+	iconPart := styleCalloutIcon.Foreground(textColor).Render(icon)
+	contentPart := styleCalloutText.Foreground(textColor).Render(message)
 
 	return style.Render(lipgloss.JoinHorizontal(lipgloss.Left, iconPart, contentPart))
 }
 
 func Warn(message string) string {
-	return renderCallout("⚠️", message, warningBorderColor, warningTextColor)
+	return renderCallout("⚠️", message, colorWarnBorder, colorWarnText)
 }
 
 func Error(message string) string {
-	return renderCallout("❌", message, errorBorderColor, errorTextColor)
+	return renderCallout("❌", message, colorBorderError, colorErrText)
+}
+
+type Item struct {
+	Label         string
+	Value         string
+	IsHighlighted bool
+}
+
+type Panel struct {
+	Title string
+	Items []Item
+}
+
+func RenderPanel(p Panel) string {
+	var lines []string
+
+	lines = append(lines, styleTitle.Render(p.Title))
+	for _, item := range p.Items {
+		valRendered := styleValue.Render(item.Value)
+		if item.IsHighlighted {
+			valRendered = styleHero.Render(item.Value)
+		}
+		lines = append(lines, styleLabel.Render(item.Label)+valRendered)
+	}
+	return lipgloss.NewStyle().Width(30).Render(strings.Join(lines, "\n"))
 }
