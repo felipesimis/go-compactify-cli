@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.5.0] - 2026-04-28
+
+### 🚀 Added & Changed
+- **Dynamic Versioning**: Implemented version injection via `ldflags`, ensuring the CLI correctly reports its release version (e.g., `v1.5.0`) instead of the static `dev` placeholder.
+- **Documentation Polish**: Restructured the `README.md` to prioritize pre-compiled binaries and Docker usage, drastically improving the onboarding experience for non-Go developers. Added CI/CD status badges.
+
+### 🐛 Bug Fixes
+- **Help Command Blocker**: Fixed a critical UX bug where running `compactify --help` or `compactify help` would fail by prematurely enforcing the global `--input` flag requirement.
+
+### 🛠 Engineering & Maintenance
+- **Module Path Correction**: Refactored the `go.mod` and all internal imports to match the canonical GitHub repository path (`go-compactify-cli`), preventing downstream module resolution issues.
+- **CI/CD Pipeline Enhancements**: Configured automated version injection across all OS builds by dynamically passing release tags to the Go linker via GitHub Actions step outputs.
+
 ## [1.4.0] - 2026-04-27
 
 ### 🚀 CI/CD & Distribution
