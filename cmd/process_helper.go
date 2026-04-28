@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/felipesimis/compactify-cli/internal/filesystem"
-	"github.com/felipesimis/compactify-cli/internal/processing"
-	"github.com/felipesimis/compactify-cli/internal/ui"
-	"github.com/felipesimis/compactify-cli/internal/utils"
-	"github.com/felipesimis/compactify-cli/pkg/progress"
+	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
+	"github.com/felipesimis/go-compactify-cli/internal/processing"
+	"github.com/felipesimis/go-compactify-cli/internal/ui"
+	"github.com/felipesimis/go-compactify-cli/internal/utils"
+	"github.com/felipesimis/go-compactify-cli/pkg/progress"
 )
 
 const (

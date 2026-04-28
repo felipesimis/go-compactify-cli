@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/felipesimis/compactify-cli/internal/filesystem"
+	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
 )
 
 type ProgressBarInterface interface {

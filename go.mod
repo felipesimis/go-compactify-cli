@@ -1,4 +1,4 @@
-module github.com/felipesimis/compactify-cli
+module github.com/felipesimis/go-compactify-cli
 
 go 1.26.1
 

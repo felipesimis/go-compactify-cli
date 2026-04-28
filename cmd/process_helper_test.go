@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/felipesimis/compactify-cli/internal/filesystem"
-	"github.com/felipesimis/compactify-cli/internal/processing"
-	"github.com/felipesimis/compactify-cli/internal/utils"
+	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
+	"github.com/felipesimis/go-compactify-cli/internal/processing"
+	"github.com/felipesimis/go-compactify-cli/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 

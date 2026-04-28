@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/felipesimis/compactify-cli/internal/ui"
+	"github.com/felipesimis/go-compactify-cli/internal/ui"
 	"github.com/h2non/bimg"
 	"github.com/spf13/cobra"
 )

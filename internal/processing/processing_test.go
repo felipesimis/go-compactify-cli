@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/felipesimis/compactify-cli/internal/filesystem"
+	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )

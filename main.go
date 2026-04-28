@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/felipesimis/compactify-cli/cmd"
-	"github.com/felipesimis/compactify-cli/internal/ui"
+	"github.com/felipesimis/go-compactify-cli/cmd"
+	"github.com/felipesimis/go-compactify-cli/internal/ui"
 )
 
 func main() {

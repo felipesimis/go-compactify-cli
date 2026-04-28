@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/felipesimis/compactify-cli/internal/utils"
+	"github.com/felipesimis/go-compactify-cli/internal/utils"
 )
 
 type FileReader interface {
