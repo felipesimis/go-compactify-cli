@@ -29,7 +29,9 @@ var rootCmd = &cobra.Command{
 	Version:       Version,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if cmd.Name() == "help" {
+		isHelp := cmd.Name() == "help" || cmd.Flags().Changed("help")
+		isVersion := cmd.Flags().Changed("version")
+		if isHelp || isVersion {
 			return nil
 		}
 
