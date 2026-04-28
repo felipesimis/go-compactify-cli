@@ -18,12 +18,8 @@ import (
 )
 
 var (
-	concurrency int
-	inputDir    string
-	outputDir   string
-	dryRun      bool
-	Version     = "dev"
-	cfgFile     string
+	Version = "dev"
+	cfgFile string
 )
 
 var rootCmd = &cobra.Command{
@@ -39,12 +35,13 @@ var rootCmd = &cobra.Command{
 			return nil
 		}
 
-		if inputDir == "" {
+		cfg := loadGlobalConfig(cmd)
+		if cfg.InputDir == "" {
 			return fmt.Errorf(ui.Error("required flag \"input\" (-i) not set"))
 		}
 
 		defaultWorkers := runtime.NumCPU()
-		if concurrency > defaultWorkers*2 {
+		if cfg.Concurrency > defaultWorkers*2 {
 			fmt.Println(ui.Warn("⚠️  WARNING: Concurrency set very high. This may cause high memory usage and slow down your system."))
 		}
 		return nil
@@ -115,8 +112,8 @@ func bindFlags(cmd *cobra.Command) {
 
 func init() {
 	defaultWorkers := runtime.NumCPU()
-	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", defaultWorkers, "Number of concurrent operations")
-	rootCmd.PersistentFlags().StringVarP(&inputDir, "input", "i", "", "Input directory containing the images to process")
-	rootCmd.PersistentFlags().StringVarP(&outputDir, "output", "o", "", "Output directory for processed images (default: auto-creates a sibling directory, e.g., '<input>-resized')")
-	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "Perform a dry run without processing images, showing what would be done")
+	rootCmd.PersistentFlags().IntP("concurrency", "c", defaultWorkers, "Number of concurrent operations")
+	rootCmd.PersistentFlags().StringP("input", "i", "", "Input directory containing the images to process")
+	rootCmd.PersistentFlags().StringP("output", "o", "", "Output directory for processed images (default: auto-creates a sibling directory, e.g., '<input>-resized')")
+	rootCmd.PersistentFlags().Bool("dry-run", false, "Perform a dry run without processing images, showing what would be done")
 }
