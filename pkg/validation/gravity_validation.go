@@ -3,7 +3,7 @@ package validation
 import (
 	"errors"
 
-	"github.com/h2non/bimg"
+	"github.com/felipesimis/go-compactify-cli/internal/image"
 )
 
 var (
@@ -11,11 +11,11 @@ var (
 )
 
 type GravityValidation struct {
-	Gravity bimg.Gravity
+	Gravity image.Gravity
 }
 
 func (g *GravityValidation) Validate() error {
-	if g.Gravity < bimg.GravityCentre || g.Gravity > bimg.GravitySmart {
+	if !g.Gravity.IsValid() {
 		return ErrInvalidGravity
 	}
 	return nil

@@ -13,10 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	gravity int
-)
-
 type CropParams struct {
 	Width   int
 	Height  int
@@ -26,8 +22,12 @@ type CropParams struct {
 func cropRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
+	width, _ := cmd.Flags().GetInt("width")
+	height, _ := cmd.Flags().GetInt("height")
+	gravityInt, _ := cmd.Flags().GetInt("gravity")
+	gravity := image.Gravity(gravityInt)
 	dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
-	gravityValidation := &validation.GravityValidation{Gravity: bimg.Gravity(gravity)}
+	gravityValidation := &validation.GravityValidation{Gravity: gravity}
 	validationComposite := validation.ValidationComposite{Validations: []validation.Validation{dimensionValidation, gravityValidation}}
 	err := validationComposite.Validate()
 	if err != nil {
@@ -42,7 +42,7 @@ func cropRun(cmd *cobra.Command, args []string) error {
 		FileSystem:         fs,
 		OutputSuffix:       fmt.Sprintf("-cropped_%dx%d", width, height),
 		ProgressBarMessage: "Cropping images",
-		ExtraParams:        CropParams{Width: width, Height: height, Gravity: image.Gravity(gravity)},
+		ExtraParams:        CropParams{Width: width, Height: height, Gravity: gravity},
 		ProcessorFunc:      processCropImage,
 		ResultVerb:         "cropped",
 	})
@@ -76,9 +76,9 @@ and the image will be cropped accordingly.`,
 func init() {
 	rootCmd.AddCommand(cropCmd)
 
-	cropCmd.Flags().IntVarP(&width, "width", "w", 0, "Desired width of the image")
-	cropCmd.Flags().IntVarP(&height, "height", "H", 0, "Desired height of the image")
-	cropCmd.Flags().IntVarP(&gravity, "gravity", "g", int(bimg.GravityCentre), `Gravity to use when cropping the image. 
+	cropCmd.Flags().IntP("width", "w", 0, "Desired width of the image")
+	cropCmd.Flags().IntP("height", "H", 0, "Desired height of the image")
+	cropCmd.Flags().IntP("gravity", "g", int(bimg.GravityCentre), `Gravity to use when cropping the image. 
 Available options:
   0 - Centre (default)
   1 - North

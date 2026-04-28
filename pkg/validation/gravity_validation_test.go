@@ -3,36 +3,28 @@ package validation
 import (
 	"testing"
 
-	"github.com/h2non/bimg"
+	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGravityValidation_ShouldReturnError_WhenGravityIsBelowCentre(t *testing.T) {
-	v := &GravityValidation{Gravity: bimg.GravityCentre - 1}
-	err := v.Validate()
-	assert.ErrorIs(t, err, ErrInvalidGravity)
-}
+func TestGravityValidation_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		gravity image.Gravity
+		wantErr error
+	}{
+		{"Should succeed at lower bound", image.GravityCentre, nil},
+		{"Should succeed at upper bound", image.GravitySmart, nil},
+		{"Should succeed in between bounds", image.GravityEast, nil},
+		{"Should return error when below lower bound", image.GravityCentre - 1, ErrInvalidGravity},
+		{"Should return error when above upper bound", image.GravitySmart + 1, ErrInvalidGravity},
+	}
 
-func TestGravityValidation_ShouldReturnError_WhenGravityIsAboveSmart(t *testing.T) {
-	v := &GravityValidation{Gravity: bimg.GravitySmart + 1}
-	err := v.Validate()
-	assert.ErrorIs(t, err, ErrInvalidGravity)
-}
-
-func TestGravityValidation_ShouldSucceed_WhenGravityIsAtCentre(t *testing.T) {
-	v := &GravityValidation{Gravity: bimg.GravityCentre}
-	err := v.Validate()
-	assert.NoError(t, err)
-}
-
-func TestGravityValidation_ShouldSucceed_WhenGravityIsAtSmart(t *testing.T) {
-	v := &GravityValidation{Gravity: bimg.GravitySmart}
-	err := v.Validate()
-	assert.NoError(t, err)
-}
-
-func TestGravityValidation_ShouldSucceed_WhenGravityIsSomewhereInBetween(t *testing.T) {
-	v := &GravityValidation{Gravity: bimg.GravityCentre + 1}
-	err := v.Validate()
-	assert.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &GravityValidation{Gravity: tt.gravity}
+			err := v.Validate()
+			assert.ErrorIs(t, err, tt.wantErr)
+		})
+	}
 }
