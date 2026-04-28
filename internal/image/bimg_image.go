@@ -12,6 +12,15 @@ func NewProcessor(buffer []byte) ImageProcessor {
 	return &bimgImageWrapper{image: bimg.NewImage(buffer)}
 }
 
+func InitializeProcessor() {
+	bimg.VipsCacheSetMax(0)
+	bimg.VipsCacheSetMaxMem(0)
+}
+
+func ShutdownProcessor() {
+	bimg.Shutdown()
+}
+
 func (b *bimgImageWrapper) Size() (ImageSize, error) {
 	size, err := b.image.Size()
 	if err != nil {

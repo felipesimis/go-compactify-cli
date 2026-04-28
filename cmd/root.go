@@ -10,9 +10,9 @@ import (
 	"syscall"
 
 	"charm.land/lipgloss/v2"
+	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/felipesimis/go-compactify-cli/internal/ui"
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
-	"github.com/h2non/bimg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -50,9 +50,8 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() error {
-	bimg.VipsCacheSetMax(0)
-	bimg.VipsCacheSetMaxMem(0)
-	defer bimg.Shutdown()
+	image.InitializeProcessor()
+	defer image.ShutdownProcessor()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
@@ -99,12 +98,15 @@ func initConfig() {
 }
 
 func bindFlags(cmd *cobra.Command) {
-	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+	bind := func(flag *pflag.Flag) {
 		if !flag.Changed && viper.IsSet(flag.Name) {
 			value := viper.Get(flag.Name)
 			cmd.Flags().Set(flag.Name, fmt.Sprintf("%v", value))
 		}
-	})
+	}
+
+	cmd.Flags().VisitAll(bind)
+	cmd.PersistentFlags().VisitAll(bind)
 
 	for _, child := range cmd.Commands() {
 		bindFlags(child)
