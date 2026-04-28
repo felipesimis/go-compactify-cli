@@ -26,6 +26,10 @@ var rootCmd = &cobra.Command{
 	Long:          `Compactify is your complete solution for optimizing images. With fast and intuitive commands, you can easily compress, resize, and convert your images, saving time and space.`,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Name() == "help" {
+			return nil
+		}
+
 		if inputDir == "" {
 			return fmt.Errorf(ui.Error("required flag \"input\" (-i) not set"))
 		}
