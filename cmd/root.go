@@ -10,8 +10,10 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/felipesimis/go-compactify-cli/internal/ui"
+	"github.com/felipesimis/go-compactify-cli/internal/utils"
 	"github.com/h2non/bimg"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -71,7 +73,29 @@ func Execute() error {
 	return rootCmd.ExecuteContext(ctx)
 }
 
-func initConfig() {}
+func initConfig() {
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+	} else {
+		viper.AddConfigPath(".")
+
+		if home, err := os.UserHomeDir(); err == nil {
+			viper.AddConfigPath(utils.GetConfigDir(home))
+		}
+
+		viper.SetConfigName("config")
+		viper.SetConfigType("yaml")
+	}
+
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("COMPACTIFY")
+
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			fmt.Fprintf(os.Stderr, ui.Error("Error reading config file: %v\n"), err)
+		}
+	}
+}
 
 func init() {
 	defaultWorkers := runtime.NumCPU()
