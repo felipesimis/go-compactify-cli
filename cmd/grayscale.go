@@ -27,7 +27,7 @@ func grayscaleRun(cmd *cobra.Command, args []string) error {
 
 func processGrayscaleImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
-		newImg := image.NewBimgImage(img)
+		newImg := image.NewProcessor(img)
 		return newImg.Grayscale()
 	})
 }

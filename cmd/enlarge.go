@@ -45,7 +45,7 @@ func enlargeRun(cmd *cobra.Command, args []string) error {
 func processEnlargeImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	extraParams := params.ExtraParams.(EnlargeParams)
 	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
-		newImg := image.NewBimgImage(img)
+		newImg := image.NewProcessor(img)
 		return newImg.Enlarge(extraParams.Width, extraParams.Height)
 	})
 }

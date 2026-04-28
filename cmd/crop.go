@@ -51,7 +51,7 @@ func cropRun(cmd *cobra.Command, args []string) error {
 func processCropImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	extraParams := params.ExtraParams.(CropParams)
 	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
-		newImg := image.NewBimgImage(img)
+		newImg := image.NewProcessor(img)
 		return newImg.Crop(extraParams.Width, extraParams.Height, extraParams.Gravity)
 	})
 }
