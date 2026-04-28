@@ -35,3 +35,21 @@ func TestShould_CreateDefaultConfig_When_FileDoesNotExist(t *testing.T) {
 	content, _ := os.ReadFile(configPath)
 	assert.Contains(t, string(content), "concurrency:", "The file should contain the concurrency key")
 }
+
+func TestShould_ReturnError_When_FileAlreadyExists(t *testing.T) {
+	setupInitTest(t)
+	configPath := "config.yaml"
+	importantContent := "user-custom-config: true"
+
+	err := os.WriteFile(configPath, []byte(importantContent), 0644)
+	assert.NoError(t, err)
+
+	rootCmd.SetArgs([]string{"init"})
+	err = rootCmd.Execute()
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "already exists", "The error should inform that the file already exists")
+
+	content, _ := os.ReadFile(configPath)
+	assert.Equal(t, importantContent, string(content), "The init command should never overwrite an existing file without permission")
+}
