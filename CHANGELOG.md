@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0] - 2026-04-27
+
+### 🚀 CI/CD & Distribution
+- **Multi-Platform Automated Releases**: Implemented a robust GitHub Actions workflow to build and package binaries for Linux (AMD64), macOS (Apple Silicon/Intel), and Windows (x64) on every tagged release.
+- **Dynamic Dependency Resolution (Windows)**: Automated the isolation and packaging of shared `libvips` DLLs using `ldd` and MSYS2, ensuring the Windows executable is portable and works out-of-the-box.
+- **Artifact Packaging**: Improved release UX by bundling contextual `README.txt` files and technical instructions within automated `.zip` and `.tar.gz` archives.
+- **Workflow Resilience**: Migrated from volatile package managers to a deterministic build environment with inherited system paths for consistent Go toolchain execution.
+
 ## [1.3.0] - 2026-04-27
 
 ### 🐳 Docker & Infrastructure
