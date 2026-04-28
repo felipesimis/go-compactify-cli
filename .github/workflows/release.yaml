@@ -15,10 +15,16 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: compactify-linux
+            bin_name: compactify
+            archive_name: compactify-linux.tar.gz
           - os: macos-latest
             artifact_name: compactify-macos
+            bin_name: compactify
+            archive_name: compactify-macos.tar.gz
           - os: windows-latest
-            artifact_name: compactify-windows.exe
+            artifact_name: compactify-windows
+            bin_name: compactify.exe
+            archive_name: compactify-windows.zip
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -51,25 +57,30 @@ jobs:
             mingw-w64-x86_64-libvips
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-pkg-config
+            zip
       
       - name: Build binary (Unix)
         if: matrix.os != 'windows-latest'
         run: |
-          CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o ${{ matrix.artifact_name }} .
+          CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o ${{ matrix.bin_name }} .
+          tar -czvf ${{ matrix.archive_name }} ${{ matrix.bin_name }}
 
       - name: Build binary (Windows)
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
           export PKG_CONFIG_PATH="/mingw64/lib/pkgconfig"
+          mkdir release_pkg
           go version
-          CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o ${{ matrix.artifact_name }} .
+          CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o release_pkg/${{ matrix.bin_name }} .
+          ldd release_pkg/${{ matrix.bin_name }} | grep "mingw64" | awk '{print $3}' | xargs -I '{}' cp '{}' release_pkg/
+          cd release_pkg && zip -r ../${{ matrix.archive_name }} * && cd ..
       
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_name }}
+          path: ${{ matrix.archive_name }}
   
   create-release:
     needs: build
@@ -78,6 +89,8 @@ jobs:
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v7
+        with:
+          path: artifacts
 
       - name: Display structure (debug)
         run: ls -R
@@ -86,8 +99,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            compactify-linux/compactify-linux
-            compactify-macos/compactify-macos
-            compactify-windows.exe/compactify-windows.exe
+            artifacts/**/*.tar.gz
+            artifacts/**/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
