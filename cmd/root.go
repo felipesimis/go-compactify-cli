@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"syscall"
 
 	"charm.land/lipgloss/v2"
@@ -86,8 +87,9 @@ func initConfig() {
 		viper.SetConfigType("yaml")
 	}
 
-	viper.AutomaticEnv()
 	viper.SetEnvPrefix("COMPACTIFY")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
