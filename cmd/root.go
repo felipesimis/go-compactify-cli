@@ -13,6 +13,7 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
 	"github.com/h2non/bimg"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -94,6 +95,21 @@ func initConfig() {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			fmt.Fprintf(os.Stderr, ui.Error("Error reading config file: %v\n"), err)
 		}
+	}
+
+	bindFlags(rootCmd)
+}
+
+func bindFlags(cmd *cobra.Command) {
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		if !flag.Changed && viper.IsSet(flag.Name) {
+			value := viper.Get(flag.Name)
+			cmd.Flags().Set(flag.Name, fmt.Sprintf("%v", value))
+		}
+	})
+
+	for _, child := range cmd.Commands() {
+		bindFlags(child)
 	}
 }
 
