@@ -53,11 +53,16 @@ func Execute() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
+	displayVersion := Version
+	if len(Version) > 0 && Version[0] == 'v' {
+		displayVersion = Version[1:]
+	}
+
 	versionStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#00ff00")).
 		Bold(true)
 
-	rootCmd.SetVersionTemplate(fmt.Sprintf("Compactify %s\n", versionStyle.Render("v"+Version)))
+	rootCmd.SetVersionTemplate(fmt.Sprintf("Compactify %s\n", versionStyle.Render("v"+displayVersion)))
 	return rootCmd.ExecuteContext(ctx)
 }
 
