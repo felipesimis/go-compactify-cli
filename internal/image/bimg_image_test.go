@@ -10,7 +10,7 @@ import (
 
 type BimgImageTestSuite struct {
 	suite.Suite
-	img            *BimgImageWrapper
+	img            ImageProcessor
 	originalWidth  int
 	originalHeight int
 	originalLength int
@@ -20,7 +20,7 @@ type BimgImageTestSuite struct {
 var tinyJPEG []byte
 
 func (suite *BimgImageTestSuite) SetupTest() {
-	suite.img = NewBimgImage(tinyJPEG)
+	suite.img = NewProcessor(tinyJPEG)
 	size, err := suite.img.Size()
 	suite.Require().NoError(err)
 	suite.originalWidth = size.Width
@@ -83,7 +83,7 @@ func (suite *BimgImageTestSuite) TestSizingOperations_ShouldTransformImageCorrec
 			suite.NoError(err)
 			suite.NotEmpty(processedImg)
 
-			size, err := NewBimgImage(processedImg).Size()
+			size, err := NewProcessor(processedImg).Size()
 			suite.NoError(err)
 			suite.Equal(tt.expectedWidth, size.Width)
 			suite.Equal(tt.expectedHeight, size.Height)
@@ -95,7 +95,7 @@ func (suite *BimgImageTestSuite) TestConvert_ShouldChangeImageType_WhenValidForm
 	convertedImg, err := suite.img.Convert("png")
 	suite.NoError(err)
 	suite.NotEmpty(convertedImg)
-	suite.Equal("png", NewBimgImage(convertedImg).ImageType())
+	suite.Equal("png", NewProcessor(convertedImg).ImageType())
 }
 
 func (suite *BimgImageTestSuite) TestConvert_ShouldReturnError_WhenUnsupportedFormatIsProvided() {
@@ -153,31 +153,9 @@ func (suite *BimgImageTestSuite) TestMapGravityToBimg_ShouldMapCorrectlyAndFallb
 	}
 }
 
-func (suite *BimgImageTestSuite) TestGravity_IsValid_ShouldEnforceDomainBounds() {
-	tests := []struct {
-		name     string
-		input    Gravity
-		expected bool
-	}{
-		{"Valid lower bound", GravityCentre, true},
-		{"Valid upper bound", GravitySmart, true},
-		{"Valid middle value", GravityEast, true},
-		{"Invalid negative value", Gravity(-1), false},
-		{"Invalid above max bound", maxGravity, false},
-		{"Invalid arbitrary high value", Gravity(99), false},
-	}
-
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			result := tt.input.IsValid()
-			suite.Equal(tt.expected, result)
-		})
-	}
-}
-
 func (suite *BimgImageTestSuite) TestInvalidImageBuffer_ShouldReturnError_WhenBufferIsNotAnImage() {
 	invalidBuffer := []byte("not an image")
-	img := NewBimgImage(invalidBuffer)
+	img := NewProcessor(invalidBuffer)
 
 	_, err := img.Size()
 	suite.Error(err)
@@ -194,7 +172,7 @@ func (suite *BimgImageTestSuite) TestFlip_ShouldMaintainDimensions_WhenImageIsFl
 
 	originalSize, err := suite.img.Size()
 	suite.NoError(err)
-	flippedImgSize, err := NewBimgImage(flippedImg).Size()
+	flippedImgSize, err := NewProcessor(flippedImg).Size()
 	suite.NoError(err)
 
 	suite.Equal(originalSize.Width, flippedImgSize.Width)
@@ -218,7 +196,7 @@ func (suite *BimgImageTestSuite) TestEnablePalette_ShouldChangeImageLength_WhenP
 	suite.NoError(err)
 	suite.NotEmpty(paletteImg)
 
-	paletteImgLength := NewBimgImage(paletteImg).Length()
+	paletteImgLength := NewProcessor(paletteImg).Length()
 	suite.NotZero(paletteImgLength)
 	suite.NotEqual(initialImgLength, paletteImgLength, "Expected image data to change after applying palette")
 }
@@ -228,7 +206,7 @@ func (suite *BimgImageTestSuite) TestLosslessCompress_ShouldPreserveDimensions_W
 	suite.NoError(err)
 	suite.NotEmpty(compressedImg)
 
-	metadata, err := NewBimgImage(compressedImg).Metadata()
+	metadata, err := NewProcessor(compressedImg).Metadata()
 	suite.NoError(err)
 	suite.Equal(suite.originalWidth, metadata.Size.Width)
 	suite.Equal(suite.originalHeight, metadata.Size.Height)

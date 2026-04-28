@@ -1,45 +1,18 @@
 package image
 
 import (
-	"errors"
-
 	"github.com/h2non/bimg"
 )
 
-var ErrUnsupportedImageType = errors.New("unsupported image type")
-
-type Gravity int
-
-const (
-	GravityCentre Gravity = iota
-	GravityNorth
-	GravityEast
-	GravitySouth
-	GravityWest
-	GravitySmart
-
-	maxGravity
-)
-
-type ImageSize struct {
-	Width  int
-	Height int
-}
-
-type ImageMetadata struct {
-	Size ImageSize
-	Type string
-}
-
-type BimgImageWrapper struct {
+type bimgImageWrapper struct {
 	image *bimg.Image
 }
 
-func NewBimgImage(buffer []byte) *BimgImageWrapper {
-	return &BimgImageWrapper{image: bimg.NewImage(buffer)}
+func NewProcessor(buffer []byte) ImageProcessor {
+	return &bimgImageWrapper{image: bimg.NewImage(buffer)}
 }
 
-func (b *BimgImageWrapper) Size() (ImageSize, error) {
+func (b *bimgImageWrapper) Size() (ImageSize, error) {
 	size, err := b.image.Size()
 	if err != nil {
 		return ImageSize{}, err
@@ -47,11 +20,11 @@ func (b *BimgImageWrapper) Size() (ImageSize, error) {
 	return ImageSize{Width: size.Width, Height: size.Height}, nil
 }
 
-func (b *BimgImageWrapper) Resize(width, height int) ([]byte, error) {
+func (b *bimgImageWrapper) Resize(width, height int) ([]byte, error) {
 	return b.image.Resize(width, height)
 }
 
-func (b *BimgImageWrapper) Convert(format string) ([]byte, error) {
+func (b *bimgImageWrapper) Convert(format string) ([]byte, error) {
 	bimgFormat, err := mapStringToImageType(format)
 	if err != nil {
 		return nil, err
@@ -59,16 +32,12 @@ func (b *BimgImageWrapper) Convert(format string) ([]byte, error) {
 	return b.image.Convert(bimgFormat)
 }
 
-func (b *BimgImageWrapper) ImageType() string {
+func (b *bimgImageWrapper) ImageType() string {
 	return b.image.Type()
 }
 
-func (b *BimgImageWrapper) Crop(width, height int, gravity Gravity) ([]byte, error) {
+func (b *bimgImageWrapper) Crop(width, height int, gravity Gravity) ([]byte, error) {
 	return b.image.Crop(width, height, mapGravityToBimg(gravity))
-}
-
-func (g Gravity) IsValid() bool {
-	return g >= 0 && g < maxGravity
 }
 
 func mapStringToImageType(format string) (bimg.ImageType, error) {
@@ -101,35 +70,35 @@ func mapGravityToBimg(g Gravity) bimg.Gravity {
 	}
 }
 
-func (b *BimgImageWrapper) Flip() ([]byte, error) {
+func (b *bimgImageWrapper) Flip() ([]byte, error) {
 	return b.image.Flip()
 }
 
-func (b *BimgImageWrapper) Enlarge(width, height int) ([]byte, error) {
+func (b *bimgImageWrapper) Enlarge(width, height int) ([]byte, error) {
 	return b.image.Enlarge(width, height)
 }
 
-func (b *BimgImageWrapper) Thumbnail(width int) ([]byte, error) {
+func (b *bimgImageWrapper) Thumbnail(width int) ([]byte, error) {
 	return b.image.Thumbnail(width)
 }
 
-func (b *BimgImageWrapper) Grayscale() ([]byte, error) {
+func (b *bimgImageWrapper) Grayscale() ([]byte, error) {
 	return b.image.Colourspace(bimg.InterpretationBW)
 }
 
-func (b *BimgImageWrapper) Length() int {
+func (b *bimgImageWrapper) Length() int {
 	return b.image.Length()
 }
 
-func (b *BimgImageWrapper) EnablePalette() ([]byte, error) {
+func (b *bimgImageWrapper) EnablePalette() ([]byte, error) {
 	return b.image.Process(bimg.Options{Palette: true})
 }
 
-func (b *BimgImageWrapper) LosslessCompress() ([]byte, error) {
+func (b *bimgImageWrapper) LosslessCompress() ([]byte, error) {
 	return b.image.Process(bimg.Options{Lossless: true})
 }
 
-func (b *BimgImageWrapper) Metadata() (ImageMetadata, error) {
+func (b *bimgImageWrapper) Metadata() (ImageMetadata, error) {
 	size, err := b.Size()
 	if err != nil {
 		return ImageMetadata{}, err
