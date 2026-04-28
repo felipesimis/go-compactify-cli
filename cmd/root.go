@@ -31,14 +31,15 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		isHelp := cmd.Name() == "help" || cmd.Flags().Changed("help")
+		isInit := cmd.Name() == "init"
 		isVersion := cmd.Flags().Changed("version")
-		if isHelp || isVersion {
+		if isHelp || isInit || isVersion {
 			return nil
 		}
 
 		cfg := loadGlobalConfig(cmd)
 		if cfg.InputDir == "" {
-			return errors.New(ui.Error("required flag \"input\" (-i) not set"))
+			return errors.New("required flag \"input\" (-i) not set")
 		}
 
 		defaultWorkers := runtime.NumCPU()
