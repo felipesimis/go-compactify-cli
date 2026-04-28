@@ -153,6 +153,28 @@ func (suite *BimgImageTestSuite) TestMapGravityToBimg_ShouldMapCorrectlyAndFallb
 	}
 }
 
+func (suite *BimgImageTestSuite) TestGravity_IsValid_ShouldEnforceDomainBounds() {
+	tests := []struct {
+		name     string
+		input    Gravity
+		expected bool
+	}{
+		{"Valid lower bound", GravityCentre, true},
+		{"Valid upper bound", GravitySmart, true},
+		{"Valid middle value", GravityEast, true},
+		{"Invalid negative value", Gravity(-1), false},
+		{"Invalid above max bound", maxGravity, false},
+		{"Invalid arbitrary high value", Gravity(99), false},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := tt.input.IsValid()
+			suite.Equal(tt.expected, result)
+		})
+	}
+}
+
 func (suite *BimgImageTestSuite) TestInvalidImageBuffer_ShouldReturnError_WhenBufferIsNotAnImage() {
 	invalidBuffer := []byte("not an image")
 	img := NewBimgImage(invalidBuffer)

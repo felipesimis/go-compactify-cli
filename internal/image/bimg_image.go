@@ -17,6 +17,8 @@ const (
 	GravitySouth
 	GravityWest
 	GravitySmart
+
+	maxGravity
 )
 
 type ImageSize struct {
@@ -63,6 +65,10 @@ func (b *BimgImageWrapper) ImageType() string {
 
 func (b *BimgImageWrapper) Crop(width, height int, gravity Gravity) ([]byte, error) {
 	return b.image.Crop(width, height, mapGravityToBimg(gravity))
+}
+
+func (g Gravity) IsValid() bool {
+	return g >= 0 && g < maxGravity
 }
 
 func mapStringToImageType(format string) (bimg.ImageType, error) {
