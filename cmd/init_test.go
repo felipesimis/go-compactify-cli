@@ -53,3 +53,17 @@ func TestShould_ReturnError_When_FileAlreadyExists(t *testing.T) {
 	content, _ := os.ReadFile(configPath)
 	assert.Equal(t, importantContent, string(content), "The init command should never overwrite an existing file without permission")
 }
+
+func TestShould_ReturnError_When_WriteFileFails(t *testing.T) {
+	setupInitTest(t)
+	configPath := "config.yaml"
+
+	err := os.Mkdir(configPath, 0755)
+	assert.NoError(t, err)
+
+	rootCmd.SetArgs([]string{"init", "--force"})
+	err = rootCmd.Execute()
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create config file", "should capture the file write failure")
+}
