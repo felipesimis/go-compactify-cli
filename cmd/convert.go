@@ -42,9 +42,8 @@ func convertRun(cmd *cobra.Command, args []string) error {
 
 func processConvertImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	extraParams := params.ExtraParams.(ConvertParams)
-	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
-		newImg := image.NewProcessor(img)
-		return newImg.Convert(extraParams.Format)
+	return HandleImageProcessing(ctx, params, stats, func(proc image.ImageProcessor) ([]byte, error) {
+		return proc.Convert(extraParams.Format)
 	})
 }
 

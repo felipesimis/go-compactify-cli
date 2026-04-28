@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
+	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/felipesimis/go-compactify-cli/internal/processing"
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -26,8 +27,8 @@ func BenchmarkHandleImageProcessing(b *testing.B) {
 		OutputDir: b.TempDir(),
 	}
 
-	mockProcessFunc := func(img []byte) ([]byte, error) {
-		return img, nil
+	mockProcessFunc := func(proc image.ImageProcessor) ([]byte, error) {
+		return []byte{}, nil
 	}
 
 	b.ResetTimer()
@@ -54,8 +55,8 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 		OutputDir: b.TempDir(),
 	}
 
-	mockProcessFunc := func(img []byte) ([]byte, error) {
-		return img, nil
+	mockProcessFunc := func(proc image.ImageProcessor) ([]byte, error) {
+		return []byte{}, nil
 	}
 
 	b.ResetTimer()

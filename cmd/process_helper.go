@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
+	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/felipesimis/go-compactify-cli/internal/processing"
 	"github.com/felipesimis/go-compactify-cli/internal/ui"
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
@@ -92,7 +93,7 @@ func RunOperation(global GlobalConfig, config OperationConfig) error {
 	return nil
 }
 
-func HandleImageProcessing(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats, processFunc func([]byte) ([]byte, error)) error {
+func HandleImageProcessing(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats, processFunc func(image.ImageProcessor) ([]byte, error)) error {
 	select {
 	case <-ctx.Done():
 		stats.SkippedImages.Add(1)
@@ -121,7 +122,9 @@ func HandleImageProcessing(ctx context.Context, params processing.FileProcessing
 	imgBytes := buf.Bytes()
 	stats.InitialSize.Add(uint64(len(imgBytes)))
 
-	newImg, err := processFunc(imgBytes)
+	processor := image.NewProcessor(imgBytes)
+
+	newImg, err := processFunc(processor)
 	if err != nil {
 		stats.SkippedImages.Add(1)
 		return err

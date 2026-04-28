@@ -26,9 +26,8 @@ func paletteRun(cmd *cobra.Command, args []string) error {
 }
 
 func processPaletteImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
-		newImg := image.NewProcessor(img)
-		return newImg.EnablePalette()
+	return HandleImageProcessing(ctx, params, stats, func(proc image.ImageProcessor) ([]byte, error) {
+		return proc.EnablePalette()
 	})
 }
 
