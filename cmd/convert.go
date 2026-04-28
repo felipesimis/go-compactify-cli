@@ -8,7 +8,7 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/felipesimis/go-compactify-cli/internal/processing"
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
-	"github.com/felipesimis/go-compactify-cli/pkg/validation"
+	"github.com/felipesimis/go-compactify-cli/internal/validation"
 	"github.com/spf13/cobra"
 )
 
