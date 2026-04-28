@@ -67,3 +67,20 @@ func TestShould_ReturnError_When_WriteFileFails(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create config file", "should capture the file write failure")
 }
+
+func TestShould_OverwriteConfig_When_FileExistsAndForceFlagIsUsed(t *testing.T) {
+	setupInitTest(t)
+	configPath := "config.yaml"
+	oldContent := "profile: old"
+
+	os.WriteFile(configPath, []byte(oldContent), 0644)
+
+	rootCmd.SetArgs([]string{"init", "--force"})
+	err := rootCmd.Execute()
+
+	assert.NoError(t, err)
+
+	newContent, _ := os.ReadFile(configPath)
+	assert.NotEqual(t, oldContent, string(newContent), "The content should be overwritten when --force is used")
+	assert.Contains(t, string(newContent), "concurrency:", "The new file should contain the default concurrency key")
+}
