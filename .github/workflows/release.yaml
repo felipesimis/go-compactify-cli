@@ -6,6 +6,7 @@ on:
       - 'v*'
     branches:
       - feat/ci-cd
+
 jobs:
   build:
     name: 'Build for ${{ matrix.os }}'
@@ -43,8 +44,7 @@ jobs:
 
       - name: Install libvips (macOS)
         if: matrix.os == 'macos-latest'
-        run: |
-          brew install vips
+        run: brew install vips
       
       - name: Install libvips (Windows)
         if: matrix.os == 'windows-latest'
@@ -59,13 +59,27 @@ jobs:
             mingw-w64-x86_64-pkg-config
             zip
       
-      - name: Build binary (Unix)
+      - name: Build and Archive (Unix)
         if: matrix.os != 'windows-latest'
         run: |
           CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o ${{ matrix.bin_name }} .
-          tar -czvf ${{ matrix.archive_name }} ${{ matrix.bin_name }}
+          
+          # Injeta o README para Mac e Linux
+          cat << 'EOF' > README.txt
+          Compactify CLI
+          ==============
+          Command-line tool for image optimization using libvips.
 
-      - name: Build binary (Windows)
+          Basic Usage:
+            ./${{ matrix.bin_name }} -h
+
+          Recommended Installation:
+            Move this executable to your PATH (e.g., /usr/local/bin/) to access it from anywhere.
+          EOF
+          
+          tar -czvf ${{ matrix.archive_name }} ${{ matrix.bin_name }} README.txt
+
+      - name: Build and Archive (Windows)
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
@@ -74,6 +88,22 @@ jobs:
           go version
           CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o release_pkg/${{ matrix.bin_name }} .
           ldd release_pkg/${{ matrix.bin_name }} | grep "mingw64" | awk '{print $3}' | xargs -I '{}' cp '{}' release_pkg/
+          
+          # Injeta o README salva-vidas para o Windows
+          cat << 'EOF' > release_pkg/README.txt
+          Compactify CLI
+          ==============
+          IMPORTANT: This is a command-line tool. DO NOT double-click the .exe file.
+
+          Instalation Instructions:
+          1. Extract the entire folder (with all .dll files) to a safe location.
+             Example: C:\Program Files\Compactify\
+          2. Add this path (C:\Program Files\Compactify\) to the 'Path' environment variable in Windows.
+          3. Open a new terminal (PowerShell or CMD).
+          4. Type the command below to see the available commands:
+             compactify -h
+          EOF
+
           cd release_pkg && zip -r ../${{ matrix.archive_name }} * && cd ..
       
       - name: Upload artifact
@@ -91,9 +121,6 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           path: artifacts
-
-      - name: Display structure (debug)
-        run: ls -R
 
       - name: Create Github Release
         uses: softprops/action-gh-release@v3
