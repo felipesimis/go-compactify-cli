@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -37,7 +38,7 @@ var rootCmd = &cobra.Command{
 
 		cfg := loadGlobalConfig(cmd)
 		if cfg.InputDir == "" {
-			return fmt.Errorf(ui.Error("required flag \"input\" (-i) not set"))
+			return errors.New(ui.Error("required flag \"input\" (-i) not set"))
 		}
 
 		defaultWorkers := runtime.NumCPU()
@@ -90,7 +91,7 @@ func initConfig() {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			fmt.Fprintf(os.Stderr, ui.Error("Error reading config file: %v\n"), err)
+			fmt.Fprintf(os.Stderr, "%s: %v\n", ui.Error("Error reading config file"), err)
 		}
 	}
 
