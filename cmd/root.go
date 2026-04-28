@@ -116,6 +116,7 @@ func bindFlags(cmd *cobra.Command) {
 
 func init() {
 	defaultWorkers := runtime.NumCPU()
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml or $HOME/.config/compactify/config.yaml)")
 	rootCmd.PersistentFlags().IntP("concurrency", "c", defaultWorkers, "Number of concurrent operations")
 	rootCmd.PersistentFlags().StringP("input", "i", "", "Input directory containing the images to process")
 	rootCmd.PersistentFlags().StringP("output", "o", "", "Output directory for processed images (default: auto-creates a sibling directory, e.g., '<input>-resized')")
