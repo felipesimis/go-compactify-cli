@@ -53,6 +53,11 @@ func TestGetConfigDir_ShouldReturnCorrectConfigDir(t *testing.T) {
 			home:     filepath.FromSlash("/home/user"),
 			expected: filepath.Join(filepath.FromSlash("/home/user"), configDirName, appName),
 		},
+		{
+			name:     "should return default config directory in home with different path format",
+			home:     filepath.FromSlash("C:\\Users\\user"),
+			expected: filepath.Join(filepath.FromSlash("C:\\Users\\user"), configDirName, appName),
+		},
 	}
 
 	for _, tt := range tests {
