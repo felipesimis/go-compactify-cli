@@ -20,6 +20,7 @@ var (
 	outputDir   string
 	dryRun      bool
 	Version     = "dev"
+	cfgFile     string
 )
 
 var rootCmd = &cobra.Command{
@@ -65,8 +66,12 @@ func Execute() error {
 		Bold(true)
 
 	rootCmd.SetVersionTemplate(fmt.Sprintf("Compactify %s\n", versionStyle.Render("v"+displayVersion)))
+
+	cobra.OnInitialize(initConfig)
 	return rootCmd.ExecuteContext(ctx)
 }
+
+func initConfig() {}
 
 func init() {
 	defaultWorkers := runtime.NumCPU()
