@@ -12,14 +12,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var format string
-
 type ConvertParams struct {
 	Format string
 }
 
 func convertRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
+	format, _ := cmd.Flags().GetString("format")
 
 	dimensionValidation := &validation.FormatValidation{Format: format}
 	err := dimensionValidation.Validate()
@@ -69,6 +68,6 @@ and the images will be converted accordingly.`,
 func init() {
 	rootCmd.AddCommand(convertCmd)
 
-	convertCmd.Flags().StringVarP(&format, "format", "f", "", `Desired format of the images. Available options: webp, jpeg, png`)
+	convertCmd.Flags().StringP("format", "f", "", `Desired format of the images. Available options: webp, jpeg, png`)
 	convertCmd.MarkFlagRequired("format")
 }

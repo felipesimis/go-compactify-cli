@@ -20,6 +20,8 @@ type EnlargeParams struct {
 func enlargeRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
+	width, _ := cmd.Flags().GetInt("width")
+	height, _ := cmd.Flags().GetInt("height")
 	dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
 	err := dimensionValidation.Validate()
 	if err != nil {
@@ -67,8 +69,8 @@ and the image will be enlarged accordingly, keeping its original aspect ratio.`,
 func init() {
 	rootCmd.AddCommand(enlargeCmd)
 
-	enlargeCmd.Flags().IntVarP(&width, "width", "w", 0, "Desired width of the image")
-	enlargeCmd.Flags().IntVarP(&height, "height", "H", 0, "Desired height of the image")
+	enlargeCmd.Flags().IntP("width", "w", 0, "Desired width of the image")
+	enlargeCmd.Flags().IntP("height", "H", 0, "Desired height of the image")
 	enlargeCmd.MarkFlagRequired("width")
 	enlargeCmd.MarkFlagRequired("height")
 }

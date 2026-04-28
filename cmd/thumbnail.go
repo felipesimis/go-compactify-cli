@@ -18,6 +18,7 @@ type ThumbnailParams struct {
 func thumbnailRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
+	width, _ := cmd.Flags().GetInt("width")
 	dimensionValidation := &validation.WidthValidation{Width: width, MinWidth: 50, MaxWidth: 1024}
 	err := dimensionValidation.Validate()
 	if err != nil {
@@ -32,13 +33,14 @@ func thumbnailRun(cmd *cobra.Command, args []string) error {
 		FileSystem:         fs,
 		OutputSuffix:       "-thumbnail",
 		ProgressBarMessage: "Creating thumbnails",
+		ExtraParams:        ThumbnailParams{Width: width},
 		ProcessorFunc:      processThumbnailImage,
 		ResultVerb:         "thumbnails created",
 	})
 }
 
 func processThumbnailImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-	extraParams := ThumbnailParams{Width: width}
+	extraParams := params.ExtraParams.(ThumbnailParams)
 	return HandleImageProcessing(ctx, params, stats, func(img []byte) ([]byte, error) {
 		newImg := image.NewBimgImage(img)
 		return newImg.Thumbnail(extraParams.Width)
@@ -63,6 +65,6 @@ This command allows you to generate smaller versions of images, which can be use
 func init() {
 	rootCmd.AddCommand(thumbnailCmd)
 
-	thumbnailCmd.Flags().IntVarP(&width, "width", "w", 0, "Desired width of the thumbnail")
+	thumbnailCmd.Flags().IntP("width", "w", 0, "Desired width of the thumbnail")
 	thumbnailCmd.MarkFlagRequired("width")
 }

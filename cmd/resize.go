@@ -11,11 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	width  int
-	height int
-)
-
 type ResizeParams struct {
 	Width  int
 	Height int
@@ -23,6 +18,9 @@ type ResizeParams struct {
 
 func resizeRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
+
+	width, _ := cmd.Flags().GetInt("width")
+	height, _ := cmd.Flags().GetInt("height")
 
 	dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
 	err := dimensionValidation.Validate()
@@ -72,8 +70,8 @@ and the image will be resized accordingly.`,
 func init() {
 	rootCmd.AddCommand(resizeCmd)
 
-	resizeCmd.Flags().IntVarP(&width, "width", "w", 0, "Desired width of the image")
-	resizeCmd.Flags().IntVarP(&height, "height", "H", 0, "Desired height of the image")
+	resizeCmd.Flags().IntP("width", "w", 0, "Desired width of the image")
+	resizeCmd.Flags().IntP("height", "H", 0, "Desired height of the image")
 	resizeCmd.MarkFlagRequired("width")
 	resizeCmd.MarkFlagRequired("height")
 }
