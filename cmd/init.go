@@ -1,29 +1,14 @@
 package cmd
 
 import (
+	_ "embed"
 	"fmt"
 	"runtime"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
+	"github.com/felipesimis/go-compactify-cli/internal/templates"
 	"github.com/spf13/cobra"
 )
-
-const defaultConfigFileContent = `# Compactify Configuration
-# This file allows you to define global patterns for the CLI.
-# Flags passed directly on the command line will always have priority over these values.
-
-#Number of concurrent operations (Default: number of system CPUs)
-concurrency: %d
-
-# Default input directory (Commented out to prevent accidental runs)
-# input: "./images"
-
-# Default output directory
-# output: "./compacted"
-
-# Execute without writing changes to disk
-dry-run: false
-`
 
 func initRun(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
@@ -35,7 +20,7 @@ func initRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("a configuration file already exists at '%s'. Use --force to overwrite it", configPath)
 	}
 
-	content := fmt.Sprintf(defaultConfigFileContent, runtime.NumCPU())
+	content := fmt.Sprintf(templates.ConfigTemplate, runtime.NumCPU())
 	err = fs.WriteFile(configPath, []byte(content))
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
