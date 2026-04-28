@@ -47,7 +47,7 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
-            mingw-w64-x86_64-vips
+            mingw-w64-x86_64-libvips
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-pkg-config
       
@@ -60,6 +60,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
+          export PKG_CONFIG_PATH="/mingw64/lib/pkgconfig"
           CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o ${{ matrix.artifact_name }} .
       
       - name: Upload artifact
