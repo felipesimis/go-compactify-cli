@@ -88,6 +88,8 @@ func mapGravityToBimg(g Gravity) bimg.Gravity {
 		return bimg.GravityEast
 	case GravitySouth:
 		return bimg.GravitySouth
+	case GravityWest:
+		return bimg.GravityWest
 	default:
 		return bimg.GravitySmart
 	}

@@ -130,7 +130,7 @@ func (suite *BimgImageTestSuite) TestMapStringToImageType_ShouldReturnError_When
 	suite.Equal(bimg.UNKNOWN, result)
 }
 
-func (suite *BimgImageTestSuite) TestMapGravityToBimg_ShouldReturnCorrectBimgGravity_WhenGravityIsValid() {
+func (suite *BimgImageTestSuite) TestMapGravityToBimg_ShouldMapCorrectlyAndFallbackToSmartOnUnknown() {
 	tests := []struct {
 		name     string
 		input    Gravity
@@ -140,7 +140,9 @@ func (suite *BimgImageTestSuite) TestMapGravityToBimg_ShouldReturnCorrectBimgGra
 		{"GravityNorth", GravityNorth, bimg.GravityNorth},
 		{"GravityEast", GravityEast, bimg.GravityEast},
 		{"GravitySouth", GravitySouth, bimg.GravitySouth},
-		{"GravitySmart (default)", GravitySmart, bimg.GravitySmart},
+		{"GravityWest", GravityWest, bimg.GravityWest},
+		{"GravitySmart", GravitySmart, bimg.GravitySmart},
+		{"Fallback on Unknown Gravity", Gravity(999), bimg.GravitySmart},
 	}
 
 	for _, tt := range tests {
