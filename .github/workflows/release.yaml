@@ -15,13 +15,10 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: compactify-linux
-            custom_shell: bash
           - os: macos-latest
             artifact_name: compactify-macos
-            custom_shell: bash
           - os: windows-latest
             artifact_name: compactify-windows.exe
-            custom_shell: msys2 {0}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -52,10 +49,16 @@ jobs:
           install: >-
             mingw-w64-x86_64-vips
             mingw-w64-x86_64-gcc
-            pkg-config
+            mingw-w64-x86_64-pkg-config
       
-      - name: Build binary
-        shell: ${{ matrix.custom_shell }}
+      - name: Build binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o ${{ matrix.artifact_name }} .
+
+      - name: Build binary (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
         run: |
           CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o ${{ matrix.artifact_name }} .
       
@@ -72,6 +75,9 @@ jobs:
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v7
+
+      - name: Display structure (debug)
+        run: ls -R
 
       - name: Create Github Release
         uses: softprops/action-gh-release@v3
