@@ -52,7 +52,7 @@ jobs:
             pkg-config
       
       - name: Build binary
-        shell: ${{ matrix.os == 'windows-latest' && 'msys2 ${0}' || 'bash' }}
+        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || 'bash' }}
         run: |
           CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o ${{ matrix.artifact_name }} .
       
