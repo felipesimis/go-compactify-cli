@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"syscall"
 
+	"charm.land/lipgloss/v2"
 	"github.com/felipesimis/go-compactify-cli/internal/ui"
 	"github.com/h2non/bimg"
 	"github.com/spf13/cobra"
@@ -18,12 +19,14 @@ var (
 	inputDir    string
 	outputDir   string
 	dryRun      bool
+	Version     = "dev"
 )
 
 var rootCmd = &cobra.Command{
 	Use:           "compactify",
 	Short:         "Compactify: A versatile image compression and manipulation tool",
 	Long:          `Compactify is your complete solution for optimizing images. With fast and intuitive commands, you can easily compress, resize, and convert your images, saving time and space.`,
+	Version:       Version,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Name() == "help" {
@@ -50,6 +53,11 @@ func Execute() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
+	versionStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#00ff00")).
+		Bold(true)
+
+	rootCmd.SetVersionTemplate(fmt.Sprintf("Compactify %s\n", versionStyle.Render("v"+Version)))
 	return rootCmd.ExecuteContext(ctx)
 }
 

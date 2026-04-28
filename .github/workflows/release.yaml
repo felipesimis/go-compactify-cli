@@ -62,10 +62,14 @@ jobs:
             mingw-w64-x86_64-pkg-config
             zip
       
+      - name: Get version from tag
+        id: vars
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
       - name: Build and Archive (Unix)
         if: matrix.os != 'windows-latest'
         run: |
-          CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o ${{ matrix.bin_name }} .
+          CGO_ENABLED=1 go build -ldflags="-w -s -X 'github.com/${{ github.repository }}/cmd.Version=${{ steps.vars.outputs.tag }}'" -trimpath -o ${{ matrix.bin_name }} .
           
           # Injeta o README para Mac e Linux
           cat << 'EOF' > README.txt
@@ -89,7 +93,7 @@ jobs:
           export PKG_CONFIG_PATH="/mingw64/lib/pkgconfig"
           mkdir release_pkg
           go version
-          CGO_ENABLED=1 go build -ldflags="-w -s" -trimpath -o release_pkg/${{ matrix.bin_name }} .
+          CGO_ENABLED=1 go build -ldflags="-w -s -X 'github.com/${{ github.repository }}/cmd.Version=${{ steps.vars.outputs.tag }}'" -trimpath -o release_pkg/${{ matrix.bin_name }} .
           ldd release_pkg/${{ matrix.bin_name }} | grep "mingw64" | awk '{print $3}' | xargs -I '{}' cp '{}' release_pkg/
           
           # Injeta o README salva-vidas para o Windows
