@@ -3,3 +3,5 @@
 test/testdata/sample.jpeg
 
 coverage.out
+
+config.yaml
