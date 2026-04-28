@@ -1,11 +1,13 @@
 # 📸 Compactify CLI
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/felipe-simis/go-compactify-cli)](https://goreportcard.com/report/github.com/felipe-simis/go-compactify-cli)
+[![Go Report Card](https://goreportcard.com/badge/github.com/felipesimis/go-compactify-cli)](https://goreportcard.com/report/github.com/felipesimis/go-compactify-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Version](https://img.shields.io/badge/Go-1.21%2B-blue)](https://golang.org)
 ![Docker](https://img.shields.io/badge/Docker-supported-blue?logo=docker)
+![GitHub Release](https://img.shields.io/github/v/release/felipesimis/go-compactify-cli)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/felipesimis/go-compactify-cli/release.yaml)
 
-**Compactify CLI** is a high-performance, hardware-aware image optimization tool built in Go. It leverages `libvips` (via `bimg`) to provide lightning-fast image processing, including resizing, cropping, format conversion, and lossless compression.
+**Compactify CLI** is a high-performance image optimization tool. It uses the `bimg` library to leverage the extreme speed and low memory footprint of `libvips`, providing hardware-accelerated processing.
 
 Designed with **software engineering excellence** in mind, the project follows strict architectural patterns to ensure testability, safety, and scalability.
 
@@ -56,44 +58,44 @@ Implementing the `FileReaderWriter` interface, the tool supports a non-destructi
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### 📥 1. Pre-compiled Binaries (Recommended)
+The fastest way to use Compactify. No system dependencies (Go or libvips) are required.
+1. Download the latest release for your OS from the [Releases Page](https://github.com/felipesimis/go-compactify-cli/releases).
+2. Extract the archive and run the executable via terminal.
+   * *Windows users: Keep the provided DLLs in the same folder as the executable.*
 
-- [Go](https://golang.org/doc/install) 1.21+
-- [libvips](https://www.libvips.org/) (Required for image processing)
-- [Docker](https://www.docker.com/products/docker-desktop/) (Optional, for containerized execution)
+### 🐳 2. Running with Docker
+Perfect for consistent environments without installing native dependencies. Requires [Docker](https://docs.docker.com/get-docker/) installed.
+
+```bash
+# Build the image locally
+docker build -t compactify-cli .
+
+# Execute (Linux / macOS / WSL)
+docker run --rm -v "$(pwd):/workspace" compactify-cli lossless -i /workspace/images
+
+# Execute (Windows PowerShell)
+docker run --rm -v "${PWD}:/workspace" compactify-cli lossless -i /workspace/images
+```
+> [!IMPORTANT]
+> Path Mapping: When using Docker, all input (-i) and output (-o) paths must be relative to the /workspace directory inside the container.
+
+### 🛠 3. Building from Source (Developers)
+Requires [Go](https://golang.org/doc/install) 1.21+ and [libvips](https://www.libvips.org/) headers.
 
 ### Installation (Native)
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/felipe-simis/go-compactify-cli.git
+   git clone https://github.com/felipesimis/go-compactify-cli.git
    cd go-compactify-cli
    ```
 
-2. Build the binary:
+2. Build the binary (injecting version):
    ```bash
-   go build -ldflags="-w -s" -trimpath -o compactify . 
+   # In the command below, replace 'v1.5.0' with the current version tag
+   go build -ldflags="-w -s -X 'github.com/felipesimis/go-compactify-cli/cmd.Version=$(git describe --tags --abbrev=0)'" -trimpath -o compactify .
    ```
-
-### 🐳 Running with Docker (Alternative)
-If you prefer not to install libvips or Go locally, use the pre-configured Docker environment. This ensures a consistent environment across all operating systems.
-
-1. Build the image:
-   ```bash
-   docker build -t compactify-cli .
-   ```
-2. Execute via Docker:
-You must map your local folder to the container's /workspace using a volume.
-   ## Linux / macOS / WSL
-   ```bash
-   docker run --rm -v "$(pwd):/workspace" compactify-cli lossless -i /workspace/your-folder
-   ```
-   ## Windows (PowerShell)
-   ```bash
-   docker run --rm -v "${PWD}:/workspace" compactify-cli lossless -i /workspace/your-folder
-   ```
-   (> [!IMPORTANT])
-Path Mapping: When using Docker, all input (-i) and output (-o) paths must be relative to the /workspace directory inside the container.
 
 ### Usage
 
@@ -128,7 +130,7 @@ go test -v ./internal/filesystem -run TestReadDir
 ## 🛠 Built With
 
 - [Go](https://golang.org/) - The programming language.
-- [libvips](https://www.libvips.org/) - Fast image processing library.
+- [bimg](https://github.com/h2non/bimg) - Go bindings for libvips.
 - [Cobra](https://github.com/spf13/cobra) - CLI framework.
 - [Testify](https://github.com/stretchr/testify) - Testing toolkit.
 - [Lipgloss](https://github.com/charmbracelet/lipgloss) - Styling library.
@@ -140,4 +142,4 @@ go test -v ./internal/filesystem -run TestReadDir
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
-*Developed by [Felipe Simis](https://github.com/felipe-simis)*
+*Developed by [Felipe Simis](https://github.com/felipesimis)*
