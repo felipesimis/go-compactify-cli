@@ -1,0 +1,19 @@
+# Compactify Configuration Example
+# Rename this file to config.yaml to activate.
+
+# --- Performance ---
+# Define the number of concurrent workers.
+# The default is the number of logical CPUs on the system.
+# concurrency: 4
+
+# --- Path (Optional) ---
+# CAUTION: If you set these paths, they will override the default behavior of using the current working directory 
+# for both input and output. This means that all commands will use these paths by default, unless you explicitly use 
+# flags to specify different paths.
+
+# input: "~/images"
+# output: "./transformed"
+
+# --- Security ---
+# If set to true, no files will be written to disk by default.
+# dry-run: false
