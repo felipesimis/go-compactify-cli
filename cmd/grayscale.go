@@ -14,11 +14,10 @@ func grayscaleRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	fs := filesystem.NewFileSystem()
-	return RunOperation(OperationConfig{
+	globalConfig := loadGlobalConfig(cmd)
+	return RunOperation(globalConfig, OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           inputDir,
-		OutputDir:          outputDir,
 		OutputSuffix:       "-grayscale",
 		ProgressBarMessage: "Creating grayscale images",
 		ProcessorFunc:      processGrayscaleImage,

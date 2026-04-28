@@ -36,12 +36,10 @@ func cropRun(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	fs := filesystem.NewFileSystem()
-
-	return RunOperation(OperationConfig{
+	globalConfig := loadGlobalConfig(cmd)
+	return RunOperation(globalConfig, OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           inputDir,
-		OutputDir:          outputDir,
 		OutputSuffix:       fmt.Sprintf("-cropped_%dx%d", width, height),
 		ProgressBarMessage: "Cropping images",
 		ExtraParams:        CropParams{Width: width, Height: height, Gravity: image.Gravity(gravity)},

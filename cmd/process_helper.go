@@ -31,8 +31,6 @@ var bufferPool = sync.Pool{
 type OperationConfig struct {
 	Ctx                context.Context
 	FileSystem         filesystem.FileSystem
-	InputDir           string
-	OutputDir          string
 	OutputSuffix       string
 	ProgressBarMessage string
 	ExtraParams        interface{}
@@ -40,30 +38,30 @@ type OperationConfig struct {
 	ResultVerb         string
 }
 
-func RunOperation(config OperationConfig) error {
-	if dryRun {
+func RunOperation(global GlobalConfig, config OperationConfig) error {
+	if global.DryRun {
 		config.FileSystem = filesystem.NewDryRunFileSystem(config.FileSystem)
 
 		fmt.Println(ui.Warn("DRY-RUN MODE: No files will be modified or created on disk."))
 	}
 
-	files, err := config.FileSystem.ReadDir(config.InputDir)
+	files, err := config.FileSystem.ReadDir(global.InputDir)
 	if err != nil {
 		return err
 	}
 	if len(files) == 0 {
-		fmt.Println(ui.Warn(fmt.Sprintf("No files found in directory: %s", config.InputDir)))
+		fmt.Println(ui.Warn(fmt.Sprintf("No files found in directory: %s", global.InputDir)))
 		return nil
 	}
 
-	finalOutputDir, err := resolveOutputDir(config)
+	finalOutputDir, err := resolveOutputDir(global, config)
 	if err != nil {
 		return err
 	}
 
 	stats := &utils.ImageProcessingStats{}
 	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
-	progressBar := progress.NewProgressBar(os.Stdout, len(files), concurrency, config.ProgressBarMessage)
+	progressBar := progress.NewProgressBar(os.Stdout, len(files), global.Concurrency, config.ProgressBarMessage)
 	defer progressBar.Finish()
 
 	wrappedProcessor := func(p processing.FileProcessingParams) error {
@@ -72,12 +70,12 @@ func RunOperation(config OperationConfig) error {
 	params := processing.ProcessFilesParams{
 		Files:         files,
 		FS:            config.FileSystem,
-		InputDir:      config.InputDir,
+		InputDir:      global.InputDir,
 		OutputDir:     finalOutputDir,
 		ProgressBar:   progressBar,
 		ExtraParams:   config.ExtraParams,
 		ProcessorFunc: wrappedProcessor,
-		Concurrency:   concurrency,
+		Concurrency:   global.Concurrency,
 	}
 	processErrors := processing.ProcessFiles(params)
 	totalImages := uint32(len(files))
@@ -141,14 +139,14 @@ func HandleImageProcessing(ctx context.Context, params processing.FileProcessing
 	return nil
 }
 
-func resolveOutputDir(config OperationConfig) (string, error) {
-	if config.OutputDir != "" {
-		if err := config.FileSystem.CreateDir(config.OutputDir); err != nil {
+func resolveOutputDir(global GlobalConfig, config OperationConfig) (string, error) {
+	if global.OutputDir != "" {
+		if err := config.FileSystem.CreateDir(global.OutputDir); err != nil {
 			return "", err
 		}
-		return config.OutputDir, nil
+		return global.OutputDir, nil
 	}
-	return config.FileSystem.CreateSiblingDir(config.InputDir, config.OutputSuffix)
+	return config.FileSystem.CreateSiblingDir(global.InputDir, config.OutputSuffix)
 }
 
 func determineOutputPath(params processing.FileProcessingParams) string {

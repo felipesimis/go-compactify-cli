@@ -29,11 +29,10 @@ func convertRun(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	fs := filesystem.NewFileSystem()
-	return RunOperation(OperationConfig{
+	globalConfig := loadGlobalConfig(cmd)
+	return RunOperation(globalConfig, OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           inputDir,
-		OutputDir:          outputDir,
 		OutputSuffix:       fmt.Sprintf("-converted.%s", format),
 		ProgressBarMessage: "Converting images",
 		ExtraParams:        ConvertParams{Format: format},
@@ -71,6 +70,5 @@ func init() {
 	rootCmd.AddCommand(convertCmd)
 
 	convertCmd.Flags().StringVarP(&format, "format", "f", "", `Desired format of the images. Available options: webp, jpeg, png`)
-
 	convertCmd.MarkFlagRequired("format")
 }

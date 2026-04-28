@@ -32,12 +32,10 @@ func resizeRun(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	fs := filesystem.NewFileSystem()
-
-	return RunOperation(OperationConfig{
+	globalConfig := loadGlobalConfig(cmd)
+	return RunOperation(globalConfig, OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           inputDir,
-		OutputDir:          outputDir,
 		OutputSuffix:       "-resized",
 		ProgressBarMessage: "Resizing images",
 		ExtraParams:        ResizeParams{Width: width, Height: height},

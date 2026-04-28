@@ -28,11 +28,10 @@ func enlargeRun(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	fs := filesystem.NewFileSystem()
-	return RunOperation(OperationConfig{
+	globalConfig := loadGlobalConfig(cmd)
+	return RunOperation(globalConfig, OperationConfig{
 		Ctx:                ctx,
 		FileSystem:         fs,
-		InputDir:           inputDir,
-		OutputDir:          outputDir,
 		OutputSuffix:       fmt.Sprintf("-enlarged-%dx%d", width, height),
 		ProgressBarMessage: "Enlarging images",
 		ExtraParams:        EnlargeParams{Width: width, Height: height},
