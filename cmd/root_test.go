@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
@@ -158,6 +159,22 @@ func (suite *RootTestSuite) TestExecute_ShouldFormatVersionWithVPrefix() {
 
 	suite.Contains(buf.String(), "v2.0.0")
 	suite.NotContains(buf.String(), "vv2.0.0")
+}
+
+func (suite *RootTestSuite) TestPersistentPreRunE_ShouldBypassValidation_ForSpecificCommands() {
+	initCmd := &cobra.Command{Use: "init"}
+	err := rootCmd.PersistentPreRunE(initCmd, []string{})
+	suite.NoError(err, "should not require --input for init command")
+
+	helpCmd := &cobra.Command{Use: "help"}
+	err = rootCmd.PersistentPreRunE(helpCmd, []string{})
+	suite.NoError(err, "should not require --input for help command")
+
+	versionCmd := &cobra.Command{Use: "dummy"}
+	versionCmd.Flags().Bool("version", false, "version flag")
+	versionCmd.Flags().Set("version", "true")
+	err = rootCmd.PersistentPreRunE(versionCmd, []string{})
+	suite.NoError(err, "should not require --input when the --version flag is used")
 }
 
 func TestRootSuite(t *testing.T) {
