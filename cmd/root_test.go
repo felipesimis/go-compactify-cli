@@ -56,6 +56,19 @@ func (suite *RootTestSuite) TestShould_PrioritizeEnvVar_Over_ConfigFile() {
 	suite.Equal(12, concurrency)
 }
 
+func (suite *RootTestSuite) TestShould_PrioritizeFlag_Over_EnvVar_And_ConfigFile() {
+	configContent := "concurrency: 4\n"
+	suite.Require().NoError(os.WriteFile(suite.configName, []byte(configContent), 0644))
+	os.Setenv("COMPACTIFY_CONCURRENCY", "12")
+	defer os.Unsetenv("COMPACTIFY_CONCURRENCY")
+
+	rootCmd.Flags().Set("concurrency", "2")
+	initConfig()
+
+	concurrency, _ := rootCmd.Flags().GetInt("concurrency")
+	suite.Equal(2, concurrency, "should prioritize command-line flag over environment variable and config file")
+}
+
 func TestRootSuite(t *testing.T) {
 	suite.Run(t, new(RootTestSuite))
 }
