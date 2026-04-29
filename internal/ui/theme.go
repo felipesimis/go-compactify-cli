@@ -13,8 +13,11 @@ var (
 	colorWarnBorder = lipgloss.Color("#F59E0B")
 	colorWarnText   = lipgloss.Color("#FEF3C7")
 
-	colorBorderError = lipgloss.Color("#EF4444")
+	colorErrorBorder = lipgloss.Color("#EF4444")
 	colorErrText     = lipgloss.Color("#FEE2E2")
+
+	colorSuccessBorder = lipgloss.Color("#10B981")
+	colorSuccessText   = lipgloss.Color("#F0FDF4")
 
 	styleCalloutBase = lipgloss.NewStyle().
 				Border(lipgloss.ThickBorder(), false, false, false, true).

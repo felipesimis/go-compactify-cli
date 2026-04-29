@@ -21,7 +21,11 @@ func Warn(message string) string {
 }
 
 func Error(message string) string {
-	return renderCallout("❌", message, colorBorderError, colorErrText)
+	return renderCallout("❌", message, colorErrorBorder, colorErrText)
+}
+
+func Success(message string) string {
+	return renderCallout("✅", message, colorSuccessBorder, colorSuccessText)
 }
 
 type Item struct {
