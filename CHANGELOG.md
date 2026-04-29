@@ -3,11 +3,18 @@
 ## [Unreleased]
 
 ### 🚀 Added & Changed
+- **Multi-layer Configuration Hierarchy**: Implemented a robust precedence engine where Flags > Environment Variables > Config File > Defaults. This ensures maximum flexibility for local development and CI/CD environments.
+- **Environment Variable Mapping**: Integrated automatic mapping for all global settings using the COMPACTIFY_ prefix (e.g., COMPACTIFY_CONCURRENCY).
+- **Resilient Versioning**: Added intelligent version string sanitization that handles both v-prefixed tags and raw version strings, preventing redundant visual prefixes in the UI.
+- **Performance UX**: Added automated warnings when concurrency levels exceed safe hardware limits ($2 \times \text{CPU cores}$), preventing system instability.
 - **Config Initialization**: Added `init` command (with `initialize` and `config` aliases) to generate a default `config.yaml` file, simplifying global settings management.
 - **Overwrite Protection**: Implemented a security check in the `init` command that prevents accidental overwriting of existing configurations unless the `--force` (`-f`) flag is provided.
 - **Standardized Success Feedback**: Integrated a new `Success` component in the UI package to provide consistent, high-fidelity visual confirmation for CLI operations.
 
 ### 🛠 Engineering & Maintenance
+- **Full Root Orchestration Coverage**: Achieved 100% logic coverage for cmd/root.go, including edge cases for corrupted configurations and missing required flags.
+- **I/O Dependency Injection**: Refactored the root command to use OutOrStderr() and ExecuteContext, eliminating global state dependencies and enabling 100% thread-safe integration testing.
+- **Strategic Test Interception**: Implemented buffer-based testing for standard streams.
 - **Integration Test Suite**: Achieved 100% logic and interface coverage for the `init` command using `testify/suite`, including validation of filesystem edge cases and Cobra command orchestration.
 - **Theme Harmonization**: Refactored UI color constants (e.g., `colorErrorBorder`) to ensure a symmetrical and maintainable naming convention across the theme package.
 
