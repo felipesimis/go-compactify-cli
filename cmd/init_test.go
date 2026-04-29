@@ -4,83 +4,87 @@ import (
 	"os"
 	"testing"
 
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func setupInitTest(t *testing.T) string {
-	t.Helper()
-	tmpDir := t.TempDir()
-	oldWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
+type InitTestSuite struct {
+	suite.Suite
+	oldWd      string
+	configName string
+}
+
+func (suite *InitTestSuite) SetupTest() {
+	suite.oldWd, _ = os.Getwd()
+	suite.configName = "config.yaml"
+	tmpDir := suite.T().TempDir()
+	suite.Require().NoError(os.Chdir(tmpDir))
 
 	viper.Reset()
 
-	t.Cleanup(func() {
-		os.Chdir(oldWd)
+	initCmd.Flags().VisitAll(func(f *pflag.Flag) {
+		f.Value.Set(f.DefValue)
+		f.Changed = false
 	})
-	return tmpDir
+	rootCmd.SetArgs([]string{})
 }
 
-func TestShould_CreateDefaultConfig_When_FileDoesNotExist(t *testing.T) {
-	setupInitTest(t)
-	configPath := "config.yaml"
+func (suite *InitTestSuite) TearDownTest() {
+	suite.Require().NoError(os.Chdir(suite.oldWd))
+}
 
+func (s *InitTestSuite) assertConfigContent(expectedSubstring string) {
+	content, err := os.ReadFile(s.configName)
+	s.Require().NoError(err, "should be able to read the config file")
+	s.Contains(string(content), expectedSubstring)
+}
+
+func (suite *InitTestSuite) TestShould_CreateDefaultConfig_When_FileDoesNotExist() {
 	rootCmd.SetArgs([]string{"init"})
 	err := rootCmd.Execute()
 
-	assert.NoError(t, err)
-	assert.FileExists(t, configPath, "file config.yaml should be created")
-
-	content, _ := os.ReadFile(configPath)
-	assert.Contains(t, string(content), "concurrency:", "The file should contain the concurrency key")
+	suite.NoError(err)
+	suite.FileExists(suite.configName, "file config.yaml should be created")
+	suite.assertConfigContent("concurrency:")
 }
 
-func TestShould_ReturnError_When_FileAlreadyExists(t *testing.T) {
-	setupInitTest(t)
-	configPath := "config.yaml"
+func (suite *InitTestSuite) TestShould_ReturnError_When_FileAlreadyExists() {
 	importantContent := "user-custom-config: true"
-
-	err := os.WriteFile(configPath, []byte(importantContent), 0644)
-	assert.NoError(t, err)
+	suite.Require().NoError(os.WriteFile(suite.configName, []byte(importantContent), 0644))
 
 	rootCmd.SetArgs([]string{"init"})
-	err = rootCmd.Execute()
+	err := rootCmd.Execute()
 
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "already exists", "The error should inform that the file already exists")
-
-	content, _ := os.ReadFile(configPath)
-	assert.Equal(t, importantContent, string(content), "The init command should never overwrite an existing file without permission")
+	suite.Require().Error(err)
+	suite.Contains(err.Error(), "already exists")
+	suite.Contains(err.Error(), "Use --force to overwrite")
+	suite.assertConfigContent(importantContent)
 }
 
-func TestShould_ReturnError_When_WriteFileFails(t *testing.T) {
-	setupInitTest(t)
-	configPath := "config.yaml"
-
-	err := os.Mkdir(configPath, 0755)
-	assert.NoError(t, err)
-
-	rootCmd.SetArgs([]string{"init", "--force"})
-	err = rootCmd.Execute()
-
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to create config file", "should capture the file write failure")
-}
-
-func TestShould_OverwriteConfig_When_FileExistsAndForceFlagIsUsed(t *testing.T) {
-	setupInitTest(t)
-	configPath := "config.yaml"
-	oldContent := "profile: old"
-
-	os.WriteFile(configPath, []byte(oldContent), 0644)
+func (suite *InitTestSuite) TestShould_ReturnError_When_WriteFileFails() {
+	suite.Require().NoError(os.Mkdir(suite.configName, 0755))
 
 	rootCmd.SetArgs([]string{"init", "--force"})
 	err := rootCmd.Execute()
 
-	assert.NoError(t, err)
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to create config file")
+}
 
-	newContent, _ := os.ReadFile(configPath)
-	assert.NotEqual(t, oldContent, string(newContent), "The content should be overwritten when --force is used")
-	assert.Contains(t, string(newContent), "concurrency:", "The new file should contain the default concurrency key")
+func (suite *InitTestSuite) TestShould_OverwriteConfig_When_FileExistsAndForceFlagIsUsed() {
+	oldContent := "profile: old"
+	suite.Require().NoError(os.WriteFile(suite.configName, []byte(oldContent), 0644))
+
+	rootCmd.SetArgs([]string{"init", "--force"})
+	err := rootCmd.Execute()
+	suite.NoError(err)
+
+	newContent, _ := os.ReadFile(suite.configName)
+	suite.NotContains(string(newContent), oldContent)
+	suite.Contains(string(newContent), "concurrency:")
+}
+
+func TestInitSuite(t *testing.T) {
+	suite.Run(t, new(InitTestSuite))
 }
