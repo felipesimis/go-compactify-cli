@@ -91,6 +91,17 @@ func (suite *RootTestSuite) TestShould_ShowWarning_When_ConcurrencyIsTooHigh() {
 	suite.Contains(buf.String(), "WARNING: Concurrency set very high. This may cause high memory usage and slow down your system.")
 }
 
+func (suite *RootTestSuite) TestShould_LoadSpecificConfigFile_When_ConfigFlagIsProvided() {
+	customConfigFile := "custom_config.yaml"
+	suite.Require().NoError(os.WriteFile(customConfigFile, []byte("concurrency: 5\n"), 0644))
+
+	rootCmd.Flags().Set("config", customConfigFile)
+	initConfig()
+
+	concurrency, _ := rootCmd.Flags().GetInt("concurrency")
+	suite.Equal(5, concurrency)
+}
+
 func TestRootSuite(t *testing.T) {
 	suite.Run(t, new(RootTestSuite))
 }
