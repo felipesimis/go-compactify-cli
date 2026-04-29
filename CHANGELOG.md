@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### 🚀 CI/CD & Infrastructure
+- **Local Quality Gates**: Integrated Lefthook for pre-commit validation, ensuring `fmt`, `vet`, and `test` execution prior to code tracking.
+- **Commit Culture Enforcement**: Added strict Git hook validation for the Conventional Commits specification.
+- **Continuous Integration Pipeline**: Implemented a GitHub Actions workflow (`.github/workflows/ci.yaml`) to automatically validate code quality, unit tests, and cross-platform compilation (including CGO/libvips dependencies) on all pushes and pull requests.
+
 ### 🚀 Added & Changed
 - **Multi-layer Configuration Hierarchy**: Implemented a robust precedence engine where Flags > Environment Variables > Config File > Defaults. This ensures maximum flexibility for local development and CI/CD environments.
 - **Environment Variable Mapping**: Integrated automatic mapping for all global settings using the COMPACTIFY_ prefix (e.g., COMPACTIFY_CONCURRENCY).
