@@ -69,6 +69,13 @@ func (suite *RootTestSuite) TestShould_PrioritizeFlag_Over_EnvVar_And_ConfigFile
 	suite.Equal(2, concurrency, "should prioritize command-line flag over environment variable and config file")
 }
 
+func (suite *RootTestSuite) TestShould_ReturnError_When_InputFlagIsMissing() {
+	rootCmd.Flags().Set("input", "")
+	err := rootCmd.PersistentPreRunE(rootCmd, []string{})
+	suite.Error(err)
+	suite.Contains(err.Error(), "required flag \"input\" (-i) not set")
+}
+
 func TestRootSuite(t *testing.T) {
 	suite.Run(t, new(RootTestSuite))
 }
