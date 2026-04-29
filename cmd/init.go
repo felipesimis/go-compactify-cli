@@ -7,6 +7,7 @@ import (
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
 	"github.com/felipesimis/go-compactify-cli/internal/templates"
+	"github.com/felipesimis/go-compactify-cli/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +27,7 @@ func initRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create config file: %w", err)
 	}
 
-	fmt.Println("✓ Configuration file initialized successfully: " + configPath)
+	fmt.Fprintln(cmd.OutOrStdout(), ui.Success("Configuration file initialized successfully: "+configPath))
 	return nil
 }
 

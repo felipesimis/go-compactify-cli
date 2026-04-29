@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
@@ -96,6 +97,19 @@ func (suite *InitTestSuite) TestInitShould_WorkWithAliases() {
 	err := rootCmd.Execute()
 	suite.NoError(err)
 	suite.FileExists(suite.configName, "file config.yaml should be created")
+}
+
+func (suite *InitTestSuite) TestInitShould_PrintSuccessMessage_When_Initialized() {
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	defer rootCmd.SetOut(os.Stdout)
+
+	rootCmd.SetArgs([]string{"init"})
+	err := rootCmd.Execute()
+	suite.NoError(err)
+
+	output := buf.String()
+	suite.Contains(output, "Configuration file initialized successfully")
 }
 
 func TestInitSuite(t *testing.T) {
