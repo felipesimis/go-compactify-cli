@@ -2,13 +2,24 @@
 BINARY_NAME := compactify
 COVERAGE_FILE := coverage.out
 
-.PHONY : all fmt vet test coverage test clean
+.PHONY : all fmt fmt-fix vet test coverage test build clean init-hooks
 
 all: fmt vet test build
 
 fmt:
-	@echo "🧹 Running go fmt..."
-	go fmt ./...
+	@echo "🔍 Checking Go formatting..."
+	@files="$$(find . -type f -name '*.go' -not -path './vendor/*' -exec gofmt -l {} +)"; \
+	if [ -n "$$files" ]; then \
+		echo "❌ The following files need formatting:"; \
+		echo "$$files"; \
+		echo "Run 'make fmt-fix' to format them."; \
+		exit 1; \
+	fi
+	@echo "✅ Everything is formatted!"
+
+fmt-fix:
+	@echo "🧹 Formatting Go code..."
+	@gofmt -w $$(find . -type f -name '*.go' -not -path './vendor/*')
 
 vet:
 	@echo "🔍 Running go vet..."

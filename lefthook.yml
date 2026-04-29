@@ -3,13 +3,13 @@ pre-commit:
   parallel: false
   commands:
     fmt:
-      glob: "*.go"
-      run: make fmt
+      glob: "**/*.go"
+      run: make fmt-fix && git add {staged_files}
     vet:
-      glob: "*.go"
+      glob: "**/*.go"
       run: make vet
     test:
-      glob: "*.go"
+      glob: "**/*.go"
       run: make test
 
 commit-msg:

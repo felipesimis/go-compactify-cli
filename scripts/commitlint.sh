@@ -6,7 +6,7 @@ BLUE="\033[0;34m"
 NC="\033[0m" # No Color
 
 # Regex for Conventional Commits
-REGEXP="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?:\s+.{1,100}"
+REGEXP="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?:[[:space:]]+.{1,100}"
 TYPES="feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
 
 if [ -z "$1" ] || [ ! -f "$1" ]; then
@@ -14,7 +14,8 @@ if [ -z "$1" ] || [ ! -f "$1" ]; then
     exit 1
 fi
 
-COMMIT_MSG=$(cat "$1")
+IFS= read -r COMMIT_MSG < "$1"
+ COMMIT_MSG=${COMMIT_MSG%$'\r'}
 
 if ! [[ "$COMMIT_MSG" =~ $REGEXP ]]; then
     echo -e "${RED}❌ error:${NC} commit message does not follow Conventional Commits format."
