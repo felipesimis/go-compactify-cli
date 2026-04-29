@@ -44,6 +44,18 @@ func (suite *RootTestSuite) TestShould_UseConcurrencyFromFile_When_NoFlagIsProvi
 	suite.Equal(4, concurrency)
 }
 
+func (suite *RootTestSuite) TestShould_PrioritizeEnvVar_Over_ConfigFile() {
+	configContent := "concurrency: 4\n"
+	suite.Require().NoError(os.WriteFile(suite.configName, []byte(configContent), 0644))
+	os.Setenv("COMPACTIFY_CONCURRENCY", "12")
+	defer os.Unsetenv("COMPACTIFY_CONCURRENCY")
+
+	initConfig()
+
+	concurrency, _ := rootCmd.Flags().GetInt("concurrency")
+	suite.Equal(12, concurrency)
+}
+
 func TestRootSuite(t *testing.T) {
 	suite.Run(t, new(RootTestSuite))
 }
