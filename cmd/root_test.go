@@ -103,7 +103,7 @@ func (suite *RootTestSuite) TestShould_LoadSpecificConfigFile_When_ConfigFlagIsP
 }
 
 func (suite *RootTestSuite) TestShould_PrintError_When_ConfigFileIsCorrupted() {
-	corruptedContent := "concurrency: [invalid-systax"
+	corruptedContent := "concurrency: [invalid-syntax"
 	suite.Require().NoError(os.WriteFile(suite.configName, []byte(corruptedContent), 0644))
 
 	buf := new(bytes.Buffer)
