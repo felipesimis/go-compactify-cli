@@ -35,3 +35,8 @@ clean:
 	@rm -f $(BINARY_NAME)
 	@rm -f $(COVERAGE_FILE)
 	@rm -f coverage.html
+
+init-hooks:
+	@echo "🪝 Installing Git Hooks..."
+	@cd tools && go run github.com/evilmartians/lefthook/v2 install --force --reset-hooks-path
+	@echo "✅ Git Hooks installed!"
