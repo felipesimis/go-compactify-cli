@@ -16,27 +16,49 @@ Designed with **software engineering excellence** in mind, the project follows s
 ## ✨ Key Features
 
 - 🚀 **High Performance**: Uses `libvips` for low memory footprint and extreme speed.
-- 🧠 **Hardware-Aware**: Intelligent concurrency management using a semaphore pattern to optimize CPU utilization without exhausting resources.
-- 🛡️ **Safety First**: Built-in `DryRun` mode allows users to simulate filesystem operations before committing changes, preventing accidental data loss.
+- 🧠 **Hardware-Aware**: Intelligent concurrency management using a semaphore pattern to optimize CPU utilization.
+- 🛡️ **Safety First**: Built-in `Dry Run` mode allows users to simulate filesystem operations before committing changes, preventing accidental data loss.
+- ⚙️ **Multi-layer Configuration**: Support for Config Files, Environment Variables, and Flags with a strict precedence order.
 - 🛠️ **Versatile Processing**:
     - Format conversion (JPEG, PNG, WebP, etc.)
     - Intelligent resizing and cropping.
     - Grayscale, flipping, and color palette optimization.
     - Lossless compression.
-- 📊 **Detailed Analytics**: Comprehensive execution summary with color-coded statistics via Lipgloss.
+- 📊 **Detailed Analytics**: Execution summary with a side-by-side "Impact Dashboard" (Original vs. Processed).
+
+---
+
+## ⚙️ Configuration Hierarchy
+
+Compactify follows a strict precedence order (from highest to lowest). This allows for flexible deployments in local, CI/CD, or Docker environments:
+
+1. **Command Line Flags** (e.g., `--concurrency 10`)
+2. **Environment Variables** (prefixed with `COMPACTIFY_`)
+3. **Configuration File** (`config.yaml`)
+4. **Hardware Defaults** (automatically calculated based on CPU cores)
+
+### Environment Variables Mapping
+
+| Environment Variable | Flag Equivalent |
+| :--- | :--- |
+| `COMPACTIFY_CONCURRENCY` | `-c, --concurrency` |
+| `COMPACTIFY_INPUT` | `-i, --input` |
+| `COMPACTIFY_OUTPUT` | `-o, --output` |
+| `COMPACTIFY_DRY_RUN` | `--dry-run` |
+| `COMPACTIFY_CONFIG` | `--config` |
 
 ---
 
 ## 🏗 Architecture & Engineering Decisions
 
 ### 🧩 Decoupled Architecture
-The core logic is strictly isolated from external dependencies. By using the **Dependency Inversion Principle**, the `internal/filesystem` package interacts with an `OSOperations` interface. This allows for 100% unit test coverage by isolating side effects through sophisticated mocking.
+The core logic is strictly isolated from external dependencies. By using the **Dependency Inversion Principle**, the internal packages interact with interfaces, allowing for nearly 100% test coverage of the command orchestration and configuration logic.
 
 ### 🌊 Concurrency Model
-To handle thousands of images efficiently, Compactify uses a **Semaphore Pattern** (`chan struct{}`). This prevents goroutine explosion and ensures the tool respects the host machine's hardware limits, maintaining stability under heavy load.
+To handle thousands of images efficiently, Compactify uses a **Semaphore Pattern** (`chan struct{}`). This prevents goroutine explosion and ensures the tool respects the host machine's hardware limits.
 
 ### 🛡️ The Dry-Run Pattern
-Implementing the `FileReaderWriter` interface, the tool supports a non-destructive simulation mode. This is critical for CLI tools that perform destructive operations (like overwriting images), providing a "safety net" for the user.
+Implementing the `FileReaderWriter` interface, the tool supports a non-destructive simulation mode. This is critical for CLI tools that perform destructive operations, providing a "safety net" for the user.
 
 ---
 
@@ -46,14 +68,17 @@ Implementing the `FileReaderWriter` interface, the tool supports a non-destructi
 .
 ├── cmd/                # CLI command implementations (Cobra)
 ├── internal/
-│   ├── filesystem/     # Core filesystem abstraction & DryRun logic
+│   ├── filesystem/     # Core filesystem abstraction & Dry Run logic
 │   ├── image/          # bimg/libvips wrappers
 │   ├── processing/     # Orchestration of the image processing pipeline
-│   └── utils/          # Validation, path handling, and statistics
+│   ├── templates/      # Configuration and UI templates
+│   ├── ui/             # High-fidelity terminal UI components
+│   ├── utils/          # Validation, path handling, and statistics
+│   └── validation/     # Input validation logic
 ├── pkg/                # Publicly exportable packages
-└── main.go             # Application entry point
+│   └── progress/       # Terminal progress bar implementation
+└── main.go             # Application entrypoint
 ```
-
 ---
 
 ## 🚀 Getting Started
@@ -71,42 +96,46 @@ Perfect for consistent environments without installing native dependencies. Requ
 # Build the image locally
 docker build -t compactify-cli .
 
-# Execute (Linux / macOS / WSL)
+# Execute via Docker (mapping your current directory)
 docker run --rm -v "$(pwd):/workspace" compactify-cli lossless -i /workspace/images
-
-# Execute (Windows PowerShell)
-docker run --rm -v "${PWD}:/workspace" compactify-cli lossless -i /workspace/images
 ```
 > [!IMPORTANT]
 > Path Mapping: When using Docker, all input (-i) and output (-o) paths must be relative to the /workspace directory inside the container.
 
 ### 🛠 3. Building from Source (Developers)
-Requires [Go](https://golang.org/doc/install) 1.21+ and [libvips](https://www.libvips.org/) headers.
+Building from source requires [Go](https://golang.org/doc/install) 1.21+ and [libvips](https://www.libvips.org/) headers installed in your system.
 
-### Installation (Native)
+- **macOS**: `brew install vips`
+- **Linux**: `sudo apt install libvips-dev`
+- **Windows**: Follow the `vips` Windows installation guide.
 
-1. Clone the repository:
+#### Installation (Native)
+
+Clone the repository:
    ```bash
+   # Clone the repository
    git clone https://github.com/felipesimis/go-compactify-cli.git
    cd go-compactify-cli
-   ```
 
-2. Build the binary (injecting version):
-   ```bash
-   # In the command below, replace 'v1.5.0' with the current version tag
+   # Build with version injection
    go build -ldflags="-w -s -X 'github.com/felipesimis/go-compactify-cli/cmd.Version=$(git describe --tags --abbrev=0)'" -trimpath -o compactify .
    ```
 
-### Usage
+#### Quick Start
 
-Run the help command to see all available options:
 ```bash
-./compactify --help
-```
+# Initialize a default configuration file
+./compactify init
 
-Example: Resize all images in a folder with a dry run:
-```bash
-./compactify resize -w 800 -H 600 --input ./images --dry-run
+# Batch resize all images with a high concurrency
+./compactify resize -w 800 -H 600 -i ./images --concurrency 12
+
+# Convert all images to WebP without actually touching the files (Preview)
+./compactify convert --format webp -i ./assets --dry-run
+
+# Run lossless optimization with concurrency set via environment variable
+export COMPACTIFY_CONCURRENCY=10
+./compactify lossless
 ```
 
 ---
@@ -142,4 +171,5 @@ go test -v ./internal/filesystem -run TestReadDir
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
+
 *Developed by [Felipe Simis](https://github.com/felipesimis)*
