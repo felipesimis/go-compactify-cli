@@ -93,7 +93,7 @@ func initConfig() {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", ui.Error("Error reading config file"), err)
+			fmt.Fprintf(rootCmd.OutOrStderr(), "%s: %v\n", ui.Error("Error reading config file"), err)
 		}
 	}
 

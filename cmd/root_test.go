@@ -102,6 +102,22 @@ func (suite *RootTestSuite) TestShould_LoadSpecificConfigFile_When_ConfigFlagIsP
 	suite.Equal(5, concurrency)
 }
 
+func (suite *RootTestSuite) TestShould_PrintError_When_ConfigFileIsCorrupted() {
+	corruptedContent := "concurrency: [invalid-systax"
+	suite.Require().NoError(os.WriteFile(suite.configName, []byte(corruptedContent), 0644))
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	rootCmd.SetErr(buf)
+	defer rootCmd.SetOut(os.Stdout)
+	defer rootCmd.SetErr(os.Stderr)
+
+	initConfig()
+
+	suite.Contains(buf.String(), "Error reading config file")
+	suite.Contains(buf.String(), "yaml: line 1")
+}
+
 func TestRootSuite(t *testing.T) {
 	suite.Run(t, new(RootTestSuite))
 }
