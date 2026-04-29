@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### 🚀 Added & Changed
+- **Config Initialization**: Added `init` command (with `initialize` and `config` aliases) to generate a default `config.yaml` file, simplifying global settings management.
+- **Overwrite Protection**: Implemented a security check in the `init` command that prevents accidental overwriting of existing configurations unless the `--force` (`-f`) flag is provided.
+- **Standardized Success Feedback**: Integrated a new `Success` component in the UI package to provide consistent, high-fidelity visual confirmation for CLI operations.
+
+### 🛠 Engineering & Maintenance
+- **Integration Test Suite**: Achieved 100% logic and interface coverage for the `init` command using `testify/suite`, including validation of filesystem edge cases and Cobra command orchestration.
+- **Theme Harmonization**: Refactored UI color constants (e.g., `colorErrorBorder`) to ensure a symmetrical and maintainable naming convention across the theme package.
+
 ## [1.5.0] - 2026-04-28
 
 ### 🚀 Added & Changed
