@@ -104,7 +104,7 @@ func bindFlags(cmd *cobra.Command) {
 	bind := func(flag *pflag.Flag) {
 		if !flag.Changed && viper.IsSet(flag.Name) {
 			value := viper.Get(flag.Name)
-			cmd.Flags().Set(flag.Name, fmt.Sprintf("%v", value))
+			flag.Value.Set(fmt.Sprintf("%v", value))
 		}
 	}
 

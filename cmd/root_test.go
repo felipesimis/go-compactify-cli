@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/spf13/pflag"
@@ -22,7 +23,15 @@ func (suite *RootTestSuite) SetupTest() {
 	suite.configName = "config.yaml"
 	suite.Require().NoError(os.Chdir(tmpDir))
 
+	for _, env := range os.Environ() {
+		if strings.HasPrefix(env, "COMPACTIFY_") {
+			parts := strings.SplitN(env, "=", 2)[0]
+			os.Unsetenv(parts)
+		}
+	}
+
 	viper.Reset()
+	cfgFile = ""
 
 	resetFlags := func(f *pflag.Flag) {
 		f.Value.Set(f.DefValue)
