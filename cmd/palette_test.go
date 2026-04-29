@@ -34,6 +34,16 @@ func (suite *PaletteTestSuite) TestPaletteShould_ReturnError_When_InputDirectory
 	suite.Contains(err.Error(), "failed to open directory")
 }
 
+func (suite *PaletteTestSuite) TestPaletteShould_Warn_When_DirectoryIsEmpty() {
+	tmpDir := suite.T().TempDir()
+
+	suite.cmd.SetArgs([]string{"--input", tmpDir})
+	err := suite.cmd.Execute()
+
+	suite.NoError(err)
+	suite.Contains(suite.outBuf.String(), "No files found in directory")
+}
+
 func TestPaletteSuite(t *testing.T) {
 	suite.Run(t, new(PaletteTestSuite))
 }

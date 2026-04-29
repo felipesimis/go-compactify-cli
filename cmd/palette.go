@@ -30,6 +30,7 @@ func runPalette(fs filesystem.FileSystem) func(cmd *cobra.Command, args []string
 		return RunOperation(globalConfig, OperationConfig{
 			Ctx:                ctx,
 			FileSystem:         fs,
+			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       "-palette",
 			ProgressBarMessage: "Enabling palette on images",
 			ProcessorFunc:      processPaletteImage,
