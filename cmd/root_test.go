@@ -118,6 +118,21 @@ func (suite *RootTestSuite) TestShould_PrintError_When_ConfigFileIsCorrupted() {
 	suite.Contains(buf.String(), "yaml: line 1")
 }
 
+func (suite *RootTestSuite) TestExecute_ShouldInitializeConfigAndVersion() {
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	defer rootCmd.SetOut(os.Stdout)
+
+	rootCmd.SetArgs([]string{"--version"})
+
+	err := Execute()
+	suite.NoError(err)
+
+	output := buf.String()
+	suite.Contains(output, "Compactify")
+	suite.Contains(output, "v")
+}
+
 func TestRootSuite(t *testing.T) {
 	suite.Run(t, new(RootTestSuite))
 }
