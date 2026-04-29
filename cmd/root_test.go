@@ -133,6 +133,24 @@ func (suite *RootTestSuite) TestExecute_ShouldInitializeConfigAndVersion() {
 	suite.Contains(output, "v")
 }
 
+func (suite *RootTestSuite) TestExecute_ShouldFormatVersionWithVPrefix() {
+	oldVersion := Version
+	Version = "v2.0.0"
+	defer func() { Version = oldVersion }()
+
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	defer rootCmd.SetOut(os.Stdout)
+
+	rootCmd.SetArgs([]string{"--version"})
+
+	err := Execute()
+	suite.NoError(err)
+
+	suite.Contains(buf.String(), "v2.0.0")
+	suite.NotContains(buf.String(), "vv2.0.0")
+}
+
 func TestRootSuite(t *testing.T) {
 	suite.Run(t, new(RootTestSuite))
 }
