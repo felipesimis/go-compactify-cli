@@ -9,6 +9,11 @@ NC="\033[0m" # No Color
 REGEXP="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?:\s+.{1,100}"
 TYPES="feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
 
+if [ -z "$1" ] || [ ! -f "$1" ]; then
+    echo -e "${RED}❌ error:${NC} commit message file not found."
+    exit 1
+fi
+
 COMMIT_MSG=$(cat "$1")
 
 if ! [[ "$COMMIT_MSG" =~ $REGEXP ]]; then
