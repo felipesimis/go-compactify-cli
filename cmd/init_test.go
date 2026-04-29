@@ -40,7 +40,7 @@ func (s *InitTestSuite) assertConfigContent(expectedSubstring string) {
 	s.Contains(string(content), expectedSubstring)
 }
 
-func (suite *InitTestSuite) TestShould_CreateDefaultConfig_When_FileDoesNotExist() {
+func (suite *InitTestSuite) TestInitShould_CreateDefaultConfig_When_FileDoesNotExist() {
 	rootCmd.SetArgs([]string{"init"})
 	err := rootCmd.Execute()
 
@@ -49,7 +49,7 @@ func (suite *InitTestSuite) TestShould_CreateDefaultConfig_When_FileDoesNotExist
 	suite.assertConfigContent("concurrency:")
 }
 
-func (suite *InitTestSuite) TestShould_ReturnError_When_FileAlreadyExists() {
+func (suite *InitTestSuite) TestInitShould_ReturnError_When_FileAlreadyExists() {
 	importantContent := "user-custom-config: true"
 	suite.Require().NoError(os.WriteFile(suite.configName, []byte(importantContent), 0644))
 
@@ -62,7 +62,7 @@ func (suite *InitTestSuite) TestShould_ReturnError_When_FileAlreadyExists() {
 	suite.assertConfigContent(importantContent)
 }
 
-func (suite *InitTestSuite) TestShould_ReturnError_When_WriteFileFails() {
+func (suite *InitTestSuite) TestInitShould_ReturnError_When_WriteFileFails() {
 	suite.Require().NoError(os.Mkdir(suite.configName, 0755))
 
 	rootCmd.SetArgs([]string{"init", "--force"})
@@ -72,7 +72,7 @@ func (suite *InitTestSuite) TestShould_ReturnError_When_WriteFileFails() {
 	suite.Contains(err.Error(), "failed to create config file")
 }
 
-func (suite *InitTestSuite) TestShould_OverwriteConfig_When_FileExistsAndForceFlagIsUsed() {
+func (suite *InitTestSuite) TestInitShould_OverwriteConfig_When_FileExistsAndForceFlagIsUsed() {
 	oldContent := "profile: old"
 	suite.Require().NoError(os.WriteFile(suite.configName, []byte(oldContent), 0644))
 
@@ -83,6 +83,19 @@ func (suite *InitTestSuite) TestShould_OverwriteConfig_When_FileExistsAndForceFl
 	newContent, _ := os.ReadFile(suite.configName)
 	suite.NotContains(string(newContent), oldContent)
 	suite.Contains(string(newContent), "concurrency:")
+}
+
+func (suite *InitTestSuite) TestInitShould_ReturnError_When_ArgumentsAreProvided() {
+	rootCmd.SetArgs([]string{"init", "unexpected-arg"})
+	err := rootCmd.Execute()
+	suite.Error(err)
+}
+
+func (suite *InitTestSuite) TestInitShould_WorkWithAliases() {
+	rootCmd.SetArgs([]string{"config"})
+	err := rootCmd.Execute()
+	suite.NoError(err)
+	suite.FileExists(suite.configName, "file config.yaml should be created")
 }
 
 func TestInitSuite(t *testing.T) {
