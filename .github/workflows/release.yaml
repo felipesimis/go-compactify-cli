@@ -70,7 +70,6 @@ jobs:
         run: |
           CGO_ENABLED=1 go build -ldflags="-w -s -X 'github.com/${{ github.repository }}/cmd.Version=${{ steps.vars.outputs.tag }}'" -trimpath -o ${{ matrix.bin_name }} .
           
-          # Injeta o README para Mac e Linux
           cat << 'EOF' > README.txt
           Compactify CLI
           ==============
@@ -95,13 +94,12 @@ jobs:
           CGO_ENABLED=1 go build -ldflags="-w -s -X 'github.com/${{ github.repository }}/cmd.Version=${{ steps.vars.outputs.tag }}'" -trimpath -o release_pkg/${{ matrix.bin_name }} .
           ldd release_pkg/${{ matrix.bin_name }} | grep "mingw64" | awk '{print $3}' | xargs -I '{}' cp '{}' release_pkg/
           
-          # Injeta o README salva-vidas para o Windows
           cat << 'EOF' > release_pkg/README.txt
           Compactify CLI
           ==============
           IMPORTANT: This is a command-line tool. DO NOT double-click the .exe file.
 
-          Instalation Instructions:
+          Installation Instructions:
           1. Extract the entire folder (with all .dll files) to a safe location.
              Example: C:\Program Files\Compactify\
           2. Add this path (C:\Program Files\Compactify\) to the 'Path' environment variable in Windows.
