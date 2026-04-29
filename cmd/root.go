@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"charm.land/lipgloss/v2"
+	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
 	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/felipesimis/go-compactify-cli/internal/ui"
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
@@ -54,6 +55,12 @@ var rootCmd = &cobra.Command{
 func Execute() error {
 	image.InitializeProcessor()
 	defer image.ShutdownProcessor()
+
+	fs := filesystem.NewFileSystem()
+
+	rootCmd.AddCommand(
+		NewInitCmd(fs),
+	)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
