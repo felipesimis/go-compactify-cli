@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
@@ -74,6 +75,20 @@ func (suite *RootTestSuite) TestShould_ReturnError_When_InputFlagIsMissing() {
 	err := rootCmd.PersistentPreRunE(rootCmd, []string{})
 	suite.Error(err)
 	suite.Contains(err.Error(), "required flag \"input\" (-i) not set")
+}
+
+func (suite *RootTestSuite) TestShould_ShowWarning_When_ConcurrencyIsTooHigh() {
+	buf := new(bytes.Buffer)
+	rootCmd.SetOut(buf)
+	defer rootCmd.SetOut(os.Stdout)
+
+	rootCmd.Flags().Set("input", "./fake-dir")
+	rootCmd.Flags().Set("concurrency", "1000")
+
+	err := rootCmd.PersistentPreRunE(rootCmd, []string{})
+
+	suite.NoError(err)
+	suite.Contains(buf.String(), "WARNING: Concurrency set very high. This may cause high memory usage and slow down your system.")
 }
 
 func TestRootSuite(t *testing.T) {
