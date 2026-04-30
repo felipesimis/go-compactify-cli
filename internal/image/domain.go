@@ -48,3 +48,5 @@ type ImageProcessor interface {
 	LosslessCompress() ([]byte, error)
 	Metadata() (ImageMetadata, error)
 }
+
+type ProcessorFactory func(imageData []byte) ImageProcessor

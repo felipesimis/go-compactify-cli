@@ -60,6 +60,7 @@ func Execute() error {
 
 	rootCmd.AddCommand(
 		NewInitCmd(fs),
+		NewPaletteCmd(fs, image.NewProcessor),
 	)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

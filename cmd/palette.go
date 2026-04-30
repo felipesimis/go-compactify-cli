@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewPaletteCmd(fs filesystem.FileSystem, processorFactory func([]byte) image.ImageProcessor) *cobra.Command {
+func NewPaletteCmd(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) *cobra.Command {
 	return &cobra.Command{
 		Use:   "palette",
 		Args:  cobra.NoArgs,
@@ -22,7 +22,7 @@ It is useful for optimizing images for web use, creating artistic effects, and e
 	}
 }
 
-func runPalette(fs filesystem.FileSystem, processorFactory func([]byte) image.ImageProcessor) func(cmd *cobra.Command, args []string) error {
+func runPalette(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		globalConfig := loadGlobalConfig(cmd)

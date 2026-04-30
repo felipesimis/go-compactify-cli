@@ -97,7 +97,7 @@ func HandleImageProcessing(
 	ctx context.Context,
 	params processing.FileProcessingParams,
 	stats *utils.ImageProcessingStats,
-	processorFactory func([]byte) image.ImageProcessor,
+	processorFactory image.ProcessorFactory,
 	processFunc func(image.ImageProcessor) ([]byte, error),
 ) error {
 	select {
