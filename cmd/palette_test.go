@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -23,20 +22,38 @@ func (suite *PaletteTestSuite) TestPaletteShould_ReturnError_When_InputDirectory
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config)
 }
 
-func (suite *PaletteTestSuite) TestPaletteShould_ProcessImageSuccessfully() {
-	tmpDir := suite.T().TempDir()
-	testPath := filepath.Join(tmpDir, "test.jpg")
-	suite.Require().NoError(os.WriteFile(testPath, []byte("fake-image"), 0644))
+func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithDefaultOutput() {
+	inputDir := PrepareTestImages(suite.T(), "test.jpg")
+	expectedOutputDir := inputDir + "-palette"
+	defer os.RemoveAll(expectedOutputDir)
 
-	suite.cmd.SetArgs([]string{"--input", tmpDir})
-	err := suite.cmd.Execute()
+	suite.cmd.SetArgs([]string{"--input", inputDir})
+	suite.NoError(suite.cmd.Execute())
 
-	suite.NoError(err)
-	suite.True(suite.config.MockProcessor.paletteCalled, "enablePalette should have been called")
+	AssertImageProcessed(&suite.Suite, suite.config, inputDir, "test.jpg")
+	suite.True(suite.config.MockProcessor.paletteCalled)
+}
 
-	output := suite.config.OutBuf.String()
-	suite.Contains(output, "1 images")
-	suite.Contains(output, "Processed")
+func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithCustomOutput() {
+	inputDir := PrepareTestImages(suite.T(), "test.jpg")
+	customOutputDir := suite.T().TempDir()
+
+	suite.cmd.SetArgs([]string{"--input", inputDir, "--output", customOutputDir})
+	suite.NoError(suite.cmd.Execute())
+
+	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
+}
+
+func (suite *PaletteTestSuite) TestPalette_ShouldProcessMultipleImages() {
+	inputDir := PrepareTestImages(suite.T(), "img1.jpg", "img2.jpg", "img3.jpg")
+	expectedOutputDir := inputDir + "-palette"
+	defer os.RemoveAll(expectedOutputDir)
+
+	suite.cmd.SetArgs([]string{"--input", inputDir})
+	suite.NoError(suite.cmd.Execute())
+
+	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
+	suite.True(suite.config.MockProcessor.paletteCalled)
 }
 
 func TestPaletteSuite(t *testing.T) {

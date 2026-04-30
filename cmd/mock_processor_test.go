@@ -2,10 +2,15 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
 	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -41,7 +46,14 @@ func SetupTestConfig(createCmd func(filesystem.FileSystem, image.ProcessorFactor
 	}
 
 	cmd := createCmd(fs, factory)
-	cmd.Flags().StringP("input", "i", "", "Input directory")
+
+	if rootCmd != nil {
+		cmd.Flags().AddFlagSet(rootCmd.PersistentFlags())
+		cmd.Flags().VisitAll(func(f *pflag.Flag) {
+			f.Value.Set(f.DefValue)
+			f.Changed = false
+		})
+	}
 	cmd.SetOut(outBuf)
 	cmd.SetErr(outBuf)
 
@@ -53,17 +65,39 @@ func SetupTestConfig(createCmd func(filesystem.FileSystem, image.ProcessorFactor
 }
 
 func AssertCommonCommandBehaviors(suite *suite.Suite, cmd *cobra.Command, config *TestConfig) {
-	// Invalid directory
 	cmd.SetArgs([]string{"--input", "./invalid_path_name_123"})
 	err := cmd.Execute()
-	suite.Error(err)
+	suite.Error(err, "should return an error for invalid input directory")
 	suite.Contains(err.Error(), "failed to open directory")
 
-	// Empty directory
 	tmpDir := suite.T().TempDir()
 	config.OutBuf.Reset()
 	cmd.SetArgs([]string{"--input", tmpDir})
 	err = cmd.Execute()
 	suite.NoError(err)
 	suite.Contains(config.OutBuf.String(), "No files found in directory")
+}
+
+func PrepareTestImages(t *testing.T, filenames ...string) string {
+	tmpDir := t.TempDir()
+	for _, name := range filenames {
+		path := filepath.Join(tmpDir, name)
+		os.MkdirAll(filepath.Dir(path), 0755)
+		os.WriteFile(path, []byte("fake-image"), 0644)
+	}
+	return tmpDir
+}
+
+func AssertImageProcessed(suite *suite.Suite, config *TestConfig, expectedOutputDir string, filenames ...string) {
+	for _, filename := range filenames {
+		expectedOutputFile := filepath.Join(expectedOutputDir, filename)
+		_, err := os.Stat(expectedOutputFile)
+		suite.NoError(err)
+	}
+
+	output := config.OutBuf.String()
+	suite.Contains(output, expectedOutputDir)
+
+	expectedCountStr := fmt.Sprintf("%d images", len(filenames))
+	suite.Contains(output, expectedCountStr)
 }
