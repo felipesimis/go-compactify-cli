@@ -8,33 +8,33 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type PaletteTestSuite struct {
+type GrayscaleTestSuite struct {
 	suite.Suite
 	cmd    *cobra.Command
 	config *TestConfig
 }
 
-func (suite *PaletteTestSuite) SetupTest() {
-	suite.cmd, suite.config = SetupTestConfig(NewPaletteCmd)
+func (suite *GrayscaleTestSuite) SetupTest() {
+	suite.cmd, suite.config = SetupTestConfig(NewGrayscaleCmd)
 }
 
-func (suite *PaletteTestSuite) TestPaletteShould_ReturnError_When_InputDirectoryDoesNotExist() {
+func (suite *GrayscaleTestSuite) TestGrayscaleShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config)
 }
 
-func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithDefaultOutput() {
+func (suite *GrayscaleTestSuite) TestGrayscale_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
-	expectedOutputDir := inputDir + "-palette"
+	expectedOutputDir := inputDir + "-grayscale"
 	defer os.RemoveAll(expectedOutputDir)
 
 	suite.cmd.SetArgs([]string{"--input", inputDir})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-	suite.True(suite.config.MockProcessor.paletteCalled)
+	suite.True(suite.config.MockProcessor.grayscaleCalled)
 }
 
-func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithCustomOutput() {
+func (suite *GrayscaleTestSuite) TestGrayscale_ShouldWorkWithCustomOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	customOutputDir := suite.T().TempDir()
 
@@ -42,21 +42,21 @@ func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithCustomOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
-	suite.True(suite.config.MockProcessor.paletteCalled)
+	suite.True(suite.config.MockProcessor.grayscaleCalled)
 }
 
-func (suite *PaletteTestSuite) TestPalette_ShouldProcessMultipleImages() {
+func (suite *GrayscaleTestSuite) TestGrayscale_ShouldProcessMultipleImages() {
 	inputDir := PrepareTestImages(suite.T(), "img1.jpg", "img2.jpg", "img3.jpg")
-	expectedOutputDir := inputDir + "-palette"
+	expectedOutputDir := inputDir + "-grayscale"
 	defer os.RemoveAll(expectedOutputDir)
 
 	suite.cmd.SetArgs([]string{"--input", inputDir})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
-	suite.True(suite.config.MockProcessor.paletteCalled)
+	suite.True(suite.config.MockProcessor.grayscaleCalled)
 }
 
-func TestPaletteSuite(t *testing.T) {
-	suite.Run(t, new(PaletteTestSuite))
+func TestGrayscaleSuite(t *testing.T) {
+	suite.Run(t, new(GrayscaleTestSuite))
 }

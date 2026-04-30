@@ -42,6 +42,7 @@ func (suite *LosslessTestSuite) TestLossless_ShouldWorkWithCustomOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
+	suite.True(suite.config.MockProcessor.losslessCalled)
 }
 
 func (suite *LosslessTestSuite) TestLossless_ShouldProcessMultipleImages() {
