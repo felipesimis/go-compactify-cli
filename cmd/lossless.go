@@ -10,37 +10,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func losslessRun(cmd *cobra.Command, args []string) error {
-	ctx := cmd.Context()
-
-	fs := filesystem.NewFileSystem()
-	globalConfig := loadGlobalConfig(cmd)
-	return RunOperation(globalConfig, OperationConfig{
-		Ctx:                ctx,
-		FileSystem:         fs,
-		OutputSuffix:       "-lossless",
-		ProgressBarMessage: "Applying lossless compression",
-		ProcessorFunc:      processLosslessImage,
-	})
-}
-
-func processLosslessImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-	return HandleImageProcessing(ctx, params, stats, image.NewProcessor, func(proc image.ImageProcessor) ([]byte, error) {
-		return proc.LosslessCompress()
-	})
-}
-
-var losslessCmd = &cobra.Command{
-	Use:     "lossless",
-	Aliases: []string{"lc"},
-	Args:    cobra.NoArgs,
-	Short:   "Apply lossless compression to images",
-	Long: `Apply lossless compression to images.
+func NewLosslessCmd(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) *cobra.Command {
+	return &cobra.Command{
+		Use:     "lossless",
+		Aliases: []string{"lc"},
+		Args:    cobra.NoArgs,
+		Short:   "Apply lossless compression to images",
+		Long: `Apply lossless compression to images.
 This command allows you to apply lossless compression to images, preserving the original quality while potentially reducing the file size.
 It can be useful for various image processing tasks, such as optimizing images for storage or transmission.`,
-	RunE: losslessRun,
+		RunE: runLossless(fs, processorFactory),
+	}
 }
 
-func init() {
-	rootCmd.AddCommand(losslessCmd)
+func runLossless(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		globalConfig := loadGlobalConfig(cmd)
+
+		return RunOperation(globalConfig, OperationConfig{
+			Ctx:                ctx,
+			FileSystem:         fs,
+			Out:                cmd.OutOrStdout(),
+			OutputSuffix:       "-lossless",
+			ProgressBarMessage: "Applying lossless compression",
+			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
+				return HandleImageProcessing(ctx, params, stats, processorFactory, func(proc image.ImageProcessor) ([]byte, error) {
+					return proc.LosslessCompress()
+				})
+			},
+		})
+	}
 }

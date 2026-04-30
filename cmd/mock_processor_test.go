@@ -10,11 +10,17 @@ import (
 
 type mockImageProcessor struct {
 	image.ImageProcessor
-	paletteCalled bool
+	paletteCalled  bool
+	losslessCalled bool
 }
 
 func (m *mockImageProcessor) EnablePalette() ([]byte, error) {
 	m.paletteCalled = true
+	return []byte("fake-processed-bytes"), nil
+}
+
+func (m *mockImageProcessor) LosslessCompress() ([]byte, error) {
+	m.losslessCalled = true
 	return []byte("fake-processed-bytes"), nil
 }
 
