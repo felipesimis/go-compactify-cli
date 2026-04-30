@@ -20,6 +20,7 @@ type mockImageProcessor struct {
 	losslessCalled  bool
 	grayscaleCalled bool
 	flipCalled      bool
+	thumbnailCalled bool
 }
 
 func (m *mockImageProcessor) EnablePalette() ([]byte, error) {
@@ -39,6 +40,11 @@ func (m *mockImageProcessor) Grayscale() ([]byte, error) {
 
 func (m *mockImageProcessor) Flip() ([]byte, error) {
 	m.flipCalled = true
+	return []byte("fake-processed-bytes"), nil
+}
+
+func (m *mockImageProcessor) Thumbnail(width int) ([]byte, error) {
+	m.thumbnailCalled = true
 	return []byte("fake-processed-bytes"), nil
 }
 
@@ -76,15 +82,18 @@ func SetupTestConfig(createCmd func(filesystem.FileSystem, image.ProcessorFactor
 	}
 }
 
-func AssertCommonCommandBehaviors(suite *suite.Suite, cmd *cobra.Command, config *TestConfig) {
-	cmd.SetArgs([]string{"--input", "./invalid_path_name_123"})
+func AssertCommonCommandBehaviors(suite *suite.Suite, cmd *cobra.Command, config *TestConfig, extraArgs ...string) {
+	invalidArgs := append([]string{"--input", "./invalid_path_name"}, extraArgs...)
+	cmd.SetArgs(invalidArgs)
 	err := cmd.Execute()
 	suite.Error(err, "should return an error for invalid input directory")
 	suite.Contains(err.Error(), "failed to open directory")
 
 	tmpDir := suite.T().TempDir()
 	config.OutBuf.Reset()
-	cmd.SetArgs([]string{"--input", tmpDir})
+
+	emptyArgs := append([]string{"--input", tmpDir}, extraArgs...)
+	cmd.SetArgs(emptyArgs)
 	err = cmd.Execute()
 	suite.NoError(err)
 	suite.Contains(config.OutBuf.String(), "No files found in directory")

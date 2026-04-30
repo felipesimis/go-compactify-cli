@@ -5,7 +5,6 @@ import (
 )
 
 var (
-	ErrInvalidWidth  = errors.New("invalid width")
 	ErrWidthTooSmall = errors.New("width is below the minimum allowed value")
 	ErrWidthTooLarge = errors.New("width exceeds the maximum allowed value")
 )
