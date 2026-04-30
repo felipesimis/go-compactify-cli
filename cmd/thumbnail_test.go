@@ -59,9 +59,7 @@ func (suite *ThumbnailTestSuite) TestThumbnail_ShouldProcessMultipleImages() {
 }
 
 func (suite *ThumbnailTestSuite) TestThumbnail_ShouldReturnError_When_WidthIsTooSmall() {
-	inputDir := PrepareTestImages(suite.T(), "test.jpg")
-
-	suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "49"})
+	suite.cmd.SetArgs([]string{"--input", "some/dir", "--width", "49"})
 	err := suite.cmd.Execute()
 
 	suite.Error(err)
@@ -70,9 +68,7 @@ func (suite *ThumbnailTestSuite) TestThumbnail_ShouldReturnError_When_WidthIsToo
 }
 
 func (suite *ThumbnailTestSuite) TestThumbnail_ShouldReturnError_When_WidthIsTooLarge() {
-	inputDir := PrepareTestImages(suite.T(), "test.jpg")
-
-	suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "1025"})
+	suite.cmd.SetArgs([]string{"--input", "some/dir", "--width", "1025"})
 	err := suite.cmd.Execute()
 
 	suite.Error(err)
