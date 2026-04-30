@@ -20,21 +20,7 @@ func (suite *LosslessTestSuite) SetupTest() {
 }
 
 func (suite *LosslessTestSuite) TestLosslessShould_ReturnError_When_InputDirectoryDoesNotExist() {
-	suite.cmd.SetArgs([]string{"--input", "./invalid_path_name_123"})
-	err := suite.cmd.Execute()
-
-	suite.Error(err)
-	suite.Contains(err.Error(), "failed to open directory")
-}
-
-func (suite *LosslessTestSuite) TestLosslessShould_Warn_When_DirectoryIsEmpty() {
-	tmpDir := suite.T().TempDir()
-
-	suite.cmd.SetArgs([]string{"--input", tmpDir})
-	err := suite.cmd.Execute()
-
-	suite.NoError(err)
-	suite.Contains(suite.config.OutBuf.String(), "No files found in directory")
+	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config)
 }
 
 func (suite *LosslessTestSuite) TestLosslessShould_ProcessImageSuccessfully() {

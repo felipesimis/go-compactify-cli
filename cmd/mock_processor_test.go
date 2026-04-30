@@ -6,6 +6,7 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
 	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/suite"
 )
 
 type mockImageProcessor struct {
@@ -49,4 +50,20 @@ func SetupTestConfig(createCmd func(filesystem.FileSystem, image.ProcessorFactor
 		MockProcessor: mockProcessor,
 		OutBuf:        outBuf,
 	}
+}
+
+func AssertCommonCommandBehaviors(suite *suite.Suite, cmd *cobra.Command, config *TestConfig) {
+	// Invalid directory
+	cmd.SetArgs([]string{"--input", "./invalid_path_name_123"})
+	err := cmd.Execute()
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to open directory")
+
+	// Empty directory
+	tmpDir := suite.T().TempDir()
+	config.OutBuf.Reset()
+	cmd.SetArgs([]string{"--input", tmpDir})
+	err = cmd.Execute()
+	suite.NoError(err)
+	suite.Contains(config.OutBuf.String(), "No files found in directory")
 }
