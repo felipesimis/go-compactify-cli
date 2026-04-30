@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
@@ -13,6 +15,11 @@ import (
 type mockImageProcessor struct {
 	image.ImageProcessor
 	called bool
+}
+
+func (m *mockImageProcessor) EnablePalette() ([]byte, error) {
+	m.called = true
+	return []byte("fake-processed-bytes"), nil
 }
 
 type PaletteTestSuite struct {
@@ -54,6 +61,22 @@ func (suite *PaletteTestSuite) TestPaletteShould_Warn_When_DirectoryIsEmpty() {
 
 	suite.NoError(err)
 	suite.Contains(suite.outBuf.String(), "No files found in directory")
+}
+
+func (suite *PaletteTestSuite) TestPaletteShould_ProcessImageSuccessfully() {
+	tmpDir := suite.T().TempDir()
+	testPath := filepath.Join(tmpDir, "test.jpg")
+	suite.Require().NoError(os.WriteFile(testPath, []byte("fake-image"), 0644))
+
+	suite.cmd.SetArgs([]string{"--input", tmpDir})
+	err := suite.cmd.Execute()
+
+	suite.NoError(err)
+	suite.True(suite.mockProcessor.called, "enablePalette should have been called")
+
+	output := suite.outBuf.String()
+	suite.Contains(output, "1 images")
+	suite.Contains(output, "Processed")
 }
 
 func TestPaletteSuite(t *testing.T) {
