@@ -5,20 +5,32 @@ import (
 	"testing"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
+	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
 )
 
+type mockImageProcessor struct {
+	image.ImageProcessor
+	called bool
+}
+
 type PaletteTestSuite struct {
 	suite.Suite
-	fs     filesystem.FileSystem
-	cmd    *cobra.Command
-	outBuf *bytes.Buffer
+	fs            filesystem.FileSystem
+	cmd           *cobra.Command
+	outBuf        *bytes.Buffer
+	mockProcessor *mockImageProcessor
 }
 
 func (suite *PaletteTestSuite) SetupTest() {
 	suite.fs = filesystem.NewFileSystem()
-	suite.cmd = NewPaletteCmd(suite.fs)
+	suite.mockProcessor = &mockImageProcessor{}
+	mockFactory := func([]byte) image.ImageProcessor {
+		return suite.mockProcessor
+	}
+
+	suite.cmd = NewPaletteCmd(suite.fs, mockFactory)
 	suite.cmd.Flags().StringP("input", "i", "", "Input directory")
 
 	suite.outBuf = new(bytes.Buffer)

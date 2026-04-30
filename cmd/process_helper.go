@@ -93,7 +93,13 @@ func RunOperation(global GlobalConfig, config OperationConfig) error {
 	return nil
 }
 
-func HandleImageProcessing(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats, processFunc func(image.ImageProcessor) ([]byte, error)) error {
+func HandleImageProcessing(
+	ctx context.Context,
+	params processing.FileProcessingParams,
+	stats *utils.ImageProcessingStats,
+	processorFactory func([]byte) image.ImageProcessor,
+	processFunc func(image.ImageProcessor) ([]byte, error),
+) error {
 	select {
 	case <-ctx.Done():
 		stats.SkippedImages.Add(1)
@@ -122,8 +128,7 @@ func HandleImageProcessing(ctx context.Context, params processing.FileProcessing
 	imgBytes := buf.Bytes()
 	stats.InitialSize.Add(uint64(len(imgBytes)))
 
-	processor := image.NewProcessor(imgBytes)
-
+	processor := processorFactory(imgBytes)
 	newImg, err := processFunc(processor)
 	if err != nil {
 		stats.SkippedImages.Add(1)

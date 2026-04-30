@@ -44,7 +44,7 @@ func resizeRun(cmd *cobra.Command, args []string) error {
 
 func processResizeImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	extraParams := params.ExtraParams.(ResizeParams)
-	return HandleImageProcessing(ctx, params, stats, func(proc image.ImageProcessor) ([]byte, error) {
+	return HandleImageProcessing(ctx, params, stats, image.NewProcessor, func(proc image.ImageProcessor) ([]byte, error) {
 		return proc.Resize(extraParams.Width, extraParams.Height)
 	})
 }

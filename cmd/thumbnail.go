@@ -41,7 +41,7 @@ func thumbnailRun(cmd *cobra.Command, args []string) error {
 
 func processThumbnailImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 	extraParams := params.ExtraParams.(ThumbnailParams)
-	return HandleImageProcessing(ctx, params, stats, func(proc image.ImageProcessor) ([]byte, error) {
+	return HandleImageProcessing(ctx, params, stats, image.NewProcessor, func(proc image.ImageProcessor) ([]byte, error) {
 		return proc.Thumbnail(extraParams.Width)
 	})
 }

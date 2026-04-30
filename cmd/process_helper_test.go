@@ -27,6 +27,7 @@ func BenchmarkHandleImageProcessing(b *testing.B) {
 		OutputDir: b.TempDir(),
 	}
 
+	mockProcessorFactory := func([]byte) image.ImageProcessor { return nil }
 	mockProcessFunc := func(proc image.ImageProcessor) ([]byte, error) {
 		return []byte{}, nil
 	}
@@ -34,7 +35,7 @@ func BenchmarkHandleImageProcessing(b *testing.B) {
 	b.ResetTimer()
 
 	for range b.N {
-		err := HandleImageProcessing(ctx, params, stats, mockProcessFunc)
+		err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, mockProcessFunc)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -55,6 +56,7 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 		OutputDir: b.TempDir(),
 	}
 
+	mockProcessorFactory := func([]byte) image.ImageProcessor { return nil }
 	mockProcessFunc := func(proc image.ImageProcessor) ([]byte, error) {
 		return []byte{}, nil
 	}
@@ -63,7 +65,7 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := HandleImageProcessing(ctx, params, stats, mockProcessFunc)
+			err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, mockProcessFunc)
 			if err != nil {
 				b.Fatal(err)
 			}
