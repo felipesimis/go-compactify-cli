@@ -44,7 +44,6 @@ func cropRun(cmd *cobra.Command, args []string) error {
 		ProgressBarMessage: "Cropping images",
 		ExtraParams:        CropParams{Width: width, Height: height, Gravity: gravity},
 		ProcessorFunc:      processCropImage,
-		ResultVerb:         "cropped",
 	})
 }
 

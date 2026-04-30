@@ -38,7 +38,6 @@ func enlargeRun(cmd *cobra.Command, args []string) error {
 		ProgressBarMessage: "Enlarging images",
 		ExtraParams:        EnlargeParams{Width: width, Height: height},
 		ProcessorFunc:      processEnlargeImage,
-		ResultVerb:         "enlarged",
 	})
 }
 

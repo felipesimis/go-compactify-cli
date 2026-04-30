@@ -36,7 +36,6 @@ func convertRun(cmd *cobra.Command, args []string) error {
 		ProgressBarMessage: "Converting images",
 		ExtraParams:        ConvertParams{Format: format},
 		ProcessorFunc:      processConvertImage,
-		ResultVerb:         "converted",
 	})
 }
 

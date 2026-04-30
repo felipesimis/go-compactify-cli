@@ -36,7 +36,6 @@ type OperationConfig struct {
 	ProgressBarMessage string
 	ExtraParams        interface{}
 	ProcessorFunc      func(ctx context.Context, p processing.FileProcessingParams, stats *utils.ImageProcessingStats) error
-	ResultVerb         string
 }
 
 func RunOperation(global GlobalConfig, config OperationConfig) error {

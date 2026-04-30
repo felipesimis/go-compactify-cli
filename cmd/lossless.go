@@ -21,7 +21,6 @@ func losslessRun(cmd *cobra.Command, args []string) error {
 		OutputSuffix:       "-lossless",
 		ProgressBarMessage: "Applying lossless compression",
 		ProcessorFunc:      processLosslessImage,
-		ResultVerb:         "lossless compressed",
 	})
 }
 

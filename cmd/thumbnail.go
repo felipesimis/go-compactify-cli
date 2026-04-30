@@ -35,7 +35,6 @@ func thumbnailRun(cmd *cobra.Command, args []string) error {
 		ProgressBarMessage: "Creating thumbnails",
 		ExtraParams:        ThumbnailParams{Width: width},
 		ProcessorFunc:      processThumbnailImage,
-		ResultVerb:         "thumbnails created",
 	})
 }
 

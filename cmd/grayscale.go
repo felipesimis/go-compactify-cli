@@ -21,7 +21,6 @@ func grayscaleRun(cmd *cobra.Command, args []string) error {
 		OutputSuffix:       "-grayscale",
 		ProgressBarMessage: "Creating grayscale images",
 		ProcessorFunc:      processGrayscaleImage,
-		ResultVerb:         "grayscale images created",
 	})
 }
 

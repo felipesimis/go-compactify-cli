@@ -38,7 +38,6 @@ func resizeRun(cmd *cobra.Command, args []string) error {
 		ProgressBarMessage: "Resizing images",
 		ExtraParams:        ResizeParams{Width: width, Height: height},
 		ProcessorFunc:      processResizeImage,
-		ResultVerb:         "resized",
 	})
 }
 

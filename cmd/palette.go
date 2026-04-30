@@ -38,7 +38,6 @@ func runPalette(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 					return proc.EnablePalette()
 				})
 			},
-			ResultVerb: "palette enabled",
 		})
 	}
 }
