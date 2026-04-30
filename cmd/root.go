@@ -62,6 +62,7 @@ func Execute() error {
 		NewInitCmd(fs),
 		NewPaletteCmd(fs, image.NewProcessor),
 		NewGrayscaleCmd(fs, image.NewProcessor),
+		NewFlipCmd(fs, image.NewProcessor),
 	)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
