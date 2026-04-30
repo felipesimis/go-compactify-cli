@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -23,17 +22,38 @@ func (suite *LosslessTestSuite) TestLosslessShould_ReturnError_When_InputDirecto
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config)
 }
 
-func (suite *LosslessTestSuite) TestLosslessShould_ProcessImageSuccessfully() {
-	tmpDir := suite.T().TempDir()
-	testPath := filepath.Join(tmpDir, "test.jpg")
-	suite.Require().NoError(os.WriteFile(testPath, []byte("fake"), 0644))
+func (suite *LosslessTestSuite) TestLossless_ShouldWorkWithDefaultOutput() {
+	inputDir := PrepareTestImages(suite.T(), "test.jpg")
+	expectedOutputDir := inputDir + "-lossless"
+	defer os.RemoveAll(expectedOutputDir)
 
-	suite.cmd.SetArgs([]string{"--input", tmpDir})
-	err := suite.cmd.Execute()
+	suite.cmd.SetArgs([]string{"--input", inputDir})
+	suite.NoError(suite.cmd.Execute())
 
-	suite.NoError(err)
+	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
 	suite.True(suite.config.MockProcessor.losslessCalled)
-	suite.Contains(suite.config.OutBuf.String(), "Processed")
+}
+
+func (suite *LosslessTestSuite) TestLossless_ShouldWorkWithCustomOutput() {
+	inputDir := PrepareTestImages(suite.T(), "test.jpg")
+	customOutputDir := suite.T().TempDir()
+
+	suite.cmd.SetArgs([]string{"--input", inputDir, "--output", customOutputDir})
+	suite.NoError(suite.cmd.Execute())
+
+	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
+}
+
+func (suite *LosslessTestSuite) TestLossless_ShouldProcessMultipleImages() {
+	inputDir := PrepareTestImages(suite.T(), "img1.jpg", "img2.jpg", "img3.jpg")
+	expectedOutputDir := inputDir + "-lossless"
+	defer os.RemoveAll(expectedOutputDir)
+
+	suite.cmd.SetArgs([]string{"--input", inputDir})
+	suite.NoError(suite.cmd.Execute())
+
+	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
+	suite.True(suite.config.MockProcessor.losslessCalled)
 }
 
 func TestLosslessSuite(t *testing.T) {

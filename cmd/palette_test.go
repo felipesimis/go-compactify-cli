@@ -30,7 +30,7 @@ func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithDefaultOutput() {
 	suite.cmd.SetArgs([]string{"--input", inputDir})
 	suite.NoError(suite.cmd.Execute())
 
-	AssertImageProcessed(&suite.Suite, suite.config, inputDir, "test.jpg")
+	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
 	suite.True(suite.config.MockProcessor.paletteCalled)
 }
 
