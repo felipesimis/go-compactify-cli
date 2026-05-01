@@ -67,6 +67,7 @@ func Execute() error {
 		NewResizeCmd(fs, image.NewProcessor),
 		NewEnlargeCmd(fs, image.NewProcessor),
 		NewConvertCmd(fs, image.NewProcessor),
+		NewCropCmd(fs, image.NewProcessor),
 	)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

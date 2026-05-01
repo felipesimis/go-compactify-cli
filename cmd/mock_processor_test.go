@@ -24,6 +24,7 @@ type mockImageProcessor struct {
 	resizeCalled    bool
 	enlargeCalled   bool
 	convertCalled   bool
+	cropCalled      bool
 }
 
 func (m *mockImageProcessor) EnablePalette() ([]byte, error) {
@@ -63,6 +64,11 @@ func (m *mockImageProcessor) Enlarge(width, height int) ([]byte, error) {
 
 func (m *mockImageProcessor) Convert(format string) ([]byte, error) {
 	m.convertCalled = true
+	return []byte("fake-processed-bytes"), nil
+}
+
+func (m *mockImageProcessor) Crop(width int, height int, gravity image.Gravity) ([]byte, error) {
+	m.cropCalled = true
 	return []byte("fake-processed-bytes"), nil
 }
 
