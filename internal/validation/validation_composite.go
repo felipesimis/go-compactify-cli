@@ -2,7 +2,6 @@ package validation
 
 import (
 	"errors"
-	"strings"
 )
 
 type Validation interface {
@@ -14,15 +13,12 @@ type ValidationComposite struct {
 }
 
 func (v ValidationComposite) Validate() error {
-	var errs []string
+	var errs []error
 	for _, validate := range v.Validations {
 		if err := validate.Validate(); err != nil {
-			errs = append(errs, err.Error())
+			errs = append(errs, err)
 		}
 	}
 
-	if len(errs) > 0 {
-		return errors.New(strings.Join(errs, "\n"))
-	}
-	return nil
+	return errors.Join(errs...)
 }
