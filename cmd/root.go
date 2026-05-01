@@ -65,6 +65,7 @@ func Execute() error {
 		NewFlipCmd(fs, image.NewProcessor),
 		NewThumbnailCmd(fs, image.NewProcessor),
 		NewResizeCmd(fs, image.NewProcessor),
+		NewEnlargeCmd(fs, image.NewProcessor),
 	)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

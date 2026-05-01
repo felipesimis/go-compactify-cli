@@ -22,6 +22,7 @@ type mockImageProcessor struct {
 	flipCalled      bool
 	thumbnailCalled bool
 	resizeCalled    bool
+	enlargeCalled   bool
 }
 
 func (m *mockImageProcessor) EnablePalette() ([]byte, error) {
@@ -51,6 +52,11 @@ func (m *mockImageProcessor) Thumbnail(width int) ([]byte, error) {
 
 func (m *mockImageProcessor) Resize(width, height int) ([]byte, error) {
 	m.resizeCalled = true
+	return []byte("fake-processed-bytes"), nil
+}
+
+func (m *mockImageProcessor) Enlarge(width, height int) ([]byte, error) {
+	m.enlargeCalled = true
 	return []byte("fake-processed-bytes"), nil
 }
 
