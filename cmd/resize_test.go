@@ -71,7 +71,9 @@ func (suite *ResizeTestSuite) TestResize_ShouldReturnError_When_DimensionsAreInv
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
+			suite.config.MockProcessor.resizeCalled = false
 			suite.cmd.SetArgs([]string{"--input", "some/dir", "--width", tt.width, "--height", tt.height})
+
 			err := suite.cmd.Execute()
 			suite.Error(err)
 			suite.ErrorIs(err, validation.ErrInvalidDimensions)

@@ -71,7 +71,9 @@ func (suite *EnlargeTestSuite) TestEnlarge_ShouldReturnError_When_DimensionsAreI
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
+			suite.config.MockProcessor.enlargeCalled = false
 			suite.cmd.SetArgs([]string{"--input", "some/dir", "--width", tt.width, "--height", tt.height})
+
 			err := suite.cmd.Execute()
 			suite.Error(err)
 			suite.ErrorIs(err, validation.ErrInvalidDimensions)
