@@ -10,6 +10,7 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/processing"
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 func BenchmarkHandleImageProcessing(b *testing.B) {
@@ -71,6 +72,23 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 			}
 		}
 	})
+}
+
+type ProcessingTestSuite struct {
+	suite.Suite
+}
+
+func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenContextCanceled() {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	stats := &utils.ImageProcessingStats{}
+	params := processing.FileProcessingParams{}
+
+	err := HandleImageProcessing(ctx, params, stats, nil, nil)
+
+	suite.ErrorIs(err, context.Canceled)
+	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
 
 func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.T) {
@@ -152,4 +170,8 @@ func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.
 			}
 		})
 	}
+}
+
+func TestProcessingSuite(t *testing.T) {
+	suite.Run(t, new(ProcessingTestSuite))
 }
