@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -90,6 +91,11 @@ func (m *mockHelperFS) OpenFile(path string) (io.ReadCloser, error) {
 	return args.Get(0).(io.ReadCloser), args.Error(1)
 }
 
+func (m *mockHelperFS) WriteFile(path string, data []byte) error {
+	args := m.Called(path, data)
+	return args.Error(0)
+}
+
 type ProcessingTestSuite struct {
 	suite.Suite
 	mockFS *mockHelperFS
@@ -123,6 +129,28 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenOpenF
 
 	err := HandleImageProcessing(context.Background(), params, stats, nil, nil)
 	suite.ErrorContains(err, "open error")
+	suite.Equal(uint32(1), stats.SkippedImages.Load())
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
+func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWriteFileFails() {
+	suite.mockFS.On("OpenFile", "valid.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
+	suite.mockFS.On("WriteFile", mock.Anything, mock.Anything).Return(errors.New("write error"))
+
+	stats := &utils.ImageProcessingStats{}
+	params := processing.FileProcessingParams{
+		File:      filesystem.FileInfo{Path: "valid.jpg", Size: 4},
+		FS:        suite.mockFS,
+		OutputDir: "output",
+	}
+
+	mockFactory := func([]byte) image.ImageProcessor { return nil }
+	mockProcess := func(proc image.ImageProcessor) ([]byte, error) {
+		return []byte("new-data"), nil
+	}
+
+	err := HandleImageProcessing(context.Background(), params, stats, mockFactory, mockProcess)
+	suite.ErrorContains(err, "write error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 	suite.mockFS.AssertExpectations(suite.T())
 }
