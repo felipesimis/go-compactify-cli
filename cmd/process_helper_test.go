@@ -179,6 +179,26 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWrite
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
+func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenProcessingFails() {
+	suite.mockFS.On("OpenFile", "valid.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
+
+	stats := &utils.ImageProcessingStats{}
+	params := processing.FileProcessingParams{
+		File: filesystem.FileInfo{Path: "valid.jpg", Size: 4},
+		FS:   suite.mockFS,
+	}
+
+	mockFactory := func([]byte) image.ImageProcessor { return nil }
+	mockProcess := func(proc image.ImageProcessor) ([]byte, error) {
+		return nil, errors.New("processing error")
+	}
+
+	err := HandleImageProcessing(context.Background(), params, stats, mockFactory, mockProcess)
+	suite.ErrorContains(err, "processing error")
+	suite.Equal(uint32(1), stats.SkippedImages.Load())
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
 func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.T) {
 	tests := []struct {
 		name            string
