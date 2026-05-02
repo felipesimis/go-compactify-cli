@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"os"
 	"testing"
 
 	"github.com/felipesimis/go-compactify-cli/internal/validation"
@@ -26,36 +25,37 @@ func (suite *ResizeTestSuite) TestResizeShould_ReturnError_When_InputDirectoryDo
 func (suite *ResizeTestSuite) TestResize_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	expectedOutputDir := inputDir + "-resized"
-	defer os.RemoveAll(expectedOutputDir)
 
+	suite.config.MockProcessor.On("Resize", 150, 150).Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "150", "--height", "150"})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-	suite.True(suite.config.MockProcessor.resizeCalled)
+	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ResizeTestSuite) TestResize_ShouldWorkWithCustomOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	customOutputDir := suite.T().TempDir()
 
+	suite.config.MockProcessor.On("Resize", 150, 150).Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--output", customOutputDir, "--width", "150", "--height", "150"})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
-	suite.True(suite.config.MockProcessor.resizeCalled)
+	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ResizeTestSuite) TestResize_ShouldProcessMultipleImages() {
 	inputDir := PrepareTestImages(suite.T(), "img1.jpg", "img2.jpg", "img3.jpg")
 	expectedOutputDir := inputDir + "-resized"
-	defer os.RemoveAll(expectedOutputDir)
 
+	suite.config.MockProcessor.On("Resize", 150, 150).Return([]byte("fake-bytes"), nil).Times(3)
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "150", "--height", "150"})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
-	suite.True(suite.config.MockProcessor.resizeCalled)
+	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ResizeTestSuite) TestResize_ShouldReturnError_When_DimensionsAreInvalid() {
@@ -71,13 +71,13 @@ func (suite *ResizeTestSuite) TestResize_ShouldReturnError_When_DimensionsAreInv
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			suite.config.MockProcessor.resizeCalled = false
+			suite.SetupTest()
 			suite.cmd.SetArgs([]string{"--input", "some/dir", "--width", tt.width, "--height", tt.height})
 
 			err := suite.cmd.Execute()
 			suite.Error(err)
 			suite.ErrorIs(err, validation.ErrInvalidDimensions)
-			suite.False(suite.config.MockProcessor.resizeCalled)
+			suite.config.MockProcessor.AssertNotCalled(suite.T(), "Resize")
 		})
 	}
 }

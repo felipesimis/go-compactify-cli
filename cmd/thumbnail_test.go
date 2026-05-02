@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"os"
 	"testing"
 
 	"github.com/felipesimis/go-compactify-cli/internal/validation"
@@ -26,36 +25,37 @@ func (suite *ThumbnailTestSuite) TestThumbnailShould_ReturnError_When_InputDirec
 func (suite *ThumbnailTestSuite) TestThumbnail_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	expectedOutputDir := inputDir + "-thumbnail"
-	defer os.RemoveAll(expectedOutputDir)
 
+	suite.config.MockProcessor.On("Thumbnail", 150).Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "150"})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-	suite.True(suite.config.MockProcessor.thumbnailCalled)
+	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ThumbnailTestSuite) TestThumbnail_ShouldWorkWithCustomOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	customOutputDir := suite.T().TempDir()
 
+	suite.config.MockProcessor.On("Thumbnail", 150).Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--output", customOutputDir, "--width", "150"})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
-	suite.True(suite.config.MockProcessor.thumbnailCalled)
+	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ThumbnailTestSuite) TestThumbnail_ShouldProcessMultipleImages() {
 	inputDir := PrepareTestImages(suite.T(), "img1.jpg", "img2.jpg", "img3.jpg")
 	expectedOutputDir := inputDir + "-thumbnail"
-	defer os.RemoveAll(expectedOutputDir)
 
+	suite.config.MockProcessor.On("Thumbnail", 150).Return([]byte("fake-bytes"), nil).Times(3)
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "150"})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
-	suite.True(suite.config.MockProcessor.thumbnailCalled)
+	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ThumbnailTestSuite) TestThumbnail_ShouldReturnError_When_WidthIsTooSmall() {
@@ -64,7 +64,7 @@ func (suite *ThumbnailTestSuite) TestThumbnail_ShouldReturnError_When_WidthIsToo
 
 	suite.Error(err)
 	suite.ErrorIs(err, validation.ErrWidthTooSmall)
-	suite.False(suite.config.MockProcessor.thumbnailCalled)
+	suite.config.MockProcessor.AssertNotCalled(suite.T(), "Thumbnail")
 }
 
 func (suite *ThumbnailTestSuite) TestThumbnail_ShouldReturnError_When_WidthIsTooLarge() {
@@ -73,7 +73,7 @@ func (suite *ThumbnailTestSuite) TestThumbnail_ShouldReturnError_When_WidthIsToo
 
 	suite.Error(err)
 	suite.ErrorIs(err, validation.ErrWidthTooLarge)
-	suite.False(suite.config.MockProcessor.thumbnailCalled)
+	suite.config.MockProcessor.AssertNotCalled(suite.T(), "Thumbnail")
 }
 
 func TestThumbnailSuite(t *testing.T) {

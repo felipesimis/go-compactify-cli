@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"os"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -25,36 +24,37 @@ func (suite *FlipTestSuite) TestFlipShould_ReturnError_When_InputDirectoryDoesNo
 func (suite *FlipTestSuite) TestFlip_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	expectedOutputDir := inputDir + "-flip"
-	defer os.RemoveAll(expectedOutputDir)
 
+	suite.config.MockProcessor.On("Flip").Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-	suite.True(suite.config.MockProcessor.flipCalled)
+	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *FlipTestSuite) TestFlip_ShouldWorkWithCustomOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	customOutputDir := suite.T().TempDir()
 
+	suite.config.MockProcessor.On("Flip").Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--output", customOutputDir})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
-	suite.True(suite.config.MockProcessor.flipCalled)
+	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *FlipTestSuite) TestFlip_ShouldProcessMultipleImages() {
 	inputDir := PrepareTestImages(suite.T(), "img1.jpg", "img2.jpg", "img3.jpg")
 	expectedOutputDir := inputDir + "-flip"
-	defer os.RemoveAll(expectedOutputDir)
 
+	suite.config.MockProcessor.On("Flip").Return([]byte("fake-bytes"), nil).Times(3)
 	suite.cmd.SetArgs([]string{"--input", inputDir})
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
-	suite.True(suite.config.MockProcessor.flipCalled)
+	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func TestFlipSuite(t *testing.T) {

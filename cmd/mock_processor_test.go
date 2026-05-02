@@ -11,65 +11,85 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
 type mockImageProcessor struct {
 	image.ImageProcessor
-	paletteCalled   bool
-	losslessCalled  bool
-	grayscaleCalled bool
-	flipCalled      bool
-	thumbnailCalled bool
-	resizeCalled    bool
-	enlargeCalled   bool
-	convertCalled   bool
-	cropCalled      bool
+	mock.Mock
 }
 
 func (m *mockImageProcessor) EnablePalette() ([]byte, error) {
-	m.paletteCalled = true
-	return []byte("fake-processed-bytes"), nil
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (m *mockImageProcessor) LosslessCompress() ([]byte, error) {
-	m.losslessCalled = true
-	return []byte("fake-processed-bytes"), nil
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (m *mockImageProcessor) Grayscale() ([]byte, error) {
-	m.grayscaleCalled = true
-	return []byte("fake-processed-bytes"), nil
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (m *mockImageProcessor) Flip() ([]byte, error) {
-	m.flipCalled = true
-	return []byte("fake-processed-bytes"), nil
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (m *mockImageProcessor) Thumbnail(width int) ([]byte, error) {
-	m.thumbnailCalled = true
-	return []byte("fake-processed-bytes"), nil
+	args := m.Called(width)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (m *mockImageProcessor) Resize(width, height int) ([]byte, error) {
-	m.resizeCalled = true
-	return []byte("fake-processed-bytes"), nil
+	args := m.Called(width, height)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (m *mockImageProcessor) Enlarge(width, height int) ([]byte, error) {
-	m.enlargeCalled = true
-	return []byte("fake-processed-bytes"), nil
+	args := m.Called(width, height)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (m *mockImageProcessor) Convert(format string) ([]byte, error) {
-	m.convertCalled = true
-	return []byte("fake-processed-bytes"), nil
+	args := m.Called(format)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 func (m *mockImageProcessor) Crop(width int, height int, gravity image.Gravity) ([]byte, error) {
-	m.cropCalled = true
-	return []byte("fake-processed-bytes"), nil
+	args := m.Called(width, height, gravity)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 type TestConfig struct {
@@ -125,12 +145,15 @@ func AssertCommonCommandBehaviors(suite *suite.Suite, cmd *cobra.Command, config
 
 func PrepareTestImages(t *testing.T, filenames ...string) string {
 	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "input")
+	os.MkdirAll(inputDir, 0755)
+
 	for _, name := range filenames {
-		path := filepath.Join(tmpDir, name)
+		path := filepath.Join(inputDir, name)
 		os.MkdirAll(filepath.Dir(path), 0755)
 		os.WriteFile(path, []byte("fake-image"), 0644)
 	}
-	return tmpDir
+	return inputDir
 }
 
 func AssertImageProcessed(suite *suite.Suite, config *TestConfig, expectedOutputDir string, filenames ...string) {
