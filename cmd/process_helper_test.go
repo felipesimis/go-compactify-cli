@@ -96,6 +96,13 @@ func (m *mockHelperFS) WriteFile(path string, data []byte) error {
 	return args.Error(0)
 }
 
+type errorReader struct{}
+
+func (e errorReader) Read(p []byte) (n int, err error) { return 0, errors.New("forced read error") }
+func (e errorReader) Close() error {
+	return nil
+}
+
 type ProcessingTestSuite struct {
 	suite.Suite
 	mockFS *mockHelperFS
@@ -129,6 +136,23 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenOpenF
 
 	err := HandleImageProcessing(context.Background(), params, stats, nil, nil)
 	suite.ErrorContains(err, "open error")
+	suite.Equal(uint32(1), stats.SkippedImages.Load())
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
+func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenReadFails() {
+	suite.mockFS.On("OpenFile", "corrupt.jpg").Return(errorReader{}, nil)
+
+	stats := &utils.ImageProcessingStats{}
+	params := processing.FileProcessingParams{
+		File: filesystem.FileInfo{Path: "corrupt.jpg", Size: 100},
+		FS:   suite.mockFS,
+	}
+
+	err := HandleImageProcessing(context.Background(), params, stats, nil, nil)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "forced read error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 	suite.mockFS.AssertExpectations(suite.T())
 }
