@@ -12,7 +12,6 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/felipesimis/go-compactify-cli/internal/processing"
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -94,6 +93,16 @@ func (m *mockHelperFS) OpenFile(path string) (io.ReadCloser, error) {
 func (m *mockHelperFS) WriteFile(path string, data []byte) error {
 	args := m.Called(path, data)
 	return args.Error(0)
+}
+
+func (m *mockHelperFS) CreateDir(name string) error {
+	args := m.Called(name)
+	return args.Error(0)
+}
+
+func (m *mockHelperFS) CreateSiblingDir(inputDir, suffix string) (string, error) {
+	args := m.Called(inputDir, suffix)
+	return args.String(0), args.Error(1)
 }
 
 type errorReader struct{}
@@ -199,7 +208,46 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenProce
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
-func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.T) {
+func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCreateDirFails() {
+	suite.mockFS.On("CreateDir", "invalid_output").Return(errors.New("create dir error"))
+
+	global := GlobalConfig{OutputDir: "invalid_output"}
+	config := OperationConfig{FileSystem: suite.mockFS}
+
+	out, err := resolveOutputDir(global, config)
+
+	suite.ErrorContains(err, "create dir error")
+	suite.Empty(out)
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
+func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnCustomDir_WhenProvidedAndCreated() {
+	suite.mockFS.On("CreateDir", "valid_output").Return(nil)
+
+	global := GlobalConfig{OutputDir: "valid_output"}
+	opCfg := OperationConfig{FileSystem: suite.mockFS}
+
+	out, err := resolveOutputDir(global, opCfg)
+
+	suite.NoError(err)
+	suite.Equal("valid_output", out)
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
+func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnSibling_WhenNoCustomDirProvided() {
+	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("input-suffix", nil)
+
+	global := GlobalConfig{InputDir: "input"}
+	opCfg := OperationConfig{FileSystem: suite.mockFS, OutputSuffix: "-suffix"}
+
+	out, err := resolveOutputDir(global, opCfg)
+
+	suite.NoError(err)
+	suite.Equal("input-suffix", out)
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
+func (suite *ProcessingTestSuite) TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled() {
 	tests := []struct {
 		name            string
 		skippedImages   uint32
@@ -254,7 +302,7 @@ func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		suite.Run(tt.name, func() {
 			rb := utils.NewResultBuilder(utils.RealTimeProvider{})
 			rb.
 				SetOriginalBytes(10485760). // 10 MB
@@ -271,10 +319,10 @@ func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.
 			printedResult := RenderProcessSummary(result)
 
 			for _, expectedText := range tt.expected {
-				assert.Contains(t, printedResult, expectedText)
+				suite.Contains(printedResult, expectedText)
 			}
 			for _, notExpectedText := range tt.notExpected {
-				assert.NotContains(t, printedResult, notExpectedText)
+				suite.NotContains(printedResult, notExpectedText)
 			}
 		})
 	}
