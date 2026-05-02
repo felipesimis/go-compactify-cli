@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
@@ -10,6 +12,7 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/processing"
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -74,8 +77,26 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 	})
 }
 
+type mockHelperFS struct {
+	mock.Mock
+	filesystem.FileSystem
+}
+
+func (m *mockHelperFS) OpenFile(path string) (io.ReadCloser, error) {
+	args := m.Called(path)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(io.ReadCloser), args.Error(1)
+}
+
 type ProcessingTestSuite struct {
 	suite.Suite
+	mockFS *mockHelperFS
+}
+
+func (suite *ProcessingTestSuite) SetupTest() {
+	suite.mockFS = new(mockHelperFS)
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenContextCanceled() {
@@ -89,6 +110,21 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenConte
 
 	suite.ErrorIs(err, context.Canceled)
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
+}
+
+func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenOpenFileFails() {
+	suite.mockFS.On("OpenFile", "test.jpg").Return(nil, errors.New("open error"))
+
+	stats := &utils.ImageProcessingStats{}
+	params := processing.FileProcessingParams{
+		File: filesystem.FileInfo{Path: "test.jpg", Size: 100},
+		FS:   suite.mockFS,
+	}
+
+	err := HandleImageProcessing(context.Background(), params, stats, nil, nil)
+	suite.ErrorContains(err, "open error")
+	suite.Equal(uint32(1), stats.SkippedImages.Load())
+	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled(t *testing.T) {
