@@ -45,6 +45,7 @@ type domainOptions struct {
 	lossless       bool
 	thumbnailWidth int
 	flip           bool
+	stripMetadata  bool
 }
 
 type ProcessOption func(*domainOptions)
@@ -106,6 +107,12 @@ func WithPalette() ProcessOption {
 func WithLosslessCompress() ProcessOption {
 	return func(o *domainOptions) {
 		o.lossless = true
+	}
+}
+
+func WithStripMetadata() ProcessOption {
+	return func(o *domainOptions) {
+		o.stripMetadata = true
 	}
 }
 

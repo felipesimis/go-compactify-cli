@@ -79,6 +79,11 @@ func TestProcessOptions_ShouldMutateDomainOptionsCorrectly(t *testing.T) {
 			option:   WithLosslessCompress(),
 			expected: domainOptions{lossless: true},
 		},
+		{
+			name:     "WithStripMetadata should set stripMetadata flag",
+			option:   WithStripMetadata(),
+			expected: domainOptions{stripMetadata: true},
+		},
 	}
 
 	for _, tt := range tests {
