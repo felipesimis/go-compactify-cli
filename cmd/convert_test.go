@@ -29,7 +29,7 @@ func (suite *ConvertTestSuite) TestConvertShould_ReturnError_When_InputDirectory
 
 func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
-	expectedOutputDir := inputDir + "-converted-png"
+	expectedOutputDir := inputDir + "-converted.png"
 
 	suite.config.MockProcessor.On("Convert", "png").Return([]byte("fake-bytes"), nil).Once()
 
@@ -53,7 +53,7 @@ func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithCustomOutput() {
 
 func (suite *ConvertTestSuite) TestConvert_ShouldProcessMultipleImages() {
 	inputDir := PrepareTestImages(suite.T(), "img1.webp", "img2.jpg", "img3.jpg")
-	expectedOutputDir := inputDir + "-converted-png"
+	expectedOutputDir := inputDir + "-converted.png"
 
 	suite.config.MockProcessor.On("Convert", "png").Return([]byte("fake-bytes"), nil).Times(3)
 
@@ -69,10 +69,10 @@ func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithSupportedFormats() {
 		expectedSuffix string
 		expectedExt    string
 	}{
-		{"png", "-converted-png", ".png"},
-		{"webp", "-converted-webp", ".webp"},
-		{"jpg", "-converted-jpg", ".jpg"},
-		{"jpeg", "-converted-jpeg", ".jpeg"},
+		{"png", "-converted.png", ".png"},
+		{"webp", "-converted.webp", ".webp"},
+		{"jpg", "-converted.jpg", ".jpg"},
+		{"jpeg", "-converted.jpeg", ".jpeg"},
 	}
 
 	for _, tt := range tests {

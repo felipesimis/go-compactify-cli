@@ -27,7 +27,7 @@ func (suite *FlipTestSuite) TestFlipShould_ReturnError_When_InputDirectoryDoesNo
 
 func (suite *FlipTestSuite) TestFlip_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
-	expectedOutputDir := inputDir + "-flip"
+	expectedOutputDir := inputDir + "-flipped"
 
 	suite.config.MockProcessor.On("Flip").Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir})
@@ -49,7 +49,7 @@ func (suite *FlipTestSuite) TestFlip_ShouldWorkWithCustomOutput() {
 
 func (suite *FlipTestSuite) TestFlip_ShouldProcessMultipleImages() {
 	inputDir := PrepareTestImages(suite.T(), "img1.jpg", "img2.jpg", "img3.jpg")
-	expectedOutputDir := inputDir + "-flip"
+	expectedOutputDir := inputDir + "-flipped"
 
 	suite.config.MockProcessor.On("Flip").Return([]byte("fake-bytes"), nil).Times(3)
 	suite.cmd.SetArgs([]string{"--input", inputDir})

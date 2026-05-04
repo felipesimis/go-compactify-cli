@@ -70,7 +70,7 @@ func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			Ctx:                ctx,
 			FileSystem:         fs,
 			Out:                cmd.OutOrStdout(),
-			OutputSuffix:       fmt.Sprintf("-converted-%s", format),
+			OutputSuffix:       fmt.Sprintf("-converted.%s", format),
 			ProgressBarMessage: "Converting images",
 			ExtraParams:        ConvertParams{Format: format},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
