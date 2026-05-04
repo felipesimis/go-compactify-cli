@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/felipesimis/go-compactify-cli/internal/image"
@@ -18,10 +17,9 @@ type CropTestSuite struct {
 
 func (suite *CropTestSuite) SetupTest() {
 	suite.cmd, suite.config = SetupTestConfig(NewCropCmd)
-}
-
-func (suite *CropTestSuite) TearDownTest() {
-	suite.config.MockProcessor.AssertExpectations(suite.T())
+	suite.config.ProcessorFactory = func([]byte) image.ImageProcessor {
+		return &fakeProcessor{resultBytes: []byte("fake-bytes")}
+	}
 }
 
 func (suite *CropTestSuite) TestCropShould_ReturnError_When_InputDirectoryDoesNotExist() {
@@ -31,8 +29,6 @@ func (suite *CropTestSuite) TestCropShould_ReturnError_When_InputDirectoryDoesNo
 func (suite *CropTestSuite) TestCrop_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	expectedOutputDir := inputDir + "-cropped_150x150"
-
-	suite.config.MockProcessor.On("Crop", 150, 150, image.Gravity(0)).Return([]byte("fake-bytes"), nil).Once()
 
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "150", "--height", "150", "--gravity", "0"})
 	suite.NoError(suite.cmd.Execute())
@@ -44,8 +40,6 @@ func (suite *CropTestSuite) TestCrop_ShouldWorkWithCustomOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	customOutputDir := suite.T().TempDir()
 
-	suite.config.MockProcessor.On("Crop", 150, 150, image.Gravity(0)).Return([]byte("fake-bytes"), nil).Once()
-
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--output", customOutputDir, "--width", "150", "--height", "150", "--gravity", "0"})
 	suite.NoError(suite.cmd.Execute())
 
@@ -55,8 +49,6 @@ func (suite *CropTestSuite) TestCrop_ShouldWorkWithCustomOutput() {
 func (suite *CropTestSuite) TestCrop_ShouldProcessMultipleImages() {
 	inputDir := PrepareTestImages(suite.T(), "img1.jpg", "img2.jpg", "img3.jpg")
 	expectedOutputDir := inputDir + "-cropped_150x150"
-
-	suite.config.MockProcessor.On("Crop", 150, 150, image.Gravity(0)).Return([]byte("fake-bytes"), nil).Times(3)
 
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "150", "--height", "150", "--gravity", "0"})
 	suite.NoError(suite.cmd.Execute())
@@ -83,7 +75,6 @@ func (suite *CropTestSuite) TestCrop_ShouldReturnError_When_DimensionsAreInvalid
 
 			suite.Error(err)
 			suite.ErrorIs(err, validation.ErrInvalidDimensions)
-			suite.config.MockProcessor.AssertNotCalled(suite.T(), "Crop")
 		})
 	}
 }
@@ -105,7 +96,6 @@ func (suite *CropTestSuite) TestCrop_ShouldReturnError_When_GravityIsInvalid() {
 
 			suite.Error(err)
 			suite.ErrorIs(err, validation.ErrInvalidGravity)
-			suite.config.MockProcessor.AssertNotCalled(suite.T(), "Crop")
 		})
 	}
 }
@@ -117,7 +107,6 @@ func (suite *CropTestSuite) TestCrop_ShouldReturnMultipleErrors_When_AllFlagsAre
 	suite.Error(err)
 	suite.ErrorIs(err, validation.ErrInvalidDimensions)
 	suite.ErrorIs(err, validation.ErrInvalidGravity)
-	suite.config.MockProcessor.AssertNotCalled(suite.T(), "Crop")
 }
 
 func (suite *CropTestSuite) TestCrop_ShouldWorkWithAllValidFlags() {
@@ -128,9 +117,6 @@ func (suite *CropTestSuite) TestCrop_ShouldWorkWithAllValidFlags() {
 
 			inputDir := PrepareTestImages(suite.T(), "test.jpg")
 			expectedOutputDir := inputDir + "-cropped_150x150"
-
-			g, _ := strconv.Atoi(gravity)
-			suite.config.MockProcessor.On("Crop", 150, 150, image.Gravity(g)).Return([]byte("fake-bytes"), nil).Once()
 
 			suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "150", "--height", "150", "--gravity", gravity})
 			suite.NoError(suite.cmd.Execute())

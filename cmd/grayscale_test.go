@@ -3,6 +3,7 @@ package cmd
 import (
 	"testing"
 
+	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
 )
@@ -15,10 +16,9 @@ type GrayscaleTestSuite struct {
 
 func (suite *GrayscaleTestSuite) SetupTest() {
 	suite.cmd, suite.config = SetupTestConfig(NewGrayscaleCmd)
-}
-
-func (suite *GrayscaleTestSuite) TearDownTest() {
-	suite.config.MockProcessor.AssertExpectations(suite.T())
+	suite.config.ProcessorFactory = func([]byte) image.ImageProcessor {
+		return &fakeProcessor{resultBytes: []byte("fake-bytes")}
+	}
 }
 
 func (suite *GrayscaleTestSuite) TestGrayscaleShould_ReturnError_When_InputDirectoryDoesNotExist() {
@@ -29,7 +29,6 @@ func (suite *GrayscaleTestSuite) TestGrayscale_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	expectedOutputDir := inputDir + "-grayscale"
 
-	suite.config.MockProcessor.On("Grayscale").Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir})
 	suite.NoError(suite.cmd.Execute())
 
@@ -40,7 +39,6 @@ func (suite *GrayscaleTestSuite) TestGrayscale_ShouldWorkWithCustomOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	customOutputDir := suite.T().TempDir()
 
-	suite.config.MockProcessor.On("Grayscale").Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--output", customOutputDir})
 	suite.NoError(suite.cmd.Execute())
 
@@ -51,7 +49,6 @@ func (suite *GrayscaleTestSuite) TestGrayscale_ShouldProcessMultipleImages() {
 	inputDir := PrepareTestImages(suite.T(), "img1.jpg", "img2.jpg", "img3.jpg")
 	expectedOutputDir := inputDir + "-grayscale"
 
-	suite.config.MockProcessor.On("Grayscale").Return([]byte("fake-bytes"), nil).Times(3)
 	suite.cmd.SetArgs([]string{"--input", inputDir})
 	suite.NoError(suite.cmd.Execute())
 

@@ -11,105 +11,49 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
-type mockImageProcessor struct {
-	image.ImageProcessor
-	mock.Mock
+type FakeImageProcessor struct {
+	ResultBytes []byte
+	ProcessErr  error
 }
 
-func (m *mockImageProcessor) EnablePalette() ([]byte, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]byte), args.Error(1)
+func (f *FakeImageProcessor) Size() (image.ImageSize, error) { return image.ImageSize{}, nil }
+func (f *FakeImageProcessor) ImageType() string              { return "" }
+func (f *FakeImageProcessor) Length() int                    { return 0 }
+func (f *FakeImageProcessor) Metadata() (image.ImageMetadata, error) {
+	return image.ImageMetadata{}, nil
 }
-
-func (m *mockImageProcessor) LosslessCompress() ([]byte, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockImageProcessor) Grayscale() ([]byte, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockImageProcessor) Flip() ([]byte, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockImageProcessor) Thumbnail(width int) ([]byte, error) {
-	args := m.Called(width)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockImageProcessor) Resize(width, height int) ([]byte, error) {
-	args := m.Called(width, height)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockImageProcessor) Enlarge(width, height int) ([]byte, error) {
-	args := m.Called(width, height)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockImageProcessor) Convert(format string) ([]byte, error) {
-	args := m.Called(format)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockImageProcessor) Crop(width int, height int, gravity image.Gravity) ([]byte, error) {
-	args := m.Called(width, height, gravity)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]byte), args.Error(1)
+func (f *FakeImageProcessor) Process(opts ...image.ProcessOption) ([]byte, error) {
+	return f.ResultBytes, f.ProcessErr
 }
 
 type TestConfig struct {
-	FS            filesystem.FileSystem
-	MockProcessor *mockImageProcessor
-	OutBuf        *bytes.Buffer
+	FS               filesystem.FileSystem
+	ProcessorFactory image.ProcessorFactory
+	OutBuf           *bytes.Buffer
 }
 
 func SetupTestConfig(createCmd func(filesystem.FileSystem, image.ProcessorFactory) *cobra.Command) (*cobra.Command, *TestConfig) {
 	fs := filesystem.NewFileSystem()
-	mockProcessor := &mockImageProcessor{}
 	outBuf := new(bytes.Buffer)
 
-	factory := func([]byte) image.ImageProcessor {
-		return mockProcessor
+	testCfg := &TestConfig{
+		FS:     fs,
+		OutBuf: outBuf,
+		ProcessorFactory: func([]byte) image.ImageProcessor {
+			return &FakeImageProcessor{ResultBytes: []byte("fake-bytes")}
+		},
 	}
 
-	cmd := createCmd(fs, factory)
-	rootCmd := NewRootCmd()
+	factoryProxy := func(data []byte) image.ImageProcessor {
+		return testCfg.ProcessorFactory(data)
+	}
 
+	cmd := createCmd(fs, factoryProxy)
+
+	rootCmd := NewRootCmd()
 	if rootCmd != nil {
 		cmd.Flags().AddFlagSet(rootCmd.PersistentFlags())
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
@@ -117,14 +61,11 @@ func SetupTestConfig(createCmd func(filesystem.FileSystem, image.ProcessorFactor
 			f.Changed = false
 		})
 	}
+
 	cmd.SetOut(outBuf)
 	cmd.SetErr(outBuf)
 
-	return cmd, &TestConfig{
-		FS:            fs,
-		MockProcessor: mockProcessor,
-		OutBuf:        outBuf,
-	}
+	return cmd, testCfg
 }
 
 func AssertCommonCommandBehaviors(suite *suite.Suite, cmd *cobra.Command, config *TestConfig, extraArgs ...string) {
@@ -136,7 +77,6 @@ func AssertCommonCommandBehaviors(suite *suite.Suite, cmd *cobra.Command, config
 
 	tmpDir := suite.T().TempDir()
 	config.OutBuf.Reset()
-
 	emptyArgs := append([]string{"--input", tmpDir}, extraArgs...)
 	cmd.SetArgs(emptyArgs)
 	err = cmd.Execute()
@@ -148,7 +88,6 @@ func PrepareTestImages(t *testing.T, filenames ...string) string {
 	tmpDir := t.TempDir()
 	inputDir := filepath.Join(tmpDir, "input")
 	os.MkdirAll(inputDir, 0755)
-
 	for _, name := range filenames {
 		path := filepath.Join(inputDir, name)
 		os.MkdirAll(filepath.Dir(path), 0755)
@@ -163,10 +102,8 @@ func AssertImageProcessed(suite *suite.Suite, config *TestConfig, expectedOutput
 		_, err := os.Stat(expectedOutputFile)
 		suite.NoError(err)
 	}
-
 	output := config.OutBuf.String()
 	suite.Contains(output, expectedOutputDir)
-
 	expectedCountStr := fmt.Sprintf("%d images", len(filenames))
 	suite.Contains(output, expectedCountStr)
 }

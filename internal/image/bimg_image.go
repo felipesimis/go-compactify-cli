@@ -29,24 +29,8 @@ func (b *bimgImageWrapper) Size() (ImageSize, error) {
 	return ImageSize{Width: size.Width, Height: size.Height}, nil
 }
 
-func (b *bimgImageWrapper) Resize(width, height int) ([]byte, error) {
-	return b.image.Resize(width, height)
-}
-
-func (b *bimgImageWrapper) Convert(format string) ([]byte, error) {
-	bimgFormat, err := mapStringToImageType(format)
-	if err != nil {
-		return nil, err
-	}
-	return b.image.Convert(bimgFormat)
-}
-
 func (b *bimgImageWrapper) ImageType() string {
 	return b.image.Type()
-}
-
-func (b *bimgImageWrapper) Crop(width, height int, gravity Gravity) ([]byte, error) {
-	return b.image.Crop(width, height, mapGravityToBimg(gravity))
 }
 
 func mapStringToImageType(format string) (bimg.ImageType, error) {
@@ -79,32 +63,8 @@ func mapGravityToBimg(g Gravity) bimg.Gravity {
 	}
 }
 
-func (b *bimgImageWrapper) Flip() ([]byte, error) {
-	return b.image.Flip()
-}
-
-func (b *bimgImageWrapper) Enlarge(width, height int) ([]byte, error) {
-	return b.image.Enlarge(width, height)
-}
-
-func (b *bimgImageWrapper) Thumbnail(width int) ([]byte, error) {
-	return b.image.Thumbnail(width)
-}
-
-func (b *bimgImageWrapper) Grayscale() ([]byte, error) {
-	return b.image.Colourspace(bimg.InterpretationBW)
-}
-
 func (b *bimgImageWrapper) Length() int {
 	return b.image.Length()
-}
-
-func (b *bimgImageWrapper) EnablePalette() ([]byte, error) {
-	return b.image.Process(bimg.Options{Palette: true})
-}
-
-func (b *bimgImageWrapper) LosslessCompress() ([]byte, error) {
-	return b.image.Process(bimg.Options{Lossless: true})
 }
 
 func (b *bimgImageWrapper) Metadata() (ImageMetadata, error) {
@@ -116,4 +76,58 @@ func (b *bimgImageWrapper) Metadata() (ImageMetadata, error) {
 		Size: size,
 		Type: b.ImageType(),
 	}, nil
+}
+
+func (b *bimgImageWrapper) Process(opts ...ProcessOption) ([]byte, error) {
+	domainOpts := &domainOptions{}
+	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
+		opt(domainOpts)
+	}
+
+	bimgOpts := bimg.Options{}
+
+	if domainOpts.thumbnailWidth > 0 {
+		bimgOpts.Width = domainOpts.thumbnailWidth
+		bimgOpts.Height = domainOpts.thumbnailWidth
+		bimgOpts.Crop = true
+		bimgOpts.Gravity = bimg.GravitySmart
+	} else if domainOpts.width > 0 || domainOpts.height > 0 {
+		bimgOpts.Width = domainOpts.width
+		bimgOpts.Height = domainOpts.height
+		bimgOpts.Enlarge = domainOpts.enlarge
+	}
+
+	if domainOpts.crop {
+		bimgOpts.Crop = true
+		bimgOpts.Gravity = mapGravityToBimg(domainOpts.gravity)
+	}
+
+	if domainOpts.format != "" {
+		bimgFormat, err := mapStringToImageType(domainOpts.format)
+		if err != nil {
+			return nil, err
+		}
+		bimgOpts.Type = bimgFormat
+	}
+
+	if domainOpts.grayscale {
+		bimgOpts.Interpretation = bimg.InterpretationBW
+	}
+
+	if domainOpts.flip {
+		bimgOpts.Flip = true
+	}
+
+	if domainOpts.palette {
+		bimgOpts.Palette = true
+	}
+
+	if domainOpts.lossless {
+		bimgOpts.Lossless = true
+	}
+
+	return b.image.Process(bimgOpts)
 }

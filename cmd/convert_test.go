@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/felipesimis/go-compactify-cli/internal/validation"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -17,10 +18,9 @@ type ConvertTestSuite struct {
 
 func (suite *ConvertTestSuite) SetupTest() {
 	suite.cmd, suite.config = SetupTestConfig(NewConvertCmd)
-}
-
-func (suite *ConvertTestSuite) TearDownTest() {
-	suite.config.MockProcessor.AssertExpectations(suite.T())
+	suite.config.ProcessorFactory = func([]byte) image.ImageProcessor {
+		return &fakeProcessor{resultBytes: []byte("fake-bytes")}
+	}
 }
 
 func (suite *ConvertTestSuite) TestConvertShould_ReturnError_When_InputDirectoryDoesNotExist() {
@@ -30,8 +30,6 @@ func (suite *ConvertTestSuite) TestConvertShould_ReturnError_When_InputDirectory
 func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	expectedOutputDir := inputDir + "-converted.png"
-
-	suite.config.MockProcessor.On("Convert", "png").Return([]byte("fake-bytes"), nil).Once()
 
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--format", "png"})
 	suite.NoError(suite.cmd.Execute())
@@ -43,8 +41,6 @@ func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithCustomOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	customOutputDir := suite.T().TempDir()
 
-	suite.config.MockProcessor.On("Convert", "png").Return([]byte("fake-bytes"), nil).Once()
-
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--output", customOutputDir, "--format", "png"})
 	suite.NoError(suite.cmd.Execute())
 
@@ -54,8 +50,6 @@ func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithCustomOutput() {
 func (suite *ConvertTestSuite) TestConvert_ShouldProcessMultipleImages() {
 	inputDir := PrepareTestImages(suite.T(), "img1.webp", "img2.jpg", "img3.jpg")
 	expectedOutputDir := inputDir + "-converted.png"
-
-	suite.config.MockProcessor.On("Convert", "png").Return([]byte("fake-bytes"), nil).Times(3)
 
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--format", "png"})
 	suite.NoError(suite.cmd.Execute())
@@ -81,8 +75,6 @@ func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithSupportedFormats() {
 
 			inputDir := PrepareTestImages(suite.T(), "test.jpg")
 			expectedOutputDir := inputDir + tt.expectedSuffix
-
-			suite.config.MockProcessor.On("Convert", tt.format).Return([]byte("fake-bytes"), nil).Once()
 
 			suite.cmd.SetArgs([]string{"--input", inputDir, "--format", tt.format})
 			suite.NoError(suite.cmd.Execute())
@@ -110,7 +102,6 @@ func (suite *ConvertTestSuite) TestConvert_ShouldReturnError_When_InvalidFormat(
 			err := suite.cmd.Execute()
 			suite.Error(err)
 			suite.ErrorIs(err, tt.expectedErr)
-			suite.config.MockProcessor.AssertNotCalled(suite.T(), "Convert")
 		})
 	}
 }

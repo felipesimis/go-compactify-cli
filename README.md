@@ -51,8 +51,8 @@ Compactify follows a strict precedence order (from highest to lowest). This allo
 
 ## 🏗 Architecture & Engineering Decisions
 
-### 🧩 Decoupled Architecture
-The core logic is strictly isolated from external dependencies. By using the **Dependency Inversion Principle**, the internal packages interact with interfaces, allowing for nearly 100% test coverage of the command orchestration and configuration logic.
+### 🧩 Intent-Based Architecture (Functional Options)
+The core logic is strictly isolated from external dependencies. By using the **Functional Options Pattern**, the CLI layer remains "intent-based," only specifying what should happen (e.g., `WithResize`). The underlying `bimg` engine then translates these intents into a single, optimized `libvips` operation, preventing redundant memory allocations and ensuring high-performance **single-pass CGO execution**.
 
 ### 🌊 Concurrency Model
 To handle thousands of images efficiently, Compactify uses a **Semaphore Pattern** (`chan struct{}`). This prevents goroutine explosion and ensures the tool respects the host machine's hardware limits.
@@ -142,9 +142,10 @@ export COMPACTIFY_CONCURRENCY=10
 
 ## 🧪 Testing Standards
 
-We aim for maximum reliability through a multi-tiered testing strategy. The project utilizes `testify/suite` for isolated lifecycle management, `testify/mock` for strict mock expectations, and `testify/assert` for assertion validation.
+We aim for maximum reliability through a multi-tiered testing strategy.
 
-*   **Unit & Integration Tests**: Achieved 100% logic coverage in the command orchestration (`cmd`) and processing packages through robust Dependency Injection.
+*   **Unit & Integration Tests**: Achieved high logic coverage through robust Dependency Injection and the use of testify/suite.
+*   **Functional Mocking**: Uses high-performance `FakeImageProcessor` stubs to validate orchestration without the overhead of native library calls.
 *   **End-to-End (E2E) Tests**: Validates the fully compiled binary against real image files to guarantee `CGO/libvips` stability.
 
 **Run all tests:**
