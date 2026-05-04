@@ -108,6 +108,7 @@ func SetupTestConfig(createCmd func(filesystem.FileSystem, image.ProcessorFactor
 	}
 
 	cmd := createCmd(fs, factory)
+	rootCmd := NewRootCmd()
 
 	if rootCmd != nil {
 		cmd.Flags().AddFlagSet(rootCmd.PersistentFlags())
