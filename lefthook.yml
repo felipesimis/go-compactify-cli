@@ -12,6 +12,12 @@ pre-commit:
       glob: "**/*.go"
       run: make test
 
+pre-push:
+  commands:
+    test:
+      tags: "!integration"
+      run: make test-e2e
+
 commit-msg:
   commands:
     lint:

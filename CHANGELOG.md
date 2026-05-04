@@ -6,6 +6,7 @@
 - **Dimensions Validation**: Increased minimum allowed width and height from `1` to `10` pixels to ensure processing stability.
 
 ### 🚀 CI/CD & Infrastructure
+- **Pre-push Security Gate**: Configured a `pre-push` hook to execute the full End-to-End (E2E) suite, ensuring binary stability and CGO integration are verified before code is synchronized with the remote repository.
 - **Local Quality Gates**: Integrated Lefthook for pre-commit validation, ensuring `fmt`, `vet`, and `test` execution prior to code tracking.
 - **Commit Culture Enforcement**: Added strict Git hook validation for the Conventional Commits specification.
 - **Continuous Integration Pipeline**: Implemented a GitHub Actions workflow (`.github/workflows/ci.yaml`) to automatically validate code quality, unit tests, and cross-platform compilation (including CGO/libvips dependencies) on all pushes and pull requests.
@@ -20,6 +21,7 @@
 - **Standardized Success Feedback**: Integrated a new `Success` component in the UI package to provide consistent, high-fidelity visual confirmation for CLI operations.
 
 ### 🛠 Engineering & Maintenance
+- **End-to-End (E2E) Integration Testing**: Established a black-box E2E testing pipeline (`test/e2e`) that compiles the native binary and validates the full command lifecycle—from flag parsing to actual filesystem `I/O` operations—ensuring the compiled `CGO` binary functions flawlessly with real image data.
 - **Command Architecture Overhaul**: Refactored the entire CLI command layer to implement strict Dependency Injection. Commands no longer rely on global processor instantiation, enabling highly decoupled and testable orchestration.
 - **Automated Mock Lifecycle**: Centralized mock validation using the `TearDownTest` hook across packages, eliminating boilerplate assertions and preventing unverified mock expectations.
 - **Deterministic I/O Testing**: Injected `io.Writer` interfaces across the operation handlers to capture standard output, enabling 100% test coverage of CLI orchestration without polluting the console.
