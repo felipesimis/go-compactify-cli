@@ -81,12 +81,20 @@ func (b *bimgImageWrapper) Metadata() (ImageMetadata, error) {
 func (b *bimgImageWrapper) Process(opts ...ProcessOption) ([]byte, error) {
 	domainOpts := &domainOptions{}
 	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
 		opt(domainOpts)
 	}
 
 	bimgOpts := bimg.Options{}
 
-	if domainOpts.width > 0 || domainOpts.height > 0 {
+	if domainOpts.thumbnailWidth > 0 {
+		bimgOpts.Width = domainOpts.thumbnailWidth
+		bimgOpts.Height = domainOpts.thumbnailWidth
+		bimgOpts.Crop = true
+		bimgOpts.Gravity = bimg.GravitySmart
+	} else if domainOpts.width > 0 || domainOpts.height > 0 {
 		bimgOpts.Width = domainOpts.width
 		bimgOpts.Height = domainOpts.height
 		bimgOpts.Enlarge = domainOpts.enlarge
@@ -119,10 +127,6 @@ func (b *bimgImageWrapper) Process(opts ...ProcessOption) ([]byte, error) {
 
 	if domainOpts.lossless {
 		bimgOpts.Lossless = true
-	}
-
-	if domainOpts.thumbnailWidth > 0 {
-		return b.image.Thumbnail(domainOpts.thumbnailWidth)
 	}
 
 	return b.image.Process(bimgOpts)

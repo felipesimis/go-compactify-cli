@@ -83,6 +83,16 @@ func (suite *BimgImageTestSuite) TestProcessSizingOperations_ShouldTransformImag
 	}
 }
 
+func (suite *BimgImageTestSuite) TestProcess_ShouldNotPanic_WhenNilOptionIsProvided() {
+	processedImg, err := suite.img.Process(WithResize(100, 100), nil, WithGrayscale())
+
+	suite.NoError(err)
+	suite.NotEmpty(processedImg)
+
+	size, _ := NewProcessor(processedImg).Size()
+	suite.Equal(100, size.Width)
+}
+
 func (suite *BimgImageTestSuite) TestProcess_ShouldChangeImageType_WhenConvertOptionIsProvided() {
 	convertedImg, err := suite.img.Process(WithConvert("png"))
 	suite.NoError(err)
@@ -169,6 +179,39 @@ func (suite *BimgImageTestSuite) TestMapStringToImageType_ShouldReturnCorrectBim
 			suite.Equal(tt.expected, result)
 		})
 	}
+}
+
+func (suite *BimgImageTestSuite) TestProcess_ShouldCombineMultipleOperations_WhenMultipleOptionsAreProvided() {
+	opts := []ProcessOption{
+		WithThumbnail(200),
+		WithGrayscale(),
+		WithConvert("png"),
+	}
+
+	processedImg, err := suite.img.Process(opts...)
+	suite.NoError(err)
+	suite.NotEmpty(processedImg)
+
+	newProc := NewProcessor(processedImg)
+
+	size, _ := newProc.Size()
+	suite.Equal(200, size.Width)
+	suite.Equal(200, size.Height)
+	suite.Equal("png", newProc.ImageType())
+}
+
+func (suite *BimgImageTestSuite) TestProcess_ThumbnailShouldOverrideExplicitResize_WhenBothAreProvided() {
+	opts := []ProcessOption{
+		WithResize(800, 600),
+		WithThumbnail(100),
+	}
+
+	processedImg, err := suite.img.Process(opts...)
+	suite.NoError(err)
+
+	size, _ := NewProcessor(processedImg).Size()
+	suite.Equal(100, size.Width)
+	suite.NotEqual(800, size.Width)
 }
 
 func (suite *BimgImageTestSuite) TestMapStringToImageType_ShouldReturnError_WhenInputIsInvalid() {
