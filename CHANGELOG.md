@@ -18,6 +18,7 @@
 - **Continuous Integration Pipeline**: Implemented a GitHub Actions workflow (`.github/workflows/ci.yaml`) to automatically validate code quality, unit tests, and cross-platform compilation (including CGO/libvips dependencies) on all pushes and pull requests.
 
 ### 🚀 Added & Changed
+- **Privacy & Security**: Introduced the global `--strip-metadata` flag and its corresponding environment/config mappings. This feature safely strips sensitive EXIF data (such as GPS coordinates and camera models) to protect user privacy while preserving ICC color profiles for color accuracy.
 - **Multi-layer Configuration Hierarchy**: Implemented a robust precedence engine where Flags > Environment Variables > Config File > Defaults. This ensures maximum flexibility for local development and CI/CD environments.
 - **Environment Variable Mapping**: Integrated automatic mapping for all global settings using the COMPACTIFY_ prefix (e.g., COMPACTIFY_CONCURRENCY).
 - **Resilient Versioning**: Added intelligent version string sanitization that handles both v-prefixed tags and raw version strings, preventing redundant visual prefixes in the UI.
