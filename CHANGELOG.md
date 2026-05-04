@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### ⚠️ Breaking Changes
+- **Dimensions Validation**: Increased minimum allowed width and height from `1` to `10` pixels to ensure processing stability.
+
 ### 🚀 CI/CD & Infrastructure
 - **Local Quality Gates**: Integrated Lefthook for pre-commit validation, ensuring `fmt`, `vet`, and `test` execution prior to code tracking.
 - **Commit Culture Enforcement**: Added strict Git hook validation for the Conventional Commits specification.
@@ -17,6 +20,11 @@
 - **Standardized Success Feedback**: Integrated a new `Success` component in the UI package to provide consistent, high-fidelity visual confirmation for CLI operations.
 
 ### 🛠 Engineering & Maintenance
+- **Command Architecture Overhaul**: Refactored the entire CLI command layer to implement strict Dependency Injection. Commands no longer rely on global processor instantiation, enabling highly decoupled and testable orchestration.
+- **Automated Mock Lifecycle**: Centralized mock validation using the `TearDownTest` hook across packages, eliminating boilerplate assertions and preventing unverified mock expectations.
+- **Deterministic I/O Testing**: Injected `io.Writer` interfaces across the operation handlers to capture standard output, enabling 100% test coverage of CLI orchestration without polluting the console.
+- **Path Resolution Hardening**: Added comprehensive edge-case testing for output directory resolution, fixing a path relative calculation issue and ensuring correct fallback behaviors when modifiers are not present.
+- **Factory Pattern Implementation**: Extracted the `ProcessorFactory` into the domain layer to enforce clean architectural boundaries between the image processing engine and the CLI routing logic.
 - **Full Root Orchestration Coverage**: Achieved 100% logic coverage for cmd/root.go, including edge cases for corrupted configurations and missing required flags.
 - **I/O Dependency Injection**: Refactored the root command to use OutOrStderr() and ExecuteContext, eliminating global state dependencies and enabling 100% thread-safe integration testing.
 - **Strategic Test Interception**: Implemented buffer-based testing for standard streams.

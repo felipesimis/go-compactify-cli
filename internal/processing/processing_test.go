@@ -75,6 +75,11 @@ func (suite *ProcessingTestSuite) SetupTest() {
 	}
 }
 
+func (suite *ProcessingTestSuite) TearDownTest() {
+	suite.mockFS.AssertExpectations(suite.T())
+	suite.mockProgressBar.AssertExpectations(suite.T())
+}
+
 func (suite *ProcessingTestSuite) setupSuccessMocks() {
 	suite.mockFS.On("ReadFile", "image1.jpg").Return([]byte("content1"), nil)
 	suite.mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
@@ -85,8 +90,6 @@ func (suite *ProcessingTestSuite) TestProcessFiles_ShouldSucceed_WhenAllFilesAre
 	suite.setupSuccessMocks()
 	errs := ProcessFiles(suite.params)
 	suite.Empty(errs)
-	suite.mockFS.AssertExpectations(suite.T())
-	suite.mockProgressBar.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestProcessFiles_ShouldReturnErrors_WhenSomeFilesFail() {
@@ -98,8 +101,6 @@ func (suite *ProcessingTestSuite) TestProcessFiles_ShouldReturnErrors_WhenSomeFi
 	suite.Len(errs, 1)
 	suite.Contains(errs[0].Error(), "read error")
 	suite.Contains(errs[0].Error(), "image1.jpg")
-	suite.mockFS.AssertExpectations(suite.T())
-	suite.mockProgressBar.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestProcessFiles_ShouldUseDefaultConcurrency_WhenZeroIsProvided() {
@@ -108,8 +109,6 @@ func (suite *ProcessingTestSuite) TestProcessFiles_ShouldUseDefaultConcurrency_W
 
 	errs := ProcessFiles(suite.params)
 	suite.Empty(errs)
-	suite.mockFS.AssertExpectations(suite.T())
-	suite.mockProgressBar.AssertExpectations(suite.T())
 }
 
 func TestProcessingTestSuite(t *testing.T) {

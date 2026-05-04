@@ -63,12 +63,15 @@ func (suite *DryRunFileSystemTestSuite) SetupTest() {
 	suite.dryRunFs = NewDryRunFileSystem(suite.mockFS)
 }
 
+func (suite *DryRunFileSystemTestSuite) TearDownTest() {
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
 func (suite *DryRunFileSystemTestSuite) TestReadDir_ShouldReturnFiles_WhenCalled() {
 	suite.mockFS.On("ReadDir", "test/path").Return([]FileInfo{{Path: "image.jpg"}}, nil)
 	files, err := suite.dryRunFs.ReadDir("test/path")
 	suite.NoError(err)
 	suite.Len(files, 1)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *DryRunFileSystemTestSuite) TestReadFile_ShouldReturnContent_WhenCalled() {
@@ -76,33 +79,28 @@ func (suite *DryRunFileSystemTestSuite) TestReadFile_ShouldReturnContent_WhenCal
 	data, err := suite.dryRunFs.ReadFile("test/file.jpg")
 	suite.NoError(err)
 	suite.Equal([]byte("file content"), data)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *DryRunFileSystemTestSuite) TestOpenFile_ShouldReturnFile_WhenCalled() {
 	suite.mockFS.On("OpenFile", "test/file.jpg").Return(nil, nil)
 	_, err := suite.dryRunFs.OpenFile("test/file.jpg")
 	suite.NoError(err)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *DryRunFileSystemTestSuite) TestCreateDir_ShouldReturnNoError_WhenCalled() {
 	err := suite.dryRunFs.CreateDir("test/newdir")
 	suite.NoError(err)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *DryRunFileSystemTestSuite) TestWriteFile_ShouldReturnNoError_WhenCalled() {
 	err := suite.dryRunFs.WriteFile("test/file.jpg", []byte("file content"))
 	suite.NoError(err)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *DryRunFileSystemTestSuite) TestCreateSiblingDir_ShouldReturnNewPath_WhenCalled() {
 	path, err := suite.dryRunFs.CreateSiblingDir("test/input", "-suffix")
 	suite.NoError(err)
 	suite.Equal("test/input-suffix", filepath.ToSlash(path))
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func TestDryRunFileSystemTestSuite(t *testing.T) {

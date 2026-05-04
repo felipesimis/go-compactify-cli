@@ -10,38 +10,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func grayscaleRun(cmd *cobra.Command, args []string) error {
-	ctx := cmd.Context()
-
-	fs := filesystem.NewFileSystem()
-	globalConfig := loadGlobalConfig(cmd)
-	return RunOperation(globalConfig, OperationConfig{
-		Ctx:                ctx,
-		FileSystem:         fs,
-		OutputSuffix:       "-grayscale",
-		ProgressBarMessage: "Creating grayscale images",
-		ProcessorFunc:      processGrayscaleImage,
-		ResultVerb:         "grayscale images created",
-	})
-}
-
-func processGrayscaleImage(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-	return HandleImageProcessing(ctx, params, stats, func(proc image.ImageProcessor) ([]byte, error) {
-		return proc.Grayscale()
-	})
-}
-
-var grayscaleCmd = &cobra.Command{
-	Use:     "grayscale",
-	Aliases: []string{"gray", "bw"},
-	Args:    cobra.NoArgs,
-	Short:   "Convert images to grayscale",
-	Long: `Convert images to grayscale.
+func NewGrayscaleCmd(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) *cobra.Command {
+	return &cobra.Command{
+		Use:     "grayscale",
+		Aliases: []string{"gray", "bw"},
+		Args:    cobra.NoArgs,
+		Short:   "Convert images to grayscale",
+		Long: `Convert images to grayscale.
 This command allows you to convert an image to grayscale, removing all color information and leaving only shades of gray.
 It can be useful for various image processing tasks, such as creating artistic effects or preparing images for printing.`,
-	RunE: grayscaleRun,
+		RunE: runGrayscale(fs, processorFactory),
+	}
 }
 
-func init() {
-	rootCmd.AddCommand(grayscaleCmd)
+func runGrayscale(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		globalConfig := loadGlobalConfig(cmd)
+
+		return RunOperation(globalConfig, OperationConfig{
+			Ctx:                ctx,
+			FileSystem:         fs,
+			Out:                cmd.OutOrStdout(),
+			OutputSuffix:       "-grayscale",
+			ProgressBarMessage: "Creating grayscale images",
+			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
+				return HandleImageProcessing(ctx, params, stats, processorFactory, func(proc image.ImageProcessor) ([]byte, error) {
+					return proc.Grayscale()
+				})
+			},
+		})
+	}
 }

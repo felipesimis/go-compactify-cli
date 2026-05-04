@@ -26,7 +26,7 @@ func TestValidationComposite_ShouldReturnError_WhenSingleValidatorFails(t *testi
 
 	err := validationStub.Validate()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), ErrMock.Error())
+	assert.ErrorIs(t, err, ErrMock)
 }
 
 func TestValidationComposite_ShouldReturnCombinedErrors_WhenMultipleValidatorsFail(t *testing.T) {
@@ -41,9 +41,8 @@ func TestValidationComposite_ShouldReturnCombinedErrors_WhenMultipleValidatorsFa
 
 	err := validationStub.Validate()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), errOne.Error())
-	assert.Contains(t, err.Error(), errTwo.Error())
-	assert.Contains(t, err.Error(), "\n")
+	assert.ErrorIs(t, err, errOne)
+	assert.ErrorIs(t, err, errTwo)
 }
 
 func TestValidationComposite_ShouldSucceed_WhenAllValidatorsPass(t *testing.T) {

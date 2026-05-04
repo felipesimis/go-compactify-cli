@@ -5,9 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -29,21 +27,25 @@ var bufferPool = sync.Pool{
 	},
 }
 
+type OutputPathModifier interface {
+	ModifyOutputPath(originalPath, outputDir string) string
+}
+
 type OperationConfig struct {
 	Ctx                context.Context
 	FileSystem         filesystem.FileSystem
+	Out                io.Writer
 	OutputSuffix       string
 	ProgressBarMessage string
 	ExtraParams        interface{}
 	ProcessorFunc      func(ctx context.Context, p processing.FileProcessingParams, stats *utils.ImageProcessingStats) error
-	ResultVerb         string
 }
 
 func RunOperation(global GlobalConfig, config OperationConfig) error {
 	if global.DryRun {
 		config.FileSystem = filesystem.NewDryRunFileSystem(config.FileSystem)
 
-		fmt.Println(ui.Warn("DRY-RUN MODE: No files will be modified or created on disk."))
+		fmt.Fprintln(config.Out, ui.Warn("DRY-RUN MODE: No files will be modified or created on disk."))
 	}
 
 	files, err := config.FileSystem.ReadDir(global.InputDir)
@@ -51,7 +53,7 @@ func RunOperation(global GlobalConfig, config OperationConfig) error {
 		return err
 	}
 	if len(files) == 0 {
-		fmt.Println(ui.Warn(fmt.Sprintf("No files found in directory: %s", global.InputDir)))
+		fmt.Fprintln(config.Out, ui.Warn(fmt.Sprintf("No files found in directory: %s", global.InputDir)))
 		return nil
 	}
 
@@ -62,7 +64,7 @@ func RunOperation(global GlobalConfig, config OperationConfig) error {
 
 	stats := &utils.ImageProcessingStats{}
 	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
-	progressBar := progress.NewProgressBar(os.Stdout, len(files), global.Concurrency, config.ProgressBarMessage)
+	progressBar := progress.NewProgressBar(config.Out, len(files), global.Concurrency, config.ProgressBarMessage)
 	defer progressBar.Finish()
 
 	wrappedProcessor := func(p processing.FileProcessingParams) error {
@@ -88,12 +90,18 @@ func RunOperation(global GlobalConfig, config OperationConfig) error {
 		SetProcessedBytes(stats.FinalSize.Load()).
 		SetErrors(processErrors)
 	result := resultBuilder.Build()
-	fmt.Println(RenderProcessSummary(result))
+	fmt.Fprintln(config.Out, RenderProcessSummary(result))
 
 	return nil
 }
 
-func HandleImageProcessing(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats, processFunc func(image.ImageProcessor) ([]byte, error)) error {
+func HandleImageProcessing(
+	ctx context.Context,
+	params processing.FileProcessingParams,
+	stats *utils.ImageProcessingStats,
+	processorFactory image.ProcessorFactory,
+	processFunc func(image.ImageProcessor) ([]byte, error),
+) error {
 	select {
 	case <-ctx.Done():
 		stats.SkippedImages.Add(1)
@@ -122,8 +130,7 @@ func HandleImageProcessing(ctx context.Context, params processing.FileProcessing
 	imgBytes := buf.Bytes()
 	stats.InitialSize.Add(uint64(len(imgBytes)))
 
-	processor := image.NewProcessor(imgBytes)
-
+	processor := processorFactory(imgBytes)
 	newImg, err := processFunc(processor)
 	if err != nil {
 		stats.SkippedImages.Add(1)
@@ -153,13 +160,8 @@ func resolveOutputDir(global GlobalConfig, config OperationConfig) (string, erro
 }
 
 func determineOutputPath(params processing.FileProcessingParams) string {
-	if convertParams, ok := params.ExtraParams.(ConvertParams); ok && convertParams.Format != "" {
-		originalFileName := filepath.Base(params.File.Path)
-		fileExt := filepath.Ext(originalFileName)
-		fileNameWithoutExt := strings.TrimSuffix(originalFileName, fileExt)
-		newFilename := fmt.Sprintf("%s.%s", fileNameWithoutExt, convertParams.Format)
-
-		return filepath.Join(params.OutputDir, newFilename)
+	if modifier, ok := params.ExtraParams.(OutputPathModifier); ok {
+		return modifier.ModifyOutputPath(params.File.Path, params.OutputDir)
 	}
 
 	relativePath, err := filepath.Rel(params.InputDir, params.File.Path)

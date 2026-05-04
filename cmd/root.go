@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"charm.land/lipgloss/v2"
+	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
 	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/felipesimis/go-compactify-cli/internal/ui"
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
@@ -24,36 +25,64 @@ var (
 	cfgFile string
 )
 
-var rootCmd = &cobra.Command{
-	Use:           "compactify",
-	Short:         "Compactify: A versatile image compression and manipulation tool",
-	Long:          `Compactify is your complete solution for optimizing images. With fast and intuitive commands, you can easily compress, resize, and convert your images, saving time and space.`,
-	Version:       Version,
-	SilenceErrors: true,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		isHelp := cmd.Name() == "help" || cmd.Flags().Changed("help")
-		isInit := cmd.Name() == "init"
-		isVersion := cmd.Flags().Changed("version")
-		if isHelp || isInit || isVersion {
+func NewRootCmd() *cobra.Command {
+	defaultWorkers := runtime.NumCPU()
+
+	cmd := &cobra.Command{
+		Use:           "compactify",
+		Short:         "Compactify: A versatile image compression and manipulation tool",
+		Long:          `Compactify is your complete solution for optimizing images. With fast and intuitive commands, you can easily compress, resize, and convert your images, saving time and space.`,
+		Version:       Version,
+		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			initConfig(cmd)
+
+			isHelp := cmd.Name() == "help" || cmd.Flags().Changed("help")
+			isInit := cmd.Name() == "init"
+			isVersion := cmd.Flags().Changed("version")
+			if isHelp || isInit || isVersion {
+				return nil
+			}
+
+			cfg := loadGlobalConfig(cmd)
+			if cfg.InputDir == "" {
+				return errors.New("required flag \"input\" (-i) not set")
+			}
+
+			if cfg.Concurrency > defaultWorkers*2 {
+				fmt.Fprintln(cmd.OutOrStdout(), ui.Warn("WARNING: Concurrency set very high. This may cause high memory usage and slow down your system."))
+			}
 			return nil
-		}
+		},
+	}
 
-		cfg := loadGlobalConfig(cmd)
-		if cfg.InputDir == "" {
-			return errors.New("required flag \"input\" (-i) not set")
-		}
+	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml or $HOME/.config/compactify/config.yaml)")
+	cmd.PersistentFlags().IntP("concurrency", "c", defaultWorkers, "Number of concurrent operations")
+	cmd.PersistentFlags().StringP("input", "i", "", "Input directory containing the images to process")
+	cmd.PersistentFlags().StringP("output", "o", "", "Output directory for processed images (default: auto-creates a sibling directory, e.g., '<input>-resized')")
+	cmd.PersistentFlags().Bool("dry-run", false, "Perform a dry run without processing images, showing what would be done")
 
-		defaultWorkers := runtime.NumCPU()
-		if cfg.Concurrency > defaultWorkers*2 {
-			fmt.Fprintln(cmd.OutOrStdout(), ui.Warn("WARNING: Concurrency set very high. This may cause high memory usage and slow down your system."))
-		}
-		return nil
-	},
+	return cmd
 }
 
 func Execute() error {
 	image.InitializeProcessor()
 	defer image.ShutdownProcessor()
+	fs := filesystem.NewFileSystem()
+
+	rootCmd := NewRootCmd()
+	rootCmd.AddCommand(
+		NewInitCmd(fs),
+		NewPaletteCmd(fs, image.NewProcessor),
+		NewGrayscaleCmd(fs, image.NewProcessor),
+		NewFlipCmd(fs, image.NewProcessor),
+		NewThumbnailCmd(fs, image.NewProcessor),
+		NewResizeCmd(fs, image.NewProcessor),
+		NewEnlargeCmd(fs, image.NewProcessor),
+		NewConvertCmd(fs, image.NewProcessor),
+		NewCropCmd(fs, image.NewProcessor),
+		NewLosslessCmd(fs, image.NewProcessor),
+	)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
@@ -63,17 +92,13 @@ func Execute() error {
 		displayVersion = Version[1:]
 	}
 
-	versionStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#00ff00")).
-		Bold(true)
-
+	versionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")).Bold(true)
 	rootCmd.SetVersionTemplate(fmt.Sprintf("Compactify %s\n", versionStyle.Render("v"+displayVersion)))
 
-	cobra.OnInitialize(initConfig)
 	return rootCmd.ExecuteContext(ctx)
 }
 
-func initConfig() {
+func initConfig(cmd *cobra.Command) {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
@@ -93,11 +118,11 @@ func initConfig() {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			fmt.Fprintf(rootCmd.OutOrStderr(), "%s: %v\n", ui.Error("Error reading config file"), err)
+			fmt.Fprintf(cmd.OutOrStderr(), "%s: %v\n", ui.Error("Error reading config file"), err)
 		}
 	}
 
-	bindFlags(rootCmd)
+	bindFlags(cmd)
 }
 
 func bindFlags(cmd *cobra.Command) {
@@ -114,13 +139,4 @@ func bindFlags(cmd *cobra.Command) {
 	for _, child := range cmd.Commands() {
 		bindFlags(child)
 	}
-}
-
-func init() {
-	defaultWorkers := runtime.NumCPU()
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml or $HOME/.config/compactify/config.yaml)")
-	rootCmd.PersistentFlags().IntP("concurrency", "c", defaultWorkers, "Number of concurrent operations")
-	rootCmd.PersistentFlags().StringP("input", "i", "", "Input directory containing the images to process")
-	rootCmd.PersistentFlags().StringP("output", "o", "", "Output directory for processed images (default: auto-creates a sibling directory, e.g., '<input>-resized')")
-	rootCmd.PersistentFlags().Bool("dry-run", false, "Perform a dry run without processing images, showing what would be done")
 }

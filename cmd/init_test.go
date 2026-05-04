@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
+	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -14,6 +14,8 @@ type InitTestSuite struct {
 	suite.Suite
 	oldWd      string
 	configName string
+	fs         filesystem.FileSystem
+	cmd        *cobra.Command
 }
 
 func (suite *InitTestSuite) SetupTest() {
@@ -22,28 +24,23 @@ func (suite *InitTestSuite) SetupTest() {
 	tmpDir := suite.T().TempDir()
 	suite.Require().NoError(os.Chdir(tmpDir))
 
-	viper.Reset()
-
-	initCmd.Flags().VisitAll(func(f *pflag.Flag) {
-		f.Value.Set(f.DefValue)
-		f.Changed = false
-	})
-	rootCmd.SetArgs([]string{})
+	suite.fs = filesystem.NewFileSystem()
+	suite.cmd = NewInitCmd(suite.fs)
 }
 
 func (suite *InitTestSuite) TearDownTest() {
 	suite.Require().NoError(os.Chdir(suite.oldWd))
 }
 
-func (s *InitTestSuite) assertConfigContent(expectedSubstring string) {
-	content, err := os.ReadFile(s.configName)
-	s.Require().NoError(err, "should be able to read the config file")
-	s.Contains(string(content), expectedSubstring)
+func (suite *InitTestSuite) assertConfigContent(expectedSubstring string) {
+	content, err := os.ReadFile(suite.configName)
+	suite.Require().NoError(err, "should be able to read the config file")
+	suite.Contains(string(content), expectedSubstring)
 }
 
 func (suite *InitTestSuite) TestInitShould_CreateDefaultConfig_When_FileDoesNotExist() {
-	rootCmd.SetArgs([]string{"init"})
-	err := rootCmd.Execute()
+	suite.cmd.SetArgs([]string{})
+	err := suite.cmd.Execute()
 
 	suite.NoError(err)
 	suite.FileExists(suite.configName, "file config.yaml should be created")
@@ -54,8 +51,8 @@ func (suite *InitTestSuite) TestInitShould_ReturnError_When_FileAlreadyExists() 
 	importantContent := "user-custom-config: true"
 	suite.Require().NoError(os.WriteFile(suite.configName, []byte(importantContent), 0644))
 
-	rootCmd.SetArgs([]string{"init"})
-	err := rootCmd.Execute()
+	suite.cmd.SetArgs([]string{})
+	err := suite.cmd.Execute()
 
 	suite.Require().Error(err)
 	suite.Contains(err.Error(), "already exists")
@@ -66,8 +63,8 @@ func (suite *InitTestSuite) TestInitShould_ReturnError_When_FileAlreadyExists() 
 func (suite *InitTestSuite) TestInitShould_ReturnError_When_WriteFileFails() {
 	suite.Require().NoError(os.Mkdir(suite.configName, 0755))
 
-	rootCmd.SetArgs([]string{"init", "--force"})
-	err := rootCmd.Execute()
+	suite.cmd.SetArgs([]string{"--force"})
+	err := suite.cmd.Execute()
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to create config file")
@@ -77,8 +74,8 @@ func (suite *InitTestSuite) TestInitShould_OverwriteConfig_When_FileExistsAndFor
 	oldContent := "profile: old"
 	suite.Require().NoError(os.WriteFile(suite.configName, []byte(oldContent), 0644))
 
-	rootCmd.SetArgs([]string{"init", "--force"})
-	err := rootCmd.Execute()
+	suite.cmd.SetArgs([]string{"--force"})
+	err := suite.cmd.Execute()
 	suite.NoError(err)
 
 	newContent, _ := os.ReadFile(suite.configName)
@@ -87,25 +84,28 @@ func (suite *InitTestSuite) TestInitShould_OverwriteConfig_When_FileExistsAndFor
 }
 
 func (suite *InitTestSuite) TestInitShould_ReturnError_When_ArgumentsAreProvided() {
-	rootCmd.SetArgs([]string{"init", "unexpected-arg"})
-	err := rootCmd.Execute()
+	suite.cmd.SetArgs([]string{"unexpected-arg"})
+	err := suite.cmd.Execute()
 	suite.Error(err)
 }
 
 func (suite *InitTestSuite) TestInitShould_WorkWithAliases() {
-	rootCmd.SetArgs([]string{"config"})
-	err := rootCmd.Execute()
+	dummyRoot := &cobra.Command{Use: "dummy"}
+	dummyRoot.AddCommand(suite.cmd)
+
+	dummyRoot.SetArgs([]string{"config"})
+	err := dummyRoot.Execute()
+
 	suite.NoError(err)
 	suite.FileExists(suite.configName, "file config.yaml should be created")
 }
 
 func (suite *InitTestSuite) TestInitShould_PrintSuccessMessage_When_Initialized() {
 	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	defer rootCmd.SetOut(os.Stdout)
+	suite.cmd.SetOut(buf)
 
-	rootCmd.SetArgs([]string{"init"})
-	err := rootCmd.Execute()
+	suite.cmd.SetArgs([]string{})
+	err := suite.cmd.Execute()
 	suite.NoError(err)
 
 	output := buf.String()
