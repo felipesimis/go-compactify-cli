@@ -100,7 +100,7 @@ func HandleImageProcessing(
 	params processing.FileProcessingParams,
 	stats *utils.ImageProcessingStats,
 	processorFactory image.ProcessorFactory,
-	processFunc func(image.ImageProcessor) ([]byte, error),
+	opts ...image.ProcessOption,
 ) error {
 	select {
 	case <-ctx.Done():
@@ -131,7 +131,7 @@ func HandleImageProcessing(
 	stats.InitialSize.Add(uint64(len(imgBytes)))
 
 	processor := processorFactory(imgBytes)
-	newImg, err := processFunc(processor)
+	newImg, err := processor.Process(opts...)
 	if err != nil {
 		stats.SkippedImages.Add(1)
 		return err

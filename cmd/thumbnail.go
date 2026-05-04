@@ -58,9 +58,7 @@ func runThumbnail(fs filesystem.FileSystem, processorFactory image.ProcessorFact
 			ExtraParams:        ThumbnailParams{Width: width},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ThumbnailParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, func(proc image.ImageProcessor) ([]byte, error) {
-					return proc.Thumbnail(extraParams.Width)
-				})
+				return HandleImageProcessing(ctx, params, stats, processorFactory, image.WithThumbnail(extraParams.Width))
 			},
 		})
 	}

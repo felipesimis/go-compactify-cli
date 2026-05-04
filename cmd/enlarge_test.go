@@ -3,6 +3,7 @@ package cmd
 import (
 	"testing"
 
+	"github.com/felipesimis/go-compactify-cli/internal/image"
 	"github.com/felipesimis/go-compactify-cli/internal/validation"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -16,10 +17,9 @@ type EnlargeTestSuite struct {
 
 func (suite *EnlargeTestSuite) SetupTest() {
 	suite.cmd, suite.config = SetupTestConfig(NewEnlargeCmd)
-}
-
-func (suite *EnlargeTestSuite) TearDownTest() {
-	suite.config.MockProcessor.AssertExpectations(suite.T())
+	suite.config.ProcessorFactory = func([]byte) image.ImageProcessor {
+		return &fakeProcessor{resultBytes: []byte("fake-bytes")}
+	}
 }
 
 func (suite *EnlargeTestSuite) TestEnlargeShould_ReturnError_When_InputDirectoryDoesNotExist() {
@@ -30,7 +30,6 @@ func (suite *EnlargeTestSuite) TestEnlarge_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	expectedOutputDir := inputDir + "-enlarged-150x150"
 
-	suite.config.MockProcessor.On("Enlarge", 150, 150).Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "150", "--height", "150"})
 	suite.NoError(suite.cmd.Execute())
 
@@ -41,7 +40,6 @@ func (suite *EnlargeTestSuite) TestEnlarge_ShouldWorkWithCustomOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	customOutputDir := suite.T().TempDir()
 
-	suite.config.MockProcessor.On("Enlarge", 150, 150).Return([]byte("fake-bytes"), nil).Once()
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--output", customOutputDir, "--width", "150", "--height", "150"})
 	suite.NoError(suite.cmd.Execute())
 
@@ -52,7 +50,6 @@ func (suite *EnlargeTestSuite) TestEnlarge_ShouldProcessMultipleImages() {
 	inputDir := PrepareTestImages(suite.T(), "img1.jpg", "img2.jpg", "img3.jpg")
 	expectedOutputDir := inputDir + "-enlarged-150x150"
 
-	suite.config.MockProcessor.On("Enlarge", 150, 150).Return([]byte("fake-bytes"), nil).Times(3)
 	suite.cmd.SetArgs([]string{"--input", inputDir, "--width", "150", "--height", "150"})
 	suite.NoError(suite.cmd.Execute())
 
@@ -78,7 +75,6 @@ func (suite *EnlargeTestSuite) TestEnlarge_ShouldReturnError_When_DimensionsAreI
 			err := suite.cmd.Execute()
 			suite.Error(err)
 			suite.ErrorIs(err, validation.ErrInvalidDimensions)
-			suite.config.MockProcessor.AssertNotCalled(suite.T(), "Enlarge")
 		})
 	}
 }

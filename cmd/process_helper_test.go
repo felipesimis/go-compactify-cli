@@ -69,6 +69,19 @@ func (m *mockPathModifier) ModifyOutputPath(originalPath, outputDir string) stri
 	return args.String(0)
 }
 
+type fakeProcessor struct {
+	resultBytes []byte
+	err         error
+}
+
+func (f *fakeProcessor) Size() (image.ImageSize, error)         { return image.ImageSize{}, nil }
+func (f *fakeProcessor) ImageType() string                      { return "" }
+func (f *fakeProcessor) Length() int                            { return 0 }
+func (f *fakeProcessor) Metadata() (image.ImageMetadata, error) { return image.ImageMetadata{}, nil }
+func (f *fakeProcessor) Process(opts ...image.ProcessOption) ([]byte, error) {
+	return f.resultBytes, f.err
+}
+
 type ProcessingTestSuite struct {
 	suite.Suite
 	mockFS *mockHelperFS
@@ -197,13 +210,11 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWrite
 
 	stats, params := suite.defaultProcessingParams()
 	params.OutputDir = "output"
+	fakeFactory := func([]byte) image.ImageProcessor {
+		return &fakeProcessor{resultBytes: []byte("new-data"), err: nil}
+	}
 
-	err := HandleImageProcessing(context.Background(), params, stats,
-		func([]byte) image.ImageProcessor { return nil },
-		func(proc image.ImageProcessor) ([]byte, error) {
-			return []byte("new-data"), nil
-		},
-	)
+	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory)
 	suite.ErrorContains(err, "write error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
@@ -212,13 +223,9 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenProce
 	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
 
 	stats, params := suite.defaultProcessingParams()
+	fakeFactory := func([]byte) image.ImageProcessor { return &fakeProcessor{err: errors.New("processing error")} }
 
-	err := HandleImageProcessing(context.Background(), params, stats,
-		func([]byte) image.ImageProcessor { return nil },
-		func(proc image.ImageProcessor) ([]byte, error) {
-			return nil, errors.New("processing error")
-		},
-	)
+	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory)
 	suite.ErrorContains(err, "processing error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
@@ -233,10 +240,9 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSucceed_WhenAl
 	params.File.Size = int64(len(originalData))
 	params.OutputDir = "out"
 
-	err := HandleImageProcessing(context.Background(), params, stats,
-		func([]byte) image.ImageProcessor { return nil },
-		func(proc image.ImageProcessor) ([]byte, error) { return processedData, nil },
-	)
+	fakeFactory := func([]byte) image.ImageProcessor { return &fakeProcessor{resultBytes: processedData} }
+
+	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory)
 
 	suite.NoError(err)
 	suite.Equal(uint32(1), stats.ProcessedImages.Load())
@@ -432,15 +438,12 @@ func BenchmarkHandleImageProcessing(b *testing.B) {
 		OutputDir: b.TempDir(),
 	}
 
-	mockProcessorFactory := func([]byte) image.ImageProcessor { return nil }
-	mockProcessFunc := func(proc image.ImageProcessor) ([]byte, error) {
-		return []byte{}, nil
-	}
+	mockProcessorFactory := func([]byte) image.ImageProcessor { return &fakeProcessor{resultBytes: []byte("processed data")} }
 
 	b.ResetTimer()
 
 	for range b.N {
-		err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, mockProcessFunc)
+		err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -461,16 +464,13 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 		OutputDir: b.TempDir(),
 	}
 
-	mockProcessorFactory := func([]byte) image.ImageProcessor { return nil }
-	mockProcessFunc := func(proc image.ImageProcessor) ([]byte, error) {
-		return []byte{}, nil
-	}
+	mockProcessorFactory := func([]byte) image.ImageProcessor { return &fakeProcessor{resultBytes: []byte("processed data")} }
 
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, mockProcessFunc)
+			err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory)
 			if err != nil {
 				b.Fatal(err)
 			}
