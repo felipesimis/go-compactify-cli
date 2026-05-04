@@ -57,11 +57,11 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml or $HOME/.config/compactify/config.yaml)")
-	cmd.PersistentFlags().IntP("concurrency", "c", defaultWorkers, "Number of concurrent operations")
-	cmd.PersistentFlags().StringP("input", "i", "", "Input directory containing the images to process")
-	cmd.PersistentFlags().StringP("output", "o", "", "Output directory for processed images (default: auto-creates a sibling directory, e.g., '<input>-resized')")
-	cmd.PersistentFlags().Bool("dry-run", false, "Perform a dry run without processing images, showing what would be done")
-	cmd.PersistentFlags().Bool("strip-metadata", false, "Remove EXIF metadata from processed images")
+	cmd.PersistentFlags().IntP("concurrency", "c", defaultWorkers, "Maximum number of images to process in parallel")
+	cmd.PersistentFlags().StringP("input", "i", "", "Input directory containing images to process")
+	cmd.PersistentFlags().StringP("output", "o", "", "Output directory (default: auto-creates sibling directory)")
+	cmd.PersistentFlags().Bool("dry-run", false, "Preview operations without modifying files")
+	cmd.PersistentFlags().Bool("strip-metadata", false, "Strip EXIF data for privacy (GPS, camera info) and reduced file size")
 
 	return cmd
 }
