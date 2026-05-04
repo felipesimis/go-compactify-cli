@@ -36,42 +36,34 @@ func (suite *BimgImageTestSuite) TestSize_ShouldReturnCorrectDimensions_WhenImag
 	suite.Equal(suite.originalHeight, size.Height)
 }
 
-func (suite *BimgImageTestSuite) TestSizingOperations_ShouldTransformImageCorrectly_WhenOperationIsCalled() {
+func (suite *BimgImageTestSuite) TestProcessSizingOperations_ShouldTransformImageCorrectly_WhenGivenOptions() {
 	tests := []struct {
 		name           string
-		operation      func() ([]byte, error)
+		options        []ProcessOption
 		expectedWidth  int
 		expectedHeight int
 	}{
 		{
-			name: "Resize",
-			operation: func() ([]byte, error) {
-				return suite.img.Resize(300, 200)
-			},
+			name:           "Resize",
+			options:        []ProcessOption{WithResize(300, 200)},
 			expectedWidth:  300,
 			expectedHeight: 200,
 		},
 		{
-			name: "Crop",
-			operation: func() ([]byte, error) {
-				return suite.img.Crop(300, 200, GravitySmart)
-			},
+			name:           "Crop",
+			options:        []ProcessOption{WithCrop(300, 200, GravitySmart)},
 			expectedWidth:  300,
 			expectedHeight: 200,
 		},
 		{
-			name: "Enlarge",
-			operation: func() ([]byte, error) {
-				return suite.img.Enlarge(1200, 800)
-			},
+			name:           "Enlarge",
+			options:        []ProcessOption{WithEnlarge(1200, 800)},
 			expectedWidth:  1200,
 			expectedHeight: 800,
 		},
 		{
-			name: "Thumbnail",
-			operation: func() ([]byte, error) {
-				return suite.img.Thumbnail(300)
-			},
+			name:           "Thumbnail",
+			options:        []ProcessOption{WithThumbnail(300)},
 			expectedWidth:  300,
 			expectedHeight: 300,
 		},
@@ -79,7 +71,7 @@ func (suite *BimgImageTestSuite) TestSizingOperations_ShouldTransformImageCorrec
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			processedImg, err := tt.operation()
+			processedImg, err := suite.img.Process(tt.options...)
 			suite.NoError(err)
 			suite.NotEmpty(processedImg)
 
@@ -91,17 +83,72 @@ func (suite *BimgImageTestSuite) TestSizingOperations_ShouldTransformImageCorrec
 	}
 }
 
-func (suite *BimgImageTestSuite) TestConvert_ShouldChangeImageType_WhenValidFormatIsProvided() {
-	convertedImg, err := suite.img.Convert("png")
+func (suite *BimgImageTestSuite) TestProcess_ShouldChangeImageType_WhenConvertOptionIsProvided() {
+	convertedImg, err := suite.img.Process(WithConvert("png"))
 	suite.NoError(err)
 	suite.NotEmpty(convertedImg)
 	suite.Equal("png", NewProcessor(convertedImg).ImageType())
 }
 
-func (suite *BimgImageTestSuite) TestConvert_ShouldReturnError_WhenUnsupportedFormatIsProvided() {
-	convertedImg, err := suite.img.Convert("invalid_format")
+func (suite *BimgImageTestSuite) TestProcess_ShouldReturnError_WhenUnsupportedFormatIsProvided() {
+	convertedImg, err := suite.img.Process(WithConvert("invalid_format"))
 	suite.ErrorIs(err, ErrUnsupportedImageType)
 	suite.Empty(convertedImg)
+}
+
+func (suite *BimgImageTestSuite) TestInvalidImageBuffer_ShouldReturnError_WhenBufferIsNotAnImage() {
+	invalidBuffer := []byte("not an image")
+	img := NewProcessor(invalidBuffer)
+
+	_, err := img.Size()
+	suite.Error(err)
+
+	metadata, err := img.Metadata()
+	suite.Error(err)
+	suite.Empty(metadata.Type)
+}
+
+func (suite *BimgImageTestSuite) TestProcess_ShouldMaintainDimensions_WhenImageIsFlipped() {
+	flippedImg, err := suite.img.Process(WithFlip())
+	suite.NoError(err)
+	suite.NotEmpty(flippedImg)
+
+	originalSize, err := suite.img.Size()
+	suite.NoError(err)
+	flippedImgSize, err := NewProcessor(flippedImg).Size()
+	suite.NoError(err)
+
+	suite.Equal(originalSize.Width, flippedImgSize.Width)
+	suite.Equal(originalSize.Height, flippedImgSize.Height)
+}
+
+func (suite *BimgImageTestSuite) TestProcess_ShouldReturnProcessedImage_WhenGrayscaleOptionProvided() {
+	grayscaleImg, err := suite.img.Process(WithGrayscale())
+	suite.NoError(err)
+	suite.NotEmpty(grayscaleImg)
+}
+
+func (suite *BimgImageTestSuite) TestProcess_ShouldChangeImageLength_WhenPaletteOptionProvided() {
+	initialImgLength := suite.img.Length()
+
+	paletteImg, err := suite.img.Process(WithConvert("png"), WithPalette())
+	suite.NoError(err)
+	suite.NotEmpty(paletteImg)
+
+	paletteImgLength := NewProcessor(paletteImg).Length()
+	suite.NotZero(paletteImgLength)
+	suite.NotEqual(initialImgLength, paletteImgLength, "Expected image data to change after applying palette")
+}
+
+func (suite *BimgImageTestSuite) TestProcess_ShouldPreserveDimensions_WhenLosslessOptionProvided() {
+	compressedImg, err := suite.img.Process(WithConvert("webp"), WithLosslessCompress())
+	suite.NoError(err)
+	suite.NotEmpty(compressedImg)
+
+	metadata, err := NewProcessor(compressedImg).Metadata()
+	suite.NoError(err)
+	suite.Equal(suite.originalWidth, metadata.Size.Width)
+	suite.Equal(suite.originalHeight, metadata.Size.Height)
 }
 
 func (suite *BimgImageTestSuite) TestMapStringToImageType_ShouldReturnCorrectBimgType_WhenInputIsValid() {
@@ -153,65 +200,6 @@ func (suite *BimgImageTestSuite) TestMapGravityToBimg_ShouldMapCorrectlyAndFallb
 	}
 }
 
-func (suite *BimgImageTestSuite) TestInvalidImageBuffer_ShouldReturnError_WhenBufferIsNotAnImage() {
-	invalidBuffer := []byte("not an image")
-	img := NewProcessor(invalidBuffer)
-
-	_, err := img.Size()
-	suite.Error(err)
-
-	metadata, err := img.Metadata()
-	suite.Error(err)
-	suite.Empty(metadata.Type)
-}
-
-func (suite *BimgImageTestSuite) TestFlip_ShouldMaintainDimensions_WhenImageIsFlipped() {
-	flippedImg, err := suite.img.Flip()
-	suite.NoError(err)
-	suite.NotEmpty(flippedImg)
-
-	originalSize, err := suite.img.Size()
-	suite.NoError(err)
-	flippedImgSize, err := NewProcessor(flippedImg).Size()
-	suite.NoError(err)
-
-	suite.Equal(originalSize.Width, flippedImgSize.Width)
-	suite.Equal(originalSize.Height, flippedImgSize.Height)
-}
-
-func (suite *BimgImageTestSuite) TestLength_ShouldReturnCorrectByteLength() {
-	suite.Equal(suite.originalLength, suite.img.Length())
-}
-
-func (suite *BimgImageTestSuite) TestGrayscale_ShouldReturnProcessedImage_WhenCalled() {
-	grayscaleImg, err := suite.img.Grayscale()
-	suite.NoError(err)
-	suite.NotEmpty(grayscaleImg)
-}
-
-func (suite *BimgImageTestSuite) TestEnablePalette_ShouldChangeImageLength_WhenPaletteIsApplied() {
-	initialImgLength := suite.img.Length()
-
-	paletteImg, err := suite.img.EnablePalette()
-	suite.NoError(err)
-	suite.NotEmpty(paletteImg)
-
-	paletteImgLength := NewProcessor(paletteImg).Length()
-	suite.NotZero(paletteImgLength)
-	suite.NotEqual(initialImgLength, paletteImgLength, "Expected image data to change after applying palette")
-}
-
-func (suite *BimgImageTestSuite) TestLosslessCompress_ShouldPreserveDimensions_WhenCompressionIsApplied() {
-	compressedImg, err := suite.img.LosslessCompress()
-	suite.NoError(err)
-	suite.NotEmpty(compressedImg)
-
-	metadata, err := NewProcessor(compressedImg).Metadata()
-	suite.NoError(err)
-	suite.Equal(suite.originalWidth, metadata.Size.Width)
-	suite.Equal(suite.originalHeight, metadata.Size.Height)
-}
-
 func (suite *BimgImageTestSuite) TestMetadata_ShouldReturnCorrectMetadata_WhenImageIsValid() {
 	metadata, err := suite.img.Metadata()
 	suite.NoError(err)
@@ -219,6 +207,10 @@ func (suite *BimgImageTestSuite) TestMetadata_ShouldReturnCorrectMetadata_WhenIm
 	suite.Equal(suite.originalWidth, metadata.Size.Width)
 	suite.Equal(suite.originalHeight, metadata.Size.Height)
 	suite.Equal("jpeg", metadata.Type)
+}
+
+func (suite *BimgImageTestSuite) TestLength_ShouldReturnCorrectByteLength() {
+	suite.Equal(suite.originalLength, suite.img.Length())
 }
 
 func TestBimgImageTestSuite(t *testing.T) {
