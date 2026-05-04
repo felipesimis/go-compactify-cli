@@ -17,67 +17,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func BenchmarkHandleImageProcessing(b *testing.B) {
-	ctx := context.Background()
-
-	fs := filesystem.NewFileSystem()
-	stats := &utils.ImageProcessingStats{}
-
-	params := processing.FileProcessingParams{
-		File: filesystem.FileInfo{
-			Path: "../test/testdata/sample.jpeg",
-			Size: 1024,
-		},
-		FS:        fs,
-		OutputDir: b.TempDir(),
-	}
-
-	mockProcessorFactory := func([]byte) image.ImageProcessor { return nil }
-	mockProcessFunc := func(proc image.ImageProcessor) ([]byte, error) {
-		return []byte{}, nil
-	}
-
-	b.ResetTimer()
-
-	for range b.N {
-		err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, mockProcessFunc)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkHandleImageProcessingParallel(b *testing.B) {
-	ctx := context.Background()
-
-	fs := filesystem.NewFileSystem()
-	stats := &utils.ImageProcessingStats{}
-	params := processing.FileProcessingParams{
-		File: filesystem.FileInfo{
-			Path: "../test/testdata/large_image_sample.jpg",
-			Size: 10 * 1024 * 1024,
-		},
-		FS:        fs,
-		OutputDir: b.TempDir(),
-	}
-
-	mockProcessorFactory := func([]byte) image.ImageProcessor { return nil }
-	mockProcessFunc := func(proc image.ImageProcessor) ([]byte, error) {
-		return []byte{}, nil
-	}
-
-	b.ResetTimer()
-
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, mockProcessFunc)
-			if err != nil {
-				b.Fatal(err)
-			}
-		}
-	})
-}
-
 type mockHelperFS struct {
 	mock.Mock
 	filesystem.FileSystem
@@ -140,16 +79,33 @@ func (suite *ProcessingTestSuite) SetupTest() {
 }
 
 func (suite *ProcessingTestSuite) TestRunOperation_ShouldWrapFileSystemAndPrintWarning_WhenDryRunIsEnabled() {
-	out := new(bytes.Buffer)
-
-	global := GlobalConfig{InputDir: "/input", DryRun: true}
 	suite.mockFS.On("ReadDir", "/input").Return([]filesystem.FileInfo{}, nil)
+
+	out := new(bytes.Buffer)
+	global := GlobalConfig{InputDir: "/input", DryRun: true}
 	opCfg := OperationConfig{FileSystem: suite.mockFS, Out: out}
 
 	err := RunOperation(global, opCfg)
 
 	suite.NoError(err)
 	suite.Contains(out.String(), "DRY-RUN MODE: No files will be modified or created on disk.")
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
+func (suite *ProcessingTestSuite) TestRunOperation_ShouldReturnError_WhenOutputDirResolutionFails() {
+	suite.mockFS.On("ReadDir", "/input").Return([]filesystem.FileInfo{
+		{Path: "/input/test.jpg", Size: 100},
+	}, nil)
+	expectedErr := errors.New("permission denied")
+	suite.mockFS.On("CreateDir", "/forbidden_output").Return(expectedErr)
+
+	out := new(bytes.Buffer)
+	global := GlobalConfig{InputDir: "/input", OutputDir: "/forbidden_output"}
+	opCfg := OperationConfig{FileSystem: suite.mockFS, Out: out}
+
+	err := RunOperation(global, opCfg)
+
+	suite.ErrorIs(err, expectedErr)
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
@@ -418,4 +374,65 @@ func (suite *ProcessingTestSuite) TestRenderProcessSummary_ShouldPrintFormattedR
 
 func TestProcessingSuite(t *testing.T) {
 	suite.Run(t, new(ProcessingTestSuite))
+}
+
+func BenchmarkHandleImageProcessing(b *testing.B) {
+	ctx := context.Background()
+
+	fs := filesystem.NewFileSystem()
+	stats := &utils.ImageProcessingStats{}
+
+	params := processing.FileProcessingParams{
+		File: filesystem.FileInfo{
+			Path: "../test/testdata/sample.jpeg",
+			Size: 1024,
+		},
+		FS:        fs,
+		OutputDir: b.TempDir(),
+	}
+
+	mockProcessorFactory := func([]byte) image.ImageProcessor { return nil }
+	mockProcessFunc := func(proc image.ImageProcessor) ([]byte, error) {
+		return []byte{}, nil
+	}
+
+	b.ResetTimer()
+
+	for range b.N {
+		err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, mockProcessFunc)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkHandleImageProcessingParallel(b *testing.B) {
+	ctx := context.Background()
+
+	fs := filesystem.NewFileSystem()
+	stats := &utils.ImageProcessingStats{}
+	params := processing.FileProcessingParams{
+		File: filesystem.FileInfo{
+			Path: "../test/testdata/large_image_sample.jpg",
+			Size: 10 * 1024 * 1024,
+		},
+		FS:        fs,
+		OutputDir: b.TempDir(),
+	}
+
+	mockProcessorFactory := func([]byte) image.ImageProcessor { return nil }
+	mockProcessFunc := func(proc image.ImageProcessor) ([]byte, error) {
+		return []byte{}, nil
+	}
+
+	b.ResetTimer()
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, mockProcessFunc)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }
