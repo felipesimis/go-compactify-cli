@@ -1,3 +1,5 @@
+//go:build e2e
+
 package e2e
 
 import (
@@ -53,7 +55,7 @@ func (suite *E2ETestSuite) TestCLI_ConvertCommand_ShouldProcessImagesFillsPipeli
 
 	files, err := filepath.Glob(filepath.Join(outputDir, "*.webp"))
 	suite.NoError(err, "Failed to read output directory")
-	suite.NotEmpty(files, "Expected at least one .webp file to be generated")
+	suite.Require().NotEmpty(files, "Expected at least one .webp file to be generated")
 
 	fileInfo, err := os.Stat(files[0])
 	suite.NoError(err)
@@ -70,7 +72,7 @@ func (suite *E2ETestSuite) TestCLI_ShouldFailAndReturnExitCode1_WhenInputIsMissi
 	suite.Contains(outputStr, "required flag \"input\" (-i) not set")
 
 	exitError, ok := err.(*exec.ExitError)
-	suite.True(ok, "Error should be an ExitError")
+	suite.Require().True(ok, "Error should be an ExitError")
 	suite.Equal(1, exitError.ExitCode(), "CLI should return exit code 1 on fatal error")
 }
 

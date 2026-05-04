@@ -37,7 +37,7 @@ coverage:
 
 test-e2e:
 	@echo "🧪 Running E2E tests..."
-	go test -v ./test/e2e/...
+	go test -v -tags=e2e ./test/e2e/...
 
 build:
 	@echo "🚀 Building the binary..."

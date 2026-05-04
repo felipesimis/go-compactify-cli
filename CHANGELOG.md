@@ -6,7 +6,6 @@
 - **Dimensions Validation**: Increased minimum allowed width and height from `1` to `10` pixels to ensure processing stability.
 
 ### 🚀 CI/CD & Infrastructure
-- **Parallel Test Execution**: Enabled parallel execution for unit tests in the pre-commit hook, significantly reducing local validation time by leveraging the new thread-safe architecture.
 - **Pre-push Security Gate**: Configured a `pre-push` hook to execute the full End-to-End (E2E) suite, ensuring binary stability and CGO integration are verified before code is synchronized with the remote repository.
 - **Local Quality Gates**: Integrated Lefthook for pre-commit validation, ensuring `fmt`, `vet`, and `test` execution prior to code tracking.
 - **Commit Culture Enforcement**: Added strict Git hook validation for the Conventional Commits specification.
