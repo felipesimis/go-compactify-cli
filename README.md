@@ -142,16 +142,29 @@ export COMPACTIFY_CONCURRENCY=10
 
 ## 🧪 Testing Standards
 
-We aim for maximum reliability. Every feature is backed by a suite of unit tests using `testify/assert`.
+We aim for maximum reliability through a multi-tiered testing strategy. The project utilizes `testify/suite` for isolated lifecycle management, `testify/mock` for strict mock expectations, and `testify/assert` for assertion validation.
+
+*   **Unit & Integration Tests**: Achieved 100% logic coverage in the command orchestration (`cmd`) and processing packages through robust Dependency Injection.
+*   **End-to-End (E2E) Tests**: Validates the fully compiled binary against real image files to guarantee `CGO/libvips` stability.
+
+**Run all tests:**
+```bash
+make test
+```
 
 **Run all tests with coverage:**
 ```bash
-go test ./... -coverprofile="coverage.out"
+make coverage
 ```
 
 **Run a specific test:**
 ```bash
 go test -v ./internal/filesystem -run TestReadDir
+```
+
+**Run E2E tests:**
+```bash
+make test-e2e
 ```
 
 ---

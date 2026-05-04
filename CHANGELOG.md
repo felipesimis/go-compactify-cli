@@ -20,6 +20,7 @@
 - **Standardized Success Feedback**: Integrated a new `Success` component in the UI package to provide consistent, high-fidelity visual confirmation for CLI operations.
 
 ### 🛠 Engineering & Maintenance
+- **End-to-End (E2E) Integration Testing**: Established a black-box E2E testing pipeline (`test/e2e`) that compiles the native binary and validates the full command lifecycle—from flag parsing to actual filesystem `I/O` operations—ensuring the compiled `CGO` binary functions flawlessly with real image data.
 - **Command Architecture Overhaul**: Refactored the entire CLI command layer to implement strict Dependency Injection. Commands no longer rely on global processor instantiation, enabling highly decoupled and testable orchestration.
 - **Automated Mock Lifecycle**: Centralized mock validation using the `TearDownTest` hook across packages, eliminating boilerplate assertions and preventing unverified mock expectations.
 - **Deterministic I/O Testing**: Injected `io.Writer` interfaces across the operation handlers to capture standard output, enabling 100% test coverage of CLI orchestration without polluting the console.
