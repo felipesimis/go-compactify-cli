@@ -61,6 +61,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringP("input", "i", "", "Input directory containing the images to process")
 	cmd.PersistentFlags().StringP("output", "o", "", "Output directory for processed images (default: auto-creates a sibling directory, e.g., '<input>-resized')")
 	cmd.PersistentFlags().Bool("dry-run", false, "Perform a dry run without processing images, showing what would be done")
+	cmd.PersistentFlags().Bool("strip-metadata", false, "Remove EXIF metadata from processed images")
 
 	return cmd
 }

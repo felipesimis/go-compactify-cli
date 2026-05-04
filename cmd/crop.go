@@ -79,7 +79,7 @@ func runCrop(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) 
 			ExtraParams:        CropParams{Width: width, Height: height, Gravity: gravity},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(CropParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, image.WithCrop(extraParams.Width, extraParams.Height, extraParams.Gravity))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithCrop(extraParams.Width, extraParams.Height, extraParams.Gravity))
 			},
 		})
 	}

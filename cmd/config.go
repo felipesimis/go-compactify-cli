@@ -5,10 +5,11 @@ import (
 )
 
 type GlobalConfig struct {
-	Concurrency int
-	InputDir    string
-	OutputDir   string
-	DryRun      bool
+	Concurrency   int
+	InputDir      string
+	OutputDir     string
+	DryRun        bool
+	StripMetadata bool
 }
 
 func loadGlobalConfig(cmd *cobra.Command) GlobalConfig {
@@ -16,11 +17,13 @@ func loadGlobalConfig(cmd *cobra.Command) GlobalConfig {
 	inputDir, _ := cmd.Flags().GetString("input")
 	outputDir, _ := cmd.Flags().GetString("output")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	stripMetadata, _ := cmd.Flags().GetBool("strip-metadata")
 
 	return GlobalConfig{
-		Concurrency: concurrency,
-		InputDir:    inputDir,
-		OutputDir:   outputDir,
-		DryRun:      dryRun,
+		Concurrency:   concurrency,
+		InputDir:      inputDir,
+		OutputDir:     outputDir,
+		DryRun:        dryRun,
+		StripMetadata: stripMetadata,
 	}
 }
