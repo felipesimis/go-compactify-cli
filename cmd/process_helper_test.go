@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"testing"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
@@ -110,6 +111,15 @@ type errorReader struct{}
 func (e errorReader) Read(p []byte) (n int, err error) { return 0, errors.New("forced read error") }
 func (e errorReader) Close() error {
 	return nil
+}
+
+type mockPathModifier struct {
+	mock.Mock
+}
+
+func (m *mockPathModifier) ModifyOutputPath(originalPath, outputDir string) string {
+	args := m.Called(originalPath, outputDir)
+	return args.String(0)
 }
 
 type ProcessingTestSuite struct {
@@ -258,6 +268,49 @@ func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCre
 	suite.ErrorContains(err, "create sibling dir error")
 	suite.Empty(out)
 	suite.mockFS.AssertExpectations(suite.T())
+}
+
+func (suite *ProcessingTestSuite) TestDetermineOutputPath_ShouldUseModifier_WhenProvided() {
+	mockModifier := new(mockPathModifier)
+	expectedPath := "custom_output_path.png"
+	mockModifier.On("ModifyOutputPath", "/input/original.jpg", "/output").Return(expectedPath)
+
+	params := processing.FileProcessingParams{
+		File:        filesystem.FileInfo{Path: "/input/original.jpg"},
+		OutputDir:   "/output",
+		ExtraParams: mockModifier,
+	}
+
+	result := determineOutputPath(params)
+
+	suite.Equal(expectedPath, result)
+	mockModifier.AssertExpectations(suite.T())
+}
+
+func (suite *ProcessingTestSuite) TestDetermineOutputPath_ShouldFallbackToDefault_WhenInterfaceNotImplemented() {
+	params := processing.FileProcessingParams{
+		InputDir:  "/base/input",
+		File:      filesystem.FileInfo{Path: "/base/input/subfolder/test.jpg"},
+		OutputDir: "/base/output",
+	}
+
+	result := determineOutputPath(params)
+
+	expectedPath := filepath.Join("/base/output", "subfolder", "test.jpg")
+	suite.Equal(expectedPath, result)
+}
+
+func (suite *ProcessingTestSuite) TestDetermineOutputPath_ShouldFallbackToBase_WhenRelFails() {
+	params := processing.FileProcessingParams{
+		InputDir:  "/base/input",
+		File:      filesystem.FileInfo{Path: "base/../test.jpg"},
+		OutputDir: "/base/output",
+	}
+
+	result := determineOutputPath(params)
+
+	expectedPath := filepath.Join("/base/output", "test.jpg")
+	suite.Equal(expectedPath, result)
 }
 
 func (suite *ProcessingTestSuite) TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled() {

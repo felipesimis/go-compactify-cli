@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -26,6 +25,10 @@ var bufferPool = sync.Pool{
 	New: func() interface{} {
 		return new(bytes.Buffer)
 	},
+}
+
+type OutputPathModifier interface {
+	ModifyOutputPath(originalPath, outputDir string) string
 }
 
 type OperationConfig struct {
@@ -157,13 +160,8 @@ func resolveOutputDir(global GlobalConfig, config OperationConfig) (string, erro
 }
 
 func determineOutputPath(params processing.FileProcessingParams) string {
-	if convertParams, ok := params.ExtraParams.(ConvertParams); ok && convertParams.Format != "" {
-		originalFileName := filepath.Base(params.File.Path)
-		fileExt := filepath.Ext(originalFileName)
-		fileNameWithoutExt := strings.TrimSuffix(originalFileName, fileExt)
-		newFilename := fmt.Sprintf("%s.%s", fileNameWithoutExt, convertParams.Format)
-
-		return filepath.Join(params.OutputDir, newFilename)
+	if modifier, ok := params.ExtraParams.(OutputPathModifier); ok {
+		return modifier.ModifyOutputPath(params.File.Path, params.OutputDir)
 	}
 
 	relativePath, err := filepath.Rel(params.InputDir, params.File.Path)
