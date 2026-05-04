@@ -145,7 +145,7 @@ export COMPACTIFY_CONCURRENCY=10
 We aim for maximum reliability through a multi-tiered testing strategy.
 
 *   **Unit & Integration Tests**: Achieved high logic coverage through robust Dependency Injection and the use of testify/suite.
-*   **Functional Mocking**: Uses high-performance `FakeProcessor` stubs to validate orchestration without the overhead of native library calls.
+*   **Functional Mocking**: Uses high-performance `FakeImageProcessor` stubs to validate orchestration without the overhead of native library calls.
 *   **End-to-End (E2E) Tests**: Validates the fully compiled binary against real image files to guarantee `CGO/libvips` stability.
 
 **Run all tests:**

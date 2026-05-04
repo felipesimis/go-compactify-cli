@@ -9,7 +9,7 @@
 - **Functional Options Pattern**: Completely overhauled the `ImageProcessor` interface to use a variadic functional options pattern (`Process(opts ...ProcessOption)`).
 - **Single-Pass CGO Execution**: Refactored the `bimg` wrapper to aggregate all transformation intents into a single `bimg.Options` struct, ensuring only one memory allocation and CGO call per image.
 - **Decoupled Command Logic**: CLI commands now only construct "intents" via `With*` constructors, delegating execution to the central orchestration helper.
-- **Test Infrastructure Modernization**: Replaced complex behavioral mocks with high-performance `FakeProcessor` stubs, eliminating `reflect`-based panics during variadic function comparisons.
+- **Test Infrastructure Modernization**: Replaced complex behavioral mocks with high-performance `FakeImageProcessor` stubs, eliminating `reflect`-based panics during variadic function comparisons.
 
 ### 🚀 CI/CD & Infrastructure
 - **Pre-push Security Gate**: Configured a `pre-push` hook to execute the full End-to-End (E2E) suite, ensuring binary stability and CGO integration are verified before code is synchronized with the remote repository.
