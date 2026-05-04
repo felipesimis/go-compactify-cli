@@ -38,7 +38,7 @@ func NewProgressBar(writer io.Writer, total, concurrency int, description string
 		progressbar.OptionThrottle(throttle),
 		progressbar.OptionUseANSICodes(true),
 		progressbar.OptionOnCompletion(func() {
-			fmt.Println()
+			fmt.Fprintln(writer)
 		}),
 	)
 	return &ProgressBar{bar: bar}
@@ -53,6 +53,9 @@ func (p *ProgressBar) Finish() {
 }
 
 func calculateThrottle(total, concurrency int) time.Duration {
+	if concurrency <= 0 {
+		concurrency = 1
+	}
 	adjustmentFactor := float64(total) / float64(concurrency)
 	throttle := defaultThrottle * time.Duration(adjustmentFactor)
 

@@ -42,6 +42,12 @@ func TestCalculateThrottle_ShouldRespectBoundaries(t *testing.T) {
 		expected    time.Duration
 	}{
 		{
+			name:        "should fallback to concurrency 1 when passed 0 to prevent division by zero",
+			total:       10,
+			concurrency: 0,
+			expected:    400 * time.Millisecond,
+		},
+		{
 			name:        "should use min throttle when adjustment is very small",
 			total:       10,
 			concurrency: 100,
