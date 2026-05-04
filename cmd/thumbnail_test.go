@@ -18,6 +18,10 @@ func (suite *ThumbnailTestSuite) SetupTest() {
 	suite.cmd, suite.config = SetupTestConfig(NewThumbnailCmd)
 }
 
+func (suite *ThumbnailTestSuite) TearDownTest() {
+	suite.config.MockProcessor.AssertExpectations(suite.T())
+}
+
 func (suite *ThumbnailTestSuite) TestThumbnailShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config, "--width", "150")
 }
@@ -31,7 +35,6 @@ func (suite *ThumbnailTestSuite) TestThumbnail_ShouldWorkWithDefaultOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ThumbnailTestSuite) TestThumbnail_ShouldWorkWithCustomOutput() {
@@ -43,7 +46,6 @@ func (suite *ThumbnailTestSuite) TestThumbnail_ShouldWorkWithCustomOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ThumbnailTestSuite) TestThumbnail_ShouldProcessMultipleImages() {
@@ -55,7 +57,6 @@ func (suite *ThumbnailTestSuite) TestThumbnail_ShouldProcessMultipleImages() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ThumbnailTestSuite) TestThumbnail_ShouldReturnError_When_WidthIsTooSmall() {

@@ -20,6 +20,10 @@ func (suite *CropTestSuite) SetupTest() {
 	suite.cmd, suite.config = SetupTestConfig(NewCropCmd)
 }
 
+func (suite *CropTestSuite) TearDownTest() {
+	suite.config.MockProcessor.AssertExpectations(suite.T())
+}
+
 func (suite *CropTestSuite) TestCropShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config, "--width", "150", "--height", "150", "--gravity", "0")
 }
@@ -34,7 +38,6 @@ func (suite *CropTestSuite) TestCrop_ShouldWorkWithDefaultOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *CropTestSuite) TestCrop_ShouldWorkWithCustomOutput() {
@@ -47,7 +50,6 @@ func (suite *CropTestSuite) TestCrop_ShouldWorkWithCustomOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *CropTestSuite) TestCrop_ShouldProcessMultipleImages() {
@@ -60,7 +62,6 @@ func (suite *CropTestSuite) TestCrop_ShouldProcessMultipleImages() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *CropTestSuite) TestCrop_ShouldReturnError_When_DimensionsAreInvalid() {
@@ -135,7 +136,6 @@ func (suite *CropTestSuite) TestCrop_ShouldWorkWithAllValidFlags() {
 			suite.NoError(suite.cmd.Execute())
 
 			AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-			suite.config.MockProcessor.AssertExpectations(suite.T())
 		})
 	}
 }

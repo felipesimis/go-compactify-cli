@@ -18,6 +18,10 @@ func (suite *ResizeTestSuite) SetupTest() {
 	suite.cmd, suite.config = SetupTestConfig(NewResizeCmd)
 }
 
+func (suite *ResizeTestSuite) TearDownTest() {
+	suite.config.MockProcessor.AssertExpectations(suite.T())
+}
+
 func (suite *ResizeTestSuite) TestResizeShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config, "--width", "150", "--height", "150")
 }
@@ -31,7 +35,6 @@ func (suite *ResizeTestSuite) TestResize_ShouldWorkWithDefaultOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ResizeTestSuite) TestResize_ShouldWorkWithCustomOutput() {
@@ -43,7 +46,6 @@ func (suite *ResizeTestSuite) TestResize_ShouldWorkWithCustomOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ResizeTestSuite) TestResize_ShouldProcessMultipleImages() {
@@ -55,7 +57,6 @@ func (suite *ResizeTestSuite) TestResize_ShouldProcessMultipleImages() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ResizeTestSuite) TestResize_ShouldReturnError_When_DimensionsAreInvalid() {

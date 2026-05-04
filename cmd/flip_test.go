@@ -17,6 +17,10 @@ func (suite *FlipTestSuite) SetupTest() {
 	suite.cmd, suite.config = SetupTestConfig(NewFlipCmd)
 }
 
+func (suite *FlipTestSuite) TearDownTest() {
+	suite.config.MockProcessor.AssertExpectations(suite.T())
+}
+
 func (suite *FlipTestSuite) TestFlipShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config)
 }
@@ -30,7 +34,6 @@ func (suite *FlipTestSuite) TestFlip_ShouldWorkWithDefaultOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *FlipTestSuite) TestFlip_ShouldWorkWithCustomOutput() {
@@ -42,7 +45,6 @@ func (suite *FlipTestSuite) TestFlip_ShouldWorkWithCustomOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *FlipTestSuite) TestFlip_ShouldProcessMultipleImages() {
@@ -54,7 +56,6 @@ func (suite *FlipTestSuite) TestFlip_ShouldProcessMultipleImages() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func TestFlipSuite(t *testing.T) {

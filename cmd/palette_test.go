@@ -21,6 +21,10 @@ func (suite *PaletteTestSuite) TestPaletteShould_ReturnError_When_InputDirectory
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config)
 }
 
+func (suite *PaletteTestSuite) TearDownTest() {
+	suite.config.MockProcessor.AssertExpectations(suite.T())
+}
+
 func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithDefaultOutput() {
 	inputDir := PrepareTestImages(suite.T(), "test.jpg")
 	expectedOutputDir := inputDir + "-palette"
@@ -30,7 +34,6 @@ func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithDefaultOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithCustomOutput() {
@@ -42,7 +45,6 @@ func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithCustomOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *PaletteTestSuite) TestPalette_ShouldProcessMultipleImages() {
@@ -54,7 +56,6 @@ func (suite *PaletteTestSuite) TestPalette_ShouldProcessMultipleImages() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func TestPaletteSuite(t *testing.T) {

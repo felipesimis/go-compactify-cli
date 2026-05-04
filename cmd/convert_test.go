@@ -19,6 +19,10 @@ func (suite *ConvertTestSuite) SetupTest() {
 	suite.cmd, suite.config = SetupTestConfig(NewConvertCmd)
 }
 
+func (suite *ConvertTestSuite) TearDownTest() {
+	suite.config.MockProcessor.AssertExpectations(suite.T())
+}
+
 func (suite *ConvertTestSuite) TestConvertShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config, "--format", "png")
 }
@@ -33,7 +37,6 @@ func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithDefaultOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.png")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithCustomOutput() {
@@ -46,7 +49,6 @@ func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithCustomOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.png")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ConvertTestSuite) TestConvert_ShouldProcessMultipleImages() {
@@ -59,7 +61,6 @@ func (suite *ConvertTestSuite) TestConvert_ShouldProcessMultipleImages() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.png", "img2.png", "img3.png")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithSupportedFormats() {
@@ -87,7 +88,6 @@ func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithSupportedFormats() {
 			suite.NoError(suite.cmd.Execute())
 
 			AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test"+tt.expectedExt)
-			suite.config.MockProcessor.AssertExpectations(suite.T())
 		})
 	}
 }

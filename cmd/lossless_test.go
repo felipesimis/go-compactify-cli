@@ -17,6 +17,10 @@ func (suite *LosslessTestSuite) SetupTest() {
 	suite.cmd, suite.config = SetupTestConfig(NewLosslessCmd)
 }
 
+func (suite *LosslessTestSuite) TearDownTest() {
+	suite.config.MockProcessor.AssertExpectations(suite.T())
+}
+
 func (suite *LosslessTestSuite) TestLosslessShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config)
 }
@@ -30,7 +34,6 @@ func (suite *LosslessTestSuite) TestLossless_ShouldWorkWithDefaultOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *LosslessTestSuite) TestLossless_ShouldWorkWithCustomOutput() {
@@ -42,7 +45,6 @@ func (suite *LosslessTestSuite) TestLossless_ShouldWorkWithCustomOutput() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, customOutputDir, "test.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func (suite *LosslessTestSuite) TestLossless_ShouldProcessMultipleImages() {
@@ -54,7 +56,6 @@ func (suite *LosslessTestSuite) TestLossless_ShouldProcessMultipleImages() {
 	suite.NoError(suite.cmd.Execute())
 
 	AssertImageProcessed(&suite.Suite, suite.config, expectedOutputDir, "img1.jpg", "img2.jpg", "img3.jpg")
-	suite.config.MockProcessor.AssertExpectations(suite.T())
 }
 
 func TestLosslessSuite(t *testing.T) {
