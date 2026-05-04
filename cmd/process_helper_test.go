@@ -103,7 +103,15 @@ func (m *mockHelperFS) CreateDir(name string) error {
 
 func (m *mockHelperFS) CreateSiblingDir(inputDir, suffix string) (string, error) {
 	args := m.Called(inputDir, suffix)
-	return args.String(0), args.Error(1)
+	return args.Get(0).(string), args.Error(1)
+}
+
+func (m *mockHelperFS) ReadDir(path string) ([]filesystem.FileInfo, error) {
+	args := m.Called(path)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]filesystem.FileInfo), args.Error(1)
 }
 
 type errorReader struct{}
@@ -129,6 +137,20 @@ type ProcessingTestSuite struct {
 
 func (suite *ProcessingTestSuite) SetupTest() {
 	suite.mockFS = new(mockHelperFS)
+}
+
+func (suite *ProcessingTestSuite) TestRunOperation_ShouldWrapFileSystemAndPrintWarning_WhenDryRunIsEnabled() {
+	out := new(bytes.Buffer)
+
+	global := GlobalConfig{InputDir: "/input", DryRun: true}
+	suite.mockFS.On("ReadDir", "/input").Return([]filesystem.FileInfo{}, nil)
+	opCfg := OperationConfig{FileSystem: suite.mockFS, Out: out}
+
+	err := RunOperation(global, opCfg)
+
+	suite.NoError(err)
+	suite.Contains(out.String(), "DRY-RUN MODE: No files will be modified or created on disk.")
+	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenContextCanceled() {
