@@ -1,6 +1,6 @@
 # Compactify CLI
 pre-commit:
-  parallel: false
+  parallel: true
   commands:
     fmt:
       glob: "**/*.go"
@@ -11,6 +11,12 @@ pre-commit:
     test:
       glob: "**/*.go"
       run: make test
+
+pre-push:
+  commands:
+    test:
+      tags: "!integration"
+      run: make test-e2e
 
 commit-msg:
   commands:
