@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
 	"github.com/felipesimis/go-compactify-cli/internal/image"
@@ -14,6 +16,17 @@ import (
 
 type ConvertParams struct {
 	Format string
+}
+
+func (c ConvertParams) ModifyOutputPath(originalPath, outputDir string) string {
+	if c.Format == "" {
+		return ""
+	}
+
+	fileName := filepath.Base(originalPath)
+	fileNameWithoutExt := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	newFilename := fmt.Sprintf("%s.%s", fileNameWithoutExt, c.Format)
+	return filepath.Join(outputDir, newFilename)
 }
 
 func NewConvertCmd(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) *cobra.Command {

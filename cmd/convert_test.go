@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/felipesimis/go-compactify-cli/internal/validation"
@@ -110,6 +111,53 @@ func (suite *ConvertTestSuite) TestConvert_ShouldReturnError_When_InvalidFormat(
 			suite.Error(err)
 			suite.ErrorIs(err, tt.expectedErr)
 			suite.config.MockProcessor.AssertNotCalled(suite.T(), "Convert")
+		})
+	}
+}
+
+func (suite *ConvertTestSuite) TestModifyOutputPath_ShouldReturnFormattedPath_WhenConditionsMet() {
+	tests := []struct {
+		name         string
+		format       string
+		originalPath string
+		outputDir    string
+		expected     string
+	}{
+		{
+			name:         "ShouldReplaceExtension_WhenFormatIsProvided",
+			format:       "png",
+			originalPath: "/path/to/image.jpg",
+			outputDir:    "/output",
+			expected:     filepath.Join("/output", "image.png"),
+		},
+		{
+			name:         "ShouldReturnEmpty_WhenFormatIsEmpty",
+			format:       "",
+			originalPath: "/input/image.jpg",
+			outputDir:    "/output",
+			expected:     "",
+		},
+		{
+			name:         "ShouldHandleMultipleDots_WhenFileNameIsComplex",
+			format:       "webp",
+			originalPath: "my.awesome.image.jpg",
+			outputDir:    "/out",
+			expected:     filepath.Join("/out", "my.awesome.image.webp"),
+		},
+		{
+			name:         "ShouldAddExtension_WhenOriginalFileHasNone",
+			format:       "jpg",
+			originalPath: "image",
+			outputDir:    "/out",
+			expected:     filepath.Join("/out", "image.jpg"),
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			c := ConvertParams{Format: tt.format}
+			result := c.ModifyOutputPath(tt.originalPath, tt.outputDir)
+			suite.Equal(tt.expected, result)
 		})
 	}
 }
