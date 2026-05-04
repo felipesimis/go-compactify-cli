@@ -40,3 +40,6 @@ jobs:
 
       - name: Verify Build
         run: make build
+      
+      - name: Run E2E Tests
+        run: make test-e2e

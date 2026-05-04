@@ -2,7 +2,7 @@
 BINARY_NAME := compactify
 COVERAGE_FILE := coverage.out
 
-.PHONY : all fmt fmt-fix vet test coverage test build clean init-hooks
+.PHONY : all fmt fmt-fix vet test coverage test-e2e build clean init-hooks
 
 all: fmt vet test build
 
@@ -28,13 +28,16 @@ vet:
 test:
 	@echo "🧪 Running tests..."
 	go test ./... --failfast
-
 coverage:
 	@echo "📊 Running tests with coverage..."
 	go test ./... -coverprofile=$(COVERAGE_FILE)
 	@go tool cover -html=$(COVERAGE_FILE) -o coverage.html
 	@echo "🌐 Opening in browser..."
 	@explorer.exe coverage.html 2>/dev/null || open coverage.html 2>/dev/null || xdg-open coverage.html 2>/dev/null || true
+
+test-e2e:
+	@echo "🧪 Running E2E tests..."
+	go test -v ./test/e2e/...
 
 build:
 	@echo "🚀 Building the binary..."
