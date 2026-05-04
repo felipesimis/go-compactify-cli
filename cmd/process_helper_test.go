@@ -247,6 +247,19 @@ func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnSibling_WhenN
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
+func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCreateSiblingDirFails() {
+	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("", errors.New("create sibling dir error"))
+
+	global := GlobalConfig{InputDir: "input"}
+	opCfg := OperationConfig{FileSystem: suite.mockFS, OutputSuffix: "-suffix"}
+
+	out, err := resolveOutputDir(global, opCfg)
+
+	suite.ErrorContains(err, "create sibling dir error")
+	suite.Empty(out)
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
 func (suite *ProcessingTestSuite) TestRenderProcessSummary_ShouldPrintFormattedResults_WhenCalled() {
 	tests := []struct {
 		name            string
