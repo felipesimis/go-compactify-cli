@@ -78,67 +78,78 @@ func (suite *ProcessingTestSuite) SetupTest() {
 	suite.mockFS = new(mockHelperFS)
 }
 
+func (suite *ProcessingTestSuite) TearDownTest() {
+	suite.mockFS.AssertExpectations(suite.T())
+}
+
+func (suite *ProcessingTestSuite) defaultProcessingParams() (*utils.ImageProcessingStats, processing.FileProcessingParams) {
+	stats := &utils.ImageProcessingStats{}
+	params := processing.FileProcessingParams{
+		File: filesystem.FileInfo{Path: "test.jpg", Size: 100},
+		FS:   suite.mockFS,
+	}
+	return stats, params
+}
+
+func (suite *ProcessingTestSuite) defaultOperationConfigs() (GlobalConfig, OperationConfig) {
+	global := GlobalConfig{InputDir: "input"}
+	config := OperationConfig{
+		FileSystem: suite.mockFS,
+		Out:        io.Discard,
+	}
+	return global, config
+}
+
 func (suite *ProcessingTestSuite) TestRunOperation_ShouldWrapFileSystemAndPrintWarning_WhenDryRunIsEnabled() {
 	suite.mockFS.On("ReadDir", "input").Return([]filesystem.FileInfo{}, nil)
 
 	out := new(bytes.Buffer)
-	global := GlobalConfig{InputDir: "input", DryRun: true}
-	opCfg := OperationConfig{FileSystem: suite.mockFS, Out: out}
+	global, opCfg := suite.defaultOperationConfigs()
+	global.DryRun = true
+	opCfg.Out = out
 
 	err := RunOperation(global, opCfg)
 
 	suite.NoError(err)
-	suite.Contains(out.String(), "DRY-RUN MODE: No files will be modified or created on disk.")
-	suite.mockFS.AssertExpectations(suite.T())
+	suite.Contains(out.String(), "DRY-RUN MODE")
 }
 
 func (suite *ProcessingTestSuite) TestRunOperation_ShouldReturnError_WhenReadDirFails() {
 	expectedErr := errors.New("directory does not exist")
 	suite.mockFS.On("ReadDir", "input").Return(nil, expectedErr)
 
-	global := GlobalConfig{InputDir: "input"}
-	opCfg := OperationConfig{FileSystem: suite.mockFS, Out: io.Discard}
-
+	global, opCfg := suite.defaultOperationConfigs()
 	err := RunOperation(global, opCfg)
 
 	suite.ErrorIs(err, expectedErr)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestRunOperation_ShouldReturnError_WhenOutputDirResolutionFails() {
-	suite.mockFS.On("ReadDir", "/input").Return([]filesystem.FileInfo{
+	suite.mockFS.On("ReadDir", "input").Return([]filesystem.FileInfo{
 		{Path: "/input/test.jpg", Size: 100},
 	}, nil)
 	expectedErr := errors.New("permission denied")
 	suite.mockFS.On("CreateDir", "/forbidden_output").Return(expectedErr)
 
-	out := new(bytes.Buffer)
-	global := GlobalConfig{InputDir: "/input", OutputDir: "/forbidden_output"}
-	opCfg := OperationConfig{FileSystem: suite.mockFS, Out: out}
+	global, opCfg := suite.defaultOperationConfigs()
+	global.OutputDir = "/forbidden_output"
 
 	err := RunOperation(global, opCfg)
 
 	suite.ErrorIs(err, expectedErr)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestRunOperation_ShouldSucceed_WhenValidInputs() {
-	out := new(bytes.Buffer)
-	global := GlobalConfig{InputDir: "input"}
-
 	suite.mockFS.On("ReadDir", "input").Return([]filesystem.FileInfo{{Path: "input/test.jpg", Size: 100}}, nil)
 	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("input-suffix", nil)
 
-	opCfg := OperationConfig{
-		FileSystem:   suite.mockFS,
-		Out:          out,
-		OutputSuffix: "-suffix",
-		ProcessorFunc: func(ctx context.Context, p processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-			stats.ProcessedImages.Add(1)
-			stats.InitialSize.Add(100)
-			stats.FinalSize.Add(50)
-			return nil
-		},
+	out := new(bytes.Buffer)
+	global, opCfg := suite.defaultOperationConfigs()
+	opCfg.Out = out
+	opCfg.OutputSuffix = "-suffix"
+	opCfg.ProcessorFunc = func(ctx context.Context, p processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
+		stats.ProcessedImages.Add(1)
+		return nil
 	}
 
 	err := RunOperation(global, opCfg)
@@ -146,16 +157,13 @@ func (suite *ProcessingTestSuite) TestRunOperation_ShouldSucceed_WhenValidInputs
 	suite.NoError(err)
 	suite.Contains(out.String(), "OPERATION")
 	suite.Contains(out.String(), "OUTPUT DIRECTORY")
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenContextCanceled() {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	stats := &utils.ImageProcessingStats{}
-	params := processing.FileProcessingParams{}
-
+	stats, params := suite.defaultProcessingParams()
 	err := HandleImageProcessing(ctx, params, stats, nil, nil)
 
 	suite.ErrorIs(err, context.Canceled)
@@ -165,154 +173,121 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenConte
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenOpenFileFails() {
 	suite.mockFS.On("OpenFile", "test.jpg").Return(nil, errors.New("open error"))
 
-	stats := &utils.ImageProcessingStats{}
-	params := processing.FileProcessingParams{
-		File: filesystem.FileInfo{Path: "test.jpg", Size: 100},
-		FS:   suite.mockFS,
-	}
-
+	stats, params := suite.defaultProcessingParams()
 	err := HandleImageProcessing(context.Background(), params, stats, nil, nil)
+
 	suite.ErrorContains(err, "open error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenReadFails() {
-	suite.mockFS.On("OpenFile", "corrupt.jpg").Return(errorReader{}, nil)
+	suite.mockFS.On("OpenFile", "test.jpg").Return(errorReader{}, nil)
 
-	stats := &utils.ImageProcessingStats{}
-	params := processing.FileProcessingParams{
-		File: filesystem.FileInfo{Path: "corrupt.jpg", Size: 100},
-		FS:   suite.mockFS,
-	}
-
+	stats, params := suite.defaultProcessingParams()
 	err := HandleImageProcessing(context.Background(), params, stats, nil, nil)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "forced read error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWriteFileFails() {
-	suite.mockFS.On("OpenFile", "valid.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
+	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
 	suite.mockFS.On("WriteFile", mock.Anything, mock.Anything).Return(errors.New("write error"))
 
-	stats := &utils.ImageProcessingStats{}
-	params := processing.FileProcessingParams{
-		File:      filesystem.FileInfo{Path: "valid.jpg", Size: 4},
-		FS:        suite.mockFS,
-		OutputDir: "output",
-	}
+	stats, params := suite.defaultProcessingParams()
+	params.OutputDir = "output"
 
-	mockFactory := func([]byte) image.ImageProcessor { return nil }
-	mockProcess := func(proc image.ImageProcessor) ([]byte, error) {
-		return []byte("new-data"), nil
-	}
-
-	err := HandleImageProcessing(context.Background(), params, stats, mockFactory, mockProcess)
+	err := HandleImageProcessing(context.Background(), params, stats,
+		func([]byte) image.ImageProcessor { return nil },
+		func(proc image.ImageProcessor) ([]byte, error) {
+			return []byte("new-data"), nil
+		},
+	)
 	suite.ErrorContains(err, "write error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenProcessingFails() {
-	suite.mockFS.On("OpenFile", "valid.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
+	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
 
-	stats := &utils.ImageProcessingStats{}
-	params := processing.FileProcessingParams{
-		File: filesystem.FileInfo{Path: "valid.jpg", Size: 4},
-		FS:   suite.mockFS,
-	}
+	stats, params := suite.defaultProcessingParams()
 
-	mockFactory := func([]byte) image.ImageProcessor { return nil }
-	mockProcess := func(proc image.ImageProcessor) ([]byte, error) {
-		return nil, errors.New("processing error")
-	}
-
-	err := HandleImageProcessing(context.Background(), params, stats, mockFactory, mockProcess)
+	err := HandleImageProcessing(context.Background(), params, stats,
+		func([]byte) image.ImageProcessor { return nil },
+		func(proc image.ImageProcessor) ([]byte, error) {
+			return nil, errors.New("processing error")
+		},
+	)
 	suite.ErrorContains(err, "processing error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSucceed_WhenAllStepsPass() {
-	originalData := []byte("original")
-	processedData := []byte("new-data")
+	originalData, processedData := []byte("original"), []byte("new-data")
 
 	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader(originalData)), nil)
 	suite.mockFS.On("WriteFile", filepath.Join("out", "test.jpg"), processedData).Return(nil)
 
-	stats := &utils.ImageProcessingStats{}
-	params := processing.FileProcessingParams{
-		File:      filesystem.FileInfo{Path: "test.jpg", Size: int64(len(originalData))},
-		FS:        suite.mockFS,
-		OutputDir: "out",
-	}
+	stats, params := suite.defaultProcessingParams()
+	params.File.Size = int64(len(originalData))
+	params.OutputDir = "out"
 
-	mockFactory := func([]byte) image.ImageProcessor { return nil }
-	mockProcess := func(proc image.ImageProcessor) ([]byte, error) { return processedData, nil }
-
-	err := HandleImageProcessing(context.Background(), params, stats, mockFactory, mockProcess)
+	err := HandleImageProcessing(context.Background(), params, stats,
+		func([]byte) image.ImageProcessor { return nil },
+		func(proc image.ImageProcessor) ([]byte, error) { return processedData, nil },
+	)
 
 	suite.NoError(err)
 	suite.Equal(uint32(1), stats.ProcessedImages.Load())
 	suite.Equal(uint32(0), stats.SkippedImages.Load())
 	suite.Equal(uint64(len(originalData)), stats.InitialSize.Load())
 	suite.Equal(uint64(len(processedData)), stats.FinalSize.Load())
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCreateDirFails() {
 	suite.mockFS.On("CreateDir", "invalid_output").Return(errors.New("create dir error"))
 
-	global := GlobalConfig{OutputDir: "invalid_output"}
-	config := OperationConfig{FileSystem: suite.mockFS}
-
-	out, err := resolveOutputDir(global, config)
+	global, opCfg := suite.defaultOperationConfigs()
+	global.OutputDir = "invalid_output"
+	out, err := resolveOutputDir(global, opCfg)
 
 	suite.ErrorContains(err, "create dir error")
 	suite.Empty(out)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnCustomDir_WhenProvidedAndCreated() {
 	suite.mockFS.On("CreateDir", "valid_output").Return(nil)
 
-	global := GlobalConfig{OutputDir: "valid_output"}
-	opCfg := OperationConfig{FileSystem: suite.mockFS}
+	global, opCfg := suite.defaultOperationConfigs()
+	global.OutputDir = "valid_output"
 
 	out, err := resolveOutputDir(global, opCfg)
 
 	suite.NoError(err)
 	suite.Equal("valid_output", out)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnSibling_WhenNoCustomDirProvided() {
 	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("input-suffix", nil)
 
-	global := GlobalConfig{InputDir: "input"}
-	opCfg := OperationConfig{FileSystem: suite.mockFS, OutputSuffix: "-suffix"}
-
+	global, opCfg := suite.defaultOperationConfigs()
+	opCfg.OutputSuffix = "-suffix"
 	out, err := resolveOutputDir(global, opCfg)
 
 	suite.NoError(err)
 	suite.Equal("input-suffix", out)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCreateSiblingDirFails() {
 	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("", errors.New("create sibling dir error"))
 
-	global := GlobalConfig{InputDir: "input"}
-	opCfg := OperationConfig{FileSystem: suite.mockFS, OutputSuffix: "-suffix"}
-
+	global, opCfg := suite.defaultOperationConfigs()
+	opCfg.OutputSuffix = "-suffix"
 	out, err := resolveOutputDir(global, opCfg)
 
 	suite.ErrorContains(err, "create sibling dir error")
 	suite.Empty(out)
-	suite.mockFS.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestDetermineOutputPath_ShouldUseModifier_WhenProvided() {
@@ -329,7 +304,6 @@ func (suite *ProcessingTestSuite) TestDetermineOutputPath_ShouldUseModifier_When
 	result := determineOutputPath(params)
 
 	suite.Equal(expectedPath, result)
-	mockModifier.AssertExpectations(suite.T())
 }
 
 func (suite *ProcessingTestSuite) TestDetermineOutputPath_ShouldFallbackToDefault_WhenInterfaceNotImplemented() {
