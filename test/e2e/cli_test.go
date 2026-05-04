@@ -74,6 +74,64 @@ func (suite *E2ETestSuite) TestCLI_ShouldFailAndReturnExitCode1_WhenInputIsMissi
 	suite.Equal(1, exitError.ExitCode(), "CLI should return exit code 1 on fatal error")
 }
 
+func (suite *E2ETestSuite) TestCLI_ResizeCommand_ShouldExecuteCGOWithoutSegmentationFault() {
+	testDataDir := filepath.Join("..", "..", "internal", "image", "testdata")
+	outputDir := filepath.Join(suite.T().TempDir(), "e2e-resize-output")
+
+	cmd := exec.Command(suite.binaryPath, "resize",
+		"--input", testDataDir,
+		"--output", outputDir,
+		"--width", "100",
+		"--height", "100",
+	)
+
+	output, err := cmd.CombinedOutput()
+	suite.NoError(err, "CGO interaction failed or resulted in a segmentation fault. Output:\n%s", string(output))
+
+	files, err := filepath.Glob(filepath.Join(outputDir, "*.jpeg"))
+	suite.NoError(err)
+	suite.NotEmpty(files, "Expected resized images to be generated")
+}
+
+func (suite *E2ETestSuite) TestCLI_DryRun_ShouldNotProduceAnySideEffectsOnDisk() {
+	testDataDir := filepath.Join("..", "..", "internal", "image", "testdata")
+	outputDir := filepath.Join(suite.T().TempDir(), "e2e-dryrun-output")
+
+	cmd := exec.Command(suite.binaryPath, "convert",
+		"--input", testDataDir,
+		"--output", outputDir,
+		"--format", "png",
+		"--dry-run",
+	)
+
+	output, err := cmd.CombinedOutput()
+	suite.NoError(err, "CLI failed during dry-run execution. Output:\n%s", string(output))
+
+	files, err := filepath.Glob(filepath.Join(outputDir, "*.png"))
+	suite.NoError(err)
+	suite.Empty(files, "Dry-run failed: physical files were written to disk")
+}
+
+func (suite *E2ETestSuite) TestCLI_ShouldRespectEnvironmentVariablePrecedence() {
+	testDataDir := filepath.Join("..", "..", "internal", "image", "testdata")
+	outputDir := filepath.Join(suite.T().TempDir(), "e2e-env-output")
+
+	cmd := exec.Command(suite.binaryPath, "convert",
+		"--input", testDataDir,
+		"--output", outputDir,
+		"--format", "webp",
+	)
+
+	cmd.Env = append(os.Environ(), "COMPACTIFY_CONCURRENCY=1000")
+
+	output, err := cmd.CombinedOutput()
+	outputStr := string(output)
+
+	suite.NoError(err)
+	suite.Contains(outputStr, "WARNING: Concurrency set very high",
+		"Binary failed to map COMPACTIFY_CONCURRENCY environment variable to the internal config")
+}
+
 func TestE2ESuite(t *testing.T) {
 	suite.Run(t, new(E2ETestSuite))
 }
