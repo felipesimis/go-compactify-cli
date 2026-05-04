@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### ⚠️ Breaking Changes
+- **Dimensions Validation**: Increased minimum allowed width and height from `1` to `10` pixels to ensure processing stability.
+
 ### 🚀 CI/CD & Infrastructure
 - **Local Quality Gates**: Integrated Lefthook for pre-commit validation, ensuring `fmt`, `vet`, and `test` execution prior to code tracking.
 - **Commit Culture Enforcement**: Added strict Git hook validation for the Conventional Commits specification.
