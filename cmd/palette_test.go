@@ -21,6 +21,10 @@ func (suite *PaletteTestSuite) SetupTest() {
 	}
 }
 
+func (suite *PaletteTestSuite) TestPalette_ShouldWorkWithEncodingFlags() {
+	AssertEncodingFlagsBehaviors(&suite.Suite, NewPaletteCmd, "--input", "some/dir")
+}
+
 func (suite *PaletteTestSuite) TestPaletteShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config)
 }

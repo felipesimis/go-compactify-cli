@@ -21,6 +21,10 @@ func (suite *GrayscaleTestSuite) SetupTest() {
 	}
 }
 
+func (suite *GrayscaleTestSuite) TestGrayscale_ShouldWorkWithEncodingFlags() {
+	AssertEncodingFlagsBehaviors(&suite.Suite, NewGrayscaleCmd, "--input", "some/dir")
+}
+
 func (suite *GrayscaleTestSuite) TestGrayscaleShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config)
 }

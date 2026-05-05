@@ -21,6 +21,10 @@ func (suite *FlipTestSuite) SetupTest() {
 	}
 }
 
+func (suite *FlipTestSuite) TestFlip_ShouldWorkWithEncodingFlags() {
+	AssertEncodingFlagsBehaviors(&suite.Suite, NewFlipCmd, "--input", "some/dir")
+}
+
 func (suite *FlipTestSuite) TestFlipShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config)
 }
