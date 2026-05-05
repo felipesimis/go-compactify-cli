@@ -16,6 +16,7 @@ type CropParams struct {
 	Width   int
 	Height  int
 	Gravity image.Gravity
+	Quality int
 }
 
 func NewCropCmd(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) *cobra.Command {
@@ -48,6 +49,7 @@ Available options:
   5 - Smart`)
 	cmd.MarkFlagRequired("width")
 	cmd.MarkFlagRequired("height")
+	addEncodingFlags(cmd)
 
 	return cmd
 }
@@ -55,20 +57,21 @@ Available options:
 func runCrop(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		appConfig := loadAppConfig()
 
 		width, _ := cmd.Flags().GetInt("width")
 		height, _ := cmd.Flags().GetInt("height")
 		gravityInt, _ := cmd.Flags().GetInt("gravity")
 		gravity := image.Gravity(gravityInt)
-		dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
-		gravityValidation := &validation.GravityValidation{Gravity: gravity}
-		validationComposite := validation.ValidationComposite{Validations: []validation.Validation{dimensionValidation, gravityValidation}}
-		err := validationComposite.Validate()
-		if err != nil {
+		validationComposite := validation.ValidationComposite{Validations: []validation.Validation{
+			&validation.DimensionsValidation{Width: width, Height: height},
+			&validation.GravityValidation{Gravity: gravity},
+			&validation.QualityValidation{Quality: appConfig.Quality},
+		}}
+		if err := validationComposite.Validate(); err != nil {
 			return err
 		}
 		cmd.SilenceUsage = true
-		appConfig := loadAppConfig()
 
 		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
@@ -76,10 +79,13 @@ func runCrop(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) 
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       fmt.Sprintf("-cropped_%dx%d", width, height),
 			ProgressBarMessage: "Cropping images",
-			ExtraParams:        CropParams{Width: width, Height: height, Gravity: gravity},
+			ExtraParams:        CropParams{Width: width, Height: height, Gravity: gravity, Quality: appConfig.Quality},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(CropParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithCrop(extraParams.Width, extraParams.Height, extraParams.Gravity))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,
+					image.WithCrop(extraParams.Width, extraParams.Height, extraParams.Gravity),
+					image.WithQuality(appConfig.Quality),
+				)
 			},
 		})
 	}

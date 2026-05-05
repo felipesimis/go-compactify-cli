@@ -22,6 +22,10 @@ func (suite *ThumbnailTestSuite) SetupTest() {
 	}
 }
 
+func (suite *ThumbnailTestSuite) TestThumbnail_ShouldWorkWithEncodingFlags() {
+	AssertEncodingFlagsBehaviors(&suite.Suite, NewThumbnailCmd, "--input", "some/dir", "--width", "150")
+}
+
 func (suite *ThumbnailTestSuite) TestThumbnailShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config, "--width", "150")
 }

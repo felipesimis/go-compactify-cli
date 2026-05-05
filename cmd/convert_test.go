@@ -23,6 +23,10 @@ func (suite *ConvertTestSuite) SetupTest() {
 	}
 }
 
+func (suite *ConvertTestSuite) TestConvert_ShouldWorkWithEncodingFlags() {
+	AssertEncodingFlagsBehaviors(&suite.Suite, NewConvertCmd, "--input", "some/dir", "--format", "png")
+}
+
 func (suite *ConvertTestSuite) TestConvertShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config, "--format", "png")
 }

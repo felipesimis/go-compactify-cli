@@ -22,6 +22,10 @@ func (suite *EnlargeTestSuite) SetupTest() {
 	}
 }
 
+func (suite *EnlargeTestSuite) TestEnlarge_ShouldWorkWithEncodingFlags() {
+	AssertEncodingFlagsBehaviors(&suite.Suite, NewEnlargeCmd, "--input", "some/dir", "--width", "150", "--height", "150")
+}
+
 func (suite *EnlargeTestSuite) TestEnlargeShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config, "--width", "150", "--height", "150")
 }

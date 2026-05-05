@@ -12,7 +12,6 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
 	"github.com/felipesimis/go-compactify-cli/internal/validation"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 type ConvertParams struct {
@@ -50,10 +49,8 @@ and the images will be converted accordingly.`,
 	}
 
 	cmd.Flags().StringP("format", "f", "", `Desired format of the images. Available options: webp, jpeg, png`)
-	cmd.Flags().IntP("quality", "q", image.DefaultQuality, "Compression quality (1-100)")
 	cmd.MarkFlagRequired("format")
-
-	viper.BindPFlag("quality", cmd.Flags().Lookup("quality"))
+	addEncodingFlags(cmd)
 
 	return cmd
 }
@@ -64,11 +61,11 @@ func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 		appConfig := loadAppConfig()
 
 		format, _ := cmd.Flags().GetString("format")
-		formatValidation := &validation.FormatValidation{Format: format}
-		qualityValidation := &validation.QualityValidation{Quality: appConfig.Quality}
-		validationComposite := validation.ValidationComposite{Validations: []validation.Validation{formatValidation, qualityValidation}}
-		err := validationComposite.Validate()
-		if err != nil {
+		validationComposite := validation.ValidationComposite{Validations: []validation.Validation{
+			&validation.FormatValidation{Format: format},
+			&validation.QualityValidation{Quality: appConfig.Quality},
+		}}
+		if err := validationComposite.Validate(); err != nil {
 			return err
 		}
 		cmd.SilenceUsage = true

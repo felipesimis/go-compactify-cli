@@ -39,23 +39,25 @@ and the image will be resized accordingly.`,
 	cmd.MarkFlagRequired("width")
 	cmd.MarkFlagRequired("height")
 
+	addEncodingFlags(cmd)
 	return cmd
 }
 
 func runResize(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		appConfig := loadAppConfig()
 
 		width, _ := cmd.Flags().GetInt("width")
 		height, _ := cmd.Flags().GetInt("height")
-
-		dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
-		err := dimensionValidation.Validate()
-		if err != nil {
+		validationComposite := validation.ValidationComposite{Validations: []validation.Validation{
+			&validation.DimensionsValidation{Width: width, Height: height},
+			&validation.QualityValidation{Quality: appConfig.Quality},
+		}}
+		if err := validationComposite.Validate(); err != nil {
 			return err
 		}
 		cmd.SilenceUsage = true
-		appConfig := loadAppConfig()
 
 		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
@@ -66,7 +68,10 @@ func runResize(fs filesystem.FileSystem, processorFactory image.ProcessorFactory
 			ExtraParams:        ResizeParams{Width: width, Height: height},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ResizeParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithResize(extraParams.Width, extraParams.Height))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,
+					image.WithResize(extraParams.Width, extraParams.Height),
+					image.WithQuality(appConfig.Quality),
+				)
 			},
 		})
 	}
