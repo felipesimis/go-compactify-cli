@@ -214,6 +214,28 @@ func (suite *BimgImageTestSuite) TestProcess_ThumbnailShouldOverrideExplicitResi
 	suite.NotEqual(800, size.Width)
 }
 
+func (suite *BimgImageTestSuite) TestProcess_ShouldChangeFileSize_WhenQualityOptionIsProvided() {
+	quality100, err := suite.img.Process(WithQuality(100))
+	suite.NoError(err)
+	suite.NotEmpty(quality100)
+
+	quality10, err := suite.img.Process(WithQuality(10))
+	suite.NoError(err)
+	suite.NotEmpty(quality10)
+
+	suite.Less(len(quality10), len(quality100), "Lower quality should result in smaller file size")
+}
+
+func (suite *BimgImageTestSuite) TestProcess_ShouldIgnoreQuality_WhenLosslessOptionIsProvided() {
+	losslessOnly, err := suite.img.Process(WithConvert("webp"), WithLosslessCompress())
+	suite.NoError(err)
+
+	losslessWithLowQuality, err := suite.img.Process(WithConvert("webp"), WithLosslessCompress(), WithQuality(10))
+	suite.NoError(err)
+
+	suite.Equal(len(losslessOnly), len(losslessWithLowQuality), "Quality should be ignored when lossless is enabled")
+}
+
 func (suite *BimgImageTestSuite) TestProcess_ShouldApplyStripMetadata_WhenOptionIsProvided() {
 	processedImg, err := suite.img.Process(WithStripMetadata())
 	suite.NoError(err)
