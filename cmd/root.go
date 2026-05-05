@@ -36,6 +36,8 @@ func NewRootCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			initConfig(cmd)
 
+			viper.BindPFlags(cmd.Flags())
+
 			isHelp := cmd.Name() == "help" || cmd.Flags().Changed("help")
 			isInit := cmd.Name() == "init"
 			isVersion := cmd.Flags().Changed("version")
