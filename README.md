@@ -24,6 +24,7 @@ Designed with **software engineering excellence** in mind, the project follows s
     - Intelligent resizing and cropping.
     - Grayscale, flipping, and color palette optimization.
     - Lossless compression.
+    - Granular control over output encoding (`--quality`).
     - Privacy-first EXIF metadata stripping (removes GPS/Camera info while preserving color profiles).
 - 📊 **Detailed Analytics**: Execution summary with a side-by-side "Impact Dashboard" (Original vs. Processed).
 
@@ -45,6 +46,7 @@ Compactify follows a strict precedence order (from highest to lowest). This allo
 | `COMPACTIFY_CONCURRENCY` | `-c, --concurrency` |
 | `COMPACTIFY_INPUT` | `-i, --input` |
 | `COMPACTIFY_OUTPUT` | `-o, --output` |
+| `COMPACTIFY_QUALITY` | `-q, --quality` |
 | `COMPACTIFY_DRY_RUN` | `--dry-run` |
 | `COMPACTIFY_STRIP_METADATA` | `--strip-metadata` |
 | `COMPACTIFY_CONFIG` | `--config` |
@@ -134,6 +136,9 @@ Clone the repository:
 
 # Convert all images to WebP without actually touching the files (Preview)
 ./compactify convert --format webp -i ./assets --dry-run
+
+# Crop all images with specific compression quality
+./compactify crop -w 800 -H 600 -q 85 -i ./assets
 
 # Run lossless optimization with concurrency set via environment variable
 export COMPACTIFY_CONCURRENCY=10
