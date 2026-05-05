@@ -104,24 +104,24 @@ func (suite *ProcessingTestSuite) defaultProcessingParams() (*utils.ImageProcess
 	return stats, params
 }
 
-func (suite *ProcessingTestSuite) defaultOperationConfigs() (GlobalConfig, OperationConfig) {
-	global := GlobalConfig{InputDir: "input"}
+func (suite *ProcessingTestSuite) defaultOperationConfigs() (AppConfig, OperationConfig) {
+	appConfig := AppConfig{InputDir: "input"}
 	config := OperationConfig{
 		FileSystem: suite.mockFS,
 		Out:        io.Discard,
 	}
-	return global, config
+	return appConfig, config
 }
 
 func (suite *ProcessingTestSuite) TestRunOperation_ShouldWrapFileSystemAndPrintWarning_WhenDryRunIsEnabled() {
 	suite.mockFS.On("ReadDir", "input").Return([]filesystem.FileInfo{}, nil)
 
 	out := new(bytes.Buffer)
-	global, opCfg := suite.defaultOperationConfigs()
-	global.DryRun = true
+	appConfig, opCfg := suite.defaultOperationConfigs()
+	appConfig.DryRun = true
 	opCfg.Out = out
 
-	err := RunOperation(global, opCfg)
+	err := RunOperation(appConfig, opCfg)
 
 	suite.NoError(err)
 	suite.Contains(out.String(), "DRY-RUN MODE")
@@ -131,8 +131,8 @@ func (suite *ProcessingTestSuite) TestRunOperation_ShouldReturnError_WhenReadDir
 	expectedErr := errors.New("directory does not exist")
 	suite.mockFS.On("ReadDir", "input").Return(nil, expectedErr)
 
-	global, opCfg := suite.defaultOperationConfigs()
-	err := RunOperation(global, opCfg)
+	appConfig, opCfg := suite.defaultOperationConfigs()
+	err := RunOperation(appConfig, opCfg)
 
 	suite.ErrorIs(err, expectedErr)
 }
@@ -144,10 +144,10 @@ func (suite *ProcessingTestSuite) TestRunOperation_ShouldReturnError_WhenOutputD
 	expectedErr := errors.New("permission denied")
 	suite.mockFS.On("CreateDir", "/forbidden_output").Return(expectedErr)
 
-	global, opCfg := suite.defaultOperationConfigs()
-	global.OutputDir = "/forbidden_output"
+	appConfig, opCfg := suite.defaultOperationConfigs()
+	appConfig.OutputDir = "/forbidden_output"
 
-	err := RunOperation(global, opCfg)
+	err := RunOperation(appConfig, opCfg)
 
 	suite.ErrorIs(err, expectedErr)
 }
@@ -157,7 +157,7 @@ func (suite *ProcessingTestSuite) TestRunOperation_ShouldSucceed_WhenValidInputs
 	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("input-suffix", nil)
 
 	out := new(bytes.Buffer)
-	global, opCfg := suite.defaultOperationConfigs()
+	appConfig, opCfg := suite.defaultOperationConfigs()
 	opCfg.Out = out
 	opCfg.OutputSuffix = "-suffix"
 	opCfg.ProcessorFunc = func(ctx context.Context, p processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
@@ -165,7 +165,7 @@ func (suite *ProcessingTestSuite) TestRunOperation_ShouldSucceed_WhenValidInputs
 		return nil
 	}
 
-	err := RunOperation(global, opCfg)
+	err := RunOperation(appConfig, opCfg)
 
 	suite.NoError(err)
 	suite.Contains(out.String(), "OPERATION")
@@ -177,7 +177,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenConte
 	cancel()
 
 	stats, params := suite.defaultProcessingParams()
-	err := HandleImageProcessing(ctx, params, stats, nil, GlobalConfig{})
+	err := HandleImageProcessing(ctx, params, stats, nil, AppConfig{})
 
 	suite.ErrorIs(err, context.Canceled)
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
@@ -187,7 +187,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenOpenF
 	suite.mockFS.On("OpenFile", "test.jpg").Return(nil, errors.New("open error"))
 
 	stats, params := suite.defaultProcessingParams()
-	err := HandleImageProcessing(context.Background(), params, stats, nil, GlobalConfig{})
+	err := HandleImageProcessing(context.Background(), params, stats, nil, AppConfig{})
 
 	suite.ErrorContains(err, "open error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
@@ -197,7 +197,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenReadF
 	suite.mockFS.On("OpenFile", "test.jpg").Return(errorReader{}, nil)
 
 	stats, params := suite.defaultProcessingParams()
-	err := HandleImageProcessing(context.Background(), params, stats, nil, GlobalConfig{})
+	err := HandleImageProcessing(context.Background(), params, stats, nil, AppConfig{})
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "forced read error")
@@ -214,7 +214,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWrite
 		return &fakeProcessor{resultBytes: []byte("new-data"), err: nil}
 	}
 
-	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, GlobalConfig{})
+	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, AppConfig{})
 	suite.ErrorContains(err, "write error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
@@ -225,7 +225,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenProce
 	stats, params := suite.defaultProcessingParams()
 	fakeFactory := func([]byte) image.ImageProcessor { return &fakeProcessor{err: errors.New("processing error")} }
 
-	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, GlobalConfig{})
+	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, AppConfig{})
 	suite.ErrorContains(err, "processing error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
@@ -242,7 +242,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSucceed_WhenAl
 
 	fakeFactory := func([]byte) image.ImageProcessor { return &fakeProcessor{resultBytes: processedData} }
 
-	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, GlobalConfig{})
+	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, AppConfig{})
 
 	suite.NoError(err)
 	suite.Equal(uint32(1), stats.ProcessedImages.Load())
@@ -251,27 +251,27 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSucceed_WhenAl
 	suite.Equal(uint64(len(processedData)), stats.FinalSize.Load())
 }
 
-func (suite *ProcessingTestSuite) TestBuildGlobalOptions_ShouldReturnCorrectOptions() {
+func (suite *ProcessingTestSuite) TestBuildAppConfigOptions_ShouldReturnCorrectOptions() {
 	tests := []struct {
 		name           string
-		globalCfg      GlobalConfig
+		appConfigCfg   AppConfig
 		expectedLength int
 	}{
 		{
 			name:           "Should include WithStripMetadata when flag is true",
-			globalCfg:      GlobalConfig{StripMetadata: true},
+			appConfigCfg:   AppConfig{StripMetadata: true},
 			expectedLength: 1,
 		},
 		{
 			name:           "Should return empty slice when flag is false",
-			globalCfg:      GlobalConfig{StripMetadata: false},
+			appConfigCfg:   AppConfig{StripMetadata: false},
 			expectedLength: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			opts := buildGlobalOptions(tt.globalCfg)
+			opts := buildAppOptions(tt.appConfigCfg)
 			suite.Equal(tt.expectedLength, len(opts))
 		})
 	}
@@ -280,9 +280,9 @@ func (suite *ProcessingTestSuite) TestBuildGlobalOptions_ShouldReturnCorrectOpti
 func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCreateDirFails() {
 	suite.mockFS.On("CreateDir", "invalid_output").Return(errors.New("create dir error"))
 
-	global, opCfg := suite.defaultOperationConfigs()
-	global.OutputDir = "invalid_output"
-	out, err := resolveOutputDir(global, opCfg)
+	appConfig, opCfg := suite.defaultOperationConfigs()
+	appConfig.OutputDir = "invalid_output"
+	out, err := resolveOutputDir(appConfig, opCfg)
 
 	suite.ErrorContains(err, "create dir error")
 	suite.Empty(out)
@@ -291,10 +291,10 @@ func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCre
 func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnCustomDir_WhenProvidedAndCreated() {
 	suite.mockFS.On("CreateDir", "valid_output").Return(nil)
 
-	global, opCfg := suite.defaultOperationConfigs()
-	global.OutputDir = "valid_output"
+	appConfig, opCfg := suite.defaultOperationConfigs()
+	appConfig.OutputDir = "valid_output"
 
-	out, err := resolveOutputDir(global, opCfg)
+	out, err := resolveOutputDir(appConfig, opCfg)
 
 	suite.NoError(err)
 	suite.Equal("valid_output", out)
@@ -303,9 +303,9 @@ func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnCustomDir_Whe
 func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnSibling_WhenNoCustomDirProvided() {
 	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("input-suffix", nil)
 
-	global, opCfg := suite.defaultOperationConfigs()
+	appConfig, opCfg := suite.defaultOperationConfigs()
 	opCfg.OutputSuffix = "-suffix"
-	out, err := resolveOutputDir(global, opCfg)
+	out, err := resolveOutputDir(appConfig, opCfg)
 
 	suite.NoError(err)
 	suite.Equal("input-suffix", out)
@@ -314,9 +314,9 @@ func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnSibling_WhenN
 func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCreateSiblingDirFails() {
 	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("", errors.New("create sibling dir error"))
 
-	global, opCfg := suite.defaultOperationConfigs()
+	appConfig, opCfg := suite.defaultOperationConfigs()
 	opCfg.OutputSuffix = "-suffix"
-	out, err := resolveOutputDir(global, opCfg)
+	out, err := resolveOutputDir(appConfig, opCfg)
 
 	suite.ErrorContains(err, "create sibling dir error")
 	suite.Empty(out)
@@ -469,7 +469,7 @@ func BenchmarkHandleImageProcessing(b *testing.B) {
 	b.ResetTimer()
 
 	for range b.N {
-		err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, GlobalConfig{})
+		err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, AppConfig{})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -496,7 +496,7 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, GlobalConfig{})
+			err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, AppConfig{})
 			if err != nil {
 				b.Fatal(err)
 			}

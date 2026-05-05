@@ -44,7 +44,7 @@ func NewRootCmd() *cobra.Command {
 				return nil
 			}
 
-			cfg := loadGlobalConfig(cmd)
+			cfg := loadAppConfig(cmd)
 			if cfg.InputDir == "" {
 				return errors.New("required flag \"input\" (-i) not set")
 			}

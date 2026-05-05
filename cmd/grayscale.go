@@ -26,16 +26,16 @@ It can be useful for various image processing tasks, such as creating artistic e
 func runGrayscale(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		globalConfig := loadGlobalConfig(cmd)
+		appConfig := loadAppConfig(cmd)
 
-		return RunOperation(globalConfig, OperationConfig{
+		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
 			FileSystem:         fs,
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       "-grayscale",
 			ProgressBarMessage: "Creating grayscale images",
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithGrayscale())
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithGrayscale())
 			},
 		})
 	}

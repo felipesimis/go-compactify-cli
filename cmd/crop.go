@@ -68,9 +68,9 @@ func runCrop(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) 
 			return err
 		}
 		cmd.SilenceUsage = true
-		globalConfig := loadGlobalConfig(cmd)
+		appConfig := loadAppConfig(cmd)
 
-		return RunOperation(globalConfig, OperationConfig{
+		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
 			FileSystem:         fs,
 			Out:                cmd.OutOrStdout(),
@@ -79,7 +79,7 @@ func runCrop(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) 
 			ExtraParams:        CropParams{Width: width, Height: height, Gravity: gravity},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(CropParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithCrop(extraParams.Width, extraParams.Height, extraParams.Gravity))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithCrop(extraParams.Width, extraParams.Height, extraParams.Gravity))
 			},
 		})
 	}

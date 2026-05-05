@@ -55,9 +55,9 @@ func runResize(fs filesystem.FileSystem, processorFactory image.ProcessorFactory
 			return err
 		}
 		cmd.SilenceUsage = true
-		globalConfig := loadGlobalConfig(cmd)
+		appConfig := loadAppConfig(cmd)
 
-		return RunOperation(globalConfig, OperationConfig{
+		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
 			FileSystem:         fs,
 			Out:                cmd.OutOrStdout(),
@@ -66,7 +66,7 @@ func runResize(fs filesystem.FileSystem, processorFactory image.ProcessorFactory
 			ExtraParams:        ResizeParams{Width: width, Height: height},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ResizeParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithResize(extraParams.Width, extraParams.Height))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithResize(extraParams.Width, extraParams.Height))
 			},
 		})
 	}

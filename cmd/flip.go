@@ -26,16 +26,16 @@ It can be useful for various image processing tasks, such as creating reflection
 func runFlip(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		globalConfig := loadGlobalConfig(cmd)
+		appConfig := loadAppConfig(cmd)
 
-		return RunOperation(globalConfig, OperationConfig{
+		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
 			FileSystem:         fs,
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       "-flipped",
 			ProgressBarMessage: "Flipping images",
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithFlip())
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithFlip())
 			},
 		})
 	}

@@ -47,9 +47,9 @@ func runThumbnail(fs filesystem.FileSystem, processorFactory image.ProcessorFact
 			return err
 		}
 		cmd.SilenceUsage = true
-		globalConfig := loadGlobalConfig(cmd)
+		appConfig := loadAppConfig(cmd)
 
-		return RunOperation(globalConfig, OperationConfig{
+		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
 			FileSystem:         fs,
 			Out:                cmd.OutOrStdout(),
@@ -58,7 +58,7 @@ func runThumbnail(fs filesystem.FileSystem, processorFactory image.ProcessorFact
 			ExtraParams:        ThumbnailParams{Width: width},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ThumbnailParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithThumbnail(extraParams.Width))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithThumbnail(extraParams.Width))
 			},
 		})
 	}

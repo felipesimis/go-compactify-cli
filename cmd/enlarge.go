@@ -54,9 +54,9 @@ func runEnlarge(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			return err
 		}
 		cmd.SilenceUsage = true
-		globalConfig := loadGlobalConfig(cmd)
+		appConfig := loadAppConfig(cmd)
 
-		return RunOperation(globalConfig, OperationConfig{
+		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
 			FileSystem:         fs,
 			Out:                cmd.OutOrStdout(),
@@ -65,7 +65,7 @@ func runEnlarge(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			ExtraParams:        EnlargeParams{Width: width, Height: height},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(EnlargeParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithEnlarge(extraParams.Width, extraParams.Height))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithEnlarge(extraParams.Width, extraParams.Height))
 			},
 		})
 	}

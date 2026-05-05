@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type GlobalConfig struct {
+type AppConfig struct {
 	Concurrency   int
 	InputDir      string
 	OutputDir     string
@@ -12,14 +12,14 @@ type GlobalConfig struct {
 	StripMetadata bool
 }
 
-func loadGlobalConfig(cmd *cobra.Command) GlobalConfig {
+func loadAppConfig(cmd *cobra.Command) AppConfig {
 	concurrency, _ := cmd.Flags().GetInt("concurrency")
 	inputDir, _ := cmd.Flags().GetString("input")
 	outputDir, _ := cmd.Flags().GetString("output")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	stripMetadata, _ := cmd.Flags().GetBool("strip-metadata")
 
-	return GlobalConfig{
+	return AppConfig{
 		Concurrency:   concurrency,
 		InputDir:      inputDir,
 		OutputDir:     outputDir,
