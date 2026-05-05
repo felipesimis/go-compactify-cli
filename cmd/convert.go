@@ -15,8 +15,7 @@ import (
 )
 
 type ConvertParams struct {
-	Format  string
-	Quality int
+	Format string
 }
 
 func (c ConvertParams) ModifyOutputPath(originalPath, outputDir string) string {
@@ -76,12 +75,10 @@ func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       fmt.Sprintf("-converted.%s", format),
 			ProgressBarMessage: "Converting images",
-			ExtraParams:        ConvertParams{Format: format, Quality: appConfig.Quality},
+			ExtraParams:        ConvertParams{Format: format},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ConvertParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,
-					image.WithConvert(extraParams.Format),
-					image.WithQuality(extraParams.Quality))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithConvert(extraParams.Format))
 			},
 		})
 	}

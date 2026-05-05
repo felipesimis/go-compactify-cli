@@ -36,7 +36,9 @@ func NewRootCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			initConfig(cmd)
 
-			viper.BindPFlags(cmd.Flags())
+			if err := viper.BindPFlags(cmd.Flags()); err != nil {
+				return err
+			}
 
 			isHelp := cmd.Name() == "help" || cmd.Flags().Changed("help")
 			isInit := cmd.Name() == "init"
@@ -64,7 +66,9 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().Bool("dry-run", false, "Preview operations without modifying files")
 	cmd.PersistentFlags().Bool("strip-metadata", false, "Strip EXIF data for privacy (GPS, camera info) and reduced file size")
 
-	viper.BindPFlags(cmd.PersistentFlags())
+	if err := viper.BindPFlags(cmd.PersistentFlags()); err != nil {
+		fmt.Fprintf(cmd.ErrOrStderr(), "%s: %v\n", ui.Error("Error binding persistent flags"), err)
+	}
 
 	return cmd
 }

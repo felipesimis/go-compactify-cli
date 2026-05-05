@@ -169,9 +169,10 @@ func (suite *E2ETestSuite) TestCLI_ResizeCommand_ShouldExecuteCGOWithoutSegmenta
 
 	originalFile, err := os.Open(inputFiles[0])
 	suite.Require().NoError(err)
+	defer originalFile.Close()
+
 	originalImg, _, err := image.Decode(originalFile)
 	suite.Require().NoError(err)
-	originalFile.Close()
 
 	targetWidth, targetHeight := 100, 100
 	origBounds := originalImg.Bounds()

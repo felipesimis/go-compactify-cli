@@ -13,9 +13,8 @@ import (
 )
 
 type EnlargeParams struct {
-	Width   int
-	Height  int
-	Quality int
+	Width  int
+	Height int
 }
 
 func NewEnlargeCmd(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) *cobra.Command {
@@ -66,13 +65,11 @@ func runEnlarge(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       fmt.Sprintf("-enlarged-%dx%d", width, height),
 			ProgressBarMessage: "Enlarging images",
-			ExtraParams:        EnlargeParams{Width: width, Height: height, Quality: appConfig.Quality},
+			ExtraParams:        EnlargeParams{Width: width, Height: height},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(EnlargeParams)
 				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,
-					image.WithEnlarge(extraParams.Width, extraParams.Height),
-					image.WithQuality(appConfig.Quality),
-				)
+					image.WithEnlarge(extraParams.Width, extraParams.Height))
 			},
 		})
 	}

@@ -16,7 +16,6 @@ type CropParams struct {
 	Width   int
 	Height  int
 	Gravity image.Gravity
-	Quality int
 }
 
 func NewCropCmd(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) *cobra.Command {
@@ -79,13 +78,11 @@ func runCrop(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) 
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       fmt.Sprintf("-cropped_%dx%d", width, height),
 			ProgressBarMessage: "Cropping images",
-			ExtraParams:        CropParams{Width: width, Height: height, Gravity: gravity, Quality: appConfig.Quality},
+			ExtraParams:        CropParams{Width: width, Height: height, Gravity: gravity},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(CropParams)
 				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,
-					image.WithCrop(extraParams.Width, extraParams.Height, extraParams.Gravity),
-					image.WithQuality(appConfig.Quality),
-				)
+					image.WithCrop(extraParams.Width, extraParams.Height, extraParams.Gravity))
 			},
 		})
 	}
