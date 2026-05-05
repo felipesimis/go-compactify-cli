@@ -6,6 +6,8 @@ import (
 
 var ErrUnsupportedImageType = errors.New("unsupported image type")
 
+const DefaultQuality = 75
+
 type Gravity int
 
 const (
@@ -39,6 +41,7 @@ type domainOptions struct {
 	format         string
 	grayscale      bool
 	crop           bool
+	quality        int
 	gravity        Gravity
 	enlarge        bool
 	palette        bool
@@ -113,6 +116,12 @@ func WithLosslessCompress() ProcessOption {
 func WithStripMetadata() ProcessOption {
 	return func(o *domainOptions) {
 		o.stripMetadata = true
+	}
+}
+
+func WithQuality(quality int) ProcessOption {
+	return func(o *domainOptions) {
+		o.quality = quality
 	}
 }
 

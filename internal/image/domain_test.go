@@ -84,6 +84,11 @@ func TestProcessOptions_ShouldMutateDomainOptionsCorrectly(t *testing.T) {
 			option:   WithStripMetadata(),
 			expected: domainOptions{stripMetadata: true},
 		},
+		{
+			name:     "WithQuality should set quality value",
+			option:   WithQuality(85),
+			expected: domainOptions{quality: 85},
+		},
 	}
 
 	for _, tt := range tests {
