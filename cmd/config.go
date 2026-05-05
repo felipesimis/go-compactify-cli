@@ -10,6 +10,7 @@ type AppConfig struct {
 	OutputDir     string
 	DryRun        bool
 	StripMetadata bool
+	Quality       int
 }
 
 func loadAppConfig(cmd *cobra.Command) AppConfig {
@@ -18,6 +19,7 @@ func loadAppConfig(cmd *cobra.Command) AppConfig {
 	outputDir, _ := cmd.Flags().GetString("output")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	stripMetadata, _ := cmd.Flags().GetBool("strip-metadata")
+	quality, _ := cmd.Flags().GetInt("quality")
 
 	return AppConfig{
 		Concurrency:   concurrency,
@@ -25,5 +27,6 @@ func loadAppConfig(cmd *cobra.Command) AppConfig {
 		OutputDir:     outputDir,
 		DryRun:        dryRun,
 		StripMetadata: stripMetadata,
+		Quality:       quality,
 	}
 }

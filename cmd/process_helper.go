@@ -158,6 +158,9 @@ func buildAppOptions(appConfig AppConfig) []image.ProcessOption {
 	if appConfig.StripMetadata {
 		opts = append(opts, image.WithStripMetadata())
 	}
+	if appConfig.Quality > 0 {
+		opts = append(opts, image.WithQuality(appConfig.Quality))
+	}
 	return opts
 }
 

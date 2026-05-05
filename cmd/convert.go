@@ -15,7 +15,8 @@ import (
 )
 
 type ConvertParams struct {
-	Format string
+	Format  string
+	Quality int
 }
 
 func (c ConvertParams) ModifyOutputPath(originalPath, outputDir string) string {
@@ -48,6 +49,7 @@ and the images will be converted accordingly.`,
 	}
 
 	cmd.Flags().StringP("format", "f", "", `Desired format of the images. Available options: webp, jpeg, png`)
+	cmd.Flags().IntP("quality", "q", image.DefaultQuality, "Compression quality (1-100)")
 	cmd.MarkFlagRequired("format")
 
 	return cmd
@@ -57,9 +59,12 @@ func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		format, _ := cmd.Flags().GetString("format")
+		quality, _ := cmd.Flags().GetInt("quality")
 
 		formatValidation := &validation.FormatValidation{Format: format}
-		err := formatValidation.Validate()
+		qualityValidation := &validation.QualityValidation{Quality: quality}
+		validationComposite := validation.ValidationComposite{Validations: []validation.Validation{formatValidation, qualityValidation}}
+		err := validationComposite.Validate()
 		if err != nil {
 			return err
 		}
@@ -72,10 +77,12 @@ func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       fmt.Sprintf("-converted.%s", format),
 			ProgressBarMessage: "Converting images",
-			ExtraParams:        ConvertParams{Format: format},
+			ExtraParams:        ConvertParams{Format: format, Quality: quality},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ConvertParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithConvert(extraParams.Format))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,
+					image.WithConvert(extraParams.Format),
+					image.WithQuality(extraParams.Quality))
 			},
 		})
 	}
