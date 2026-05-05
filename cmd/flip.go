@@ -26,7 +26,7 @@ It can be useful for various image processing tasks, such as creating reflection
 func runFlip(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		appConfig := loadAppConfig(cmd)
+		appConfig := loadAppConfig()
 
 		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,

@@ -47,7 +47,7 @@ func runThumbnail(fs filesystem.FileSystem, processorFactory image.ProcessorFact
 			return err
 		}
 		cmd.SilenceUsage = true
-		appConfig := loadAppConfig(cmd)
+		appConfig := loadAppConfig()
 
 		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,

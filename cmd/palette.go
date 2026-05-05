@@ -25,7 +25,7 @@ It is useful for optimizing images for web use, creating artistic effects, and e
 func runPalette(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		appConfig := loadAppConfig(cmd)
+		appConfig := loadAppConfig()
 
 		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,

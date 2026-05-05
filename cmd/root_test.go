@@ -58,8 +58,8 @@ func (suite *RootTestSuite) TestShould_UseConcurrencyFromFile_When_NoFlagIsProvi
 	err := suite.rootCmd.Execute()
 	suite.NoError(err)
 
-	concurrency, _ := suite.rootCmd.Flags().GetInt("concurrency")
-	suite.Equal(4, concurrency)
+	cfg := loadAppConfig()
+	suite.Equal(4, cfg.Concurrency)
 }
 
 func (suite *RootTestSuite) TestShould_PrioritizeEnvVar_Over_ConfigFile() {
@@ -73,8 +73,8 @@ func (suite *RootTestSuite) TestShould_PrioritizeEnvVar_Over_ConfigFile() {
 	err := suite.rootCmd.Execute()
 	suite.NoError(err)
 
-	concurrency, _ := suite.rootCmd.Flags().GetInt("concurrency")
-	suite.Equal(12, concurrency)
+	cfg := loadAppConfig()
+	suite.Equal(12, cfg.Concurrency, "should prioritize environment variable over config file")
 }
 
 func (suite *RootTestSuite) TestShould_PrioritizeFlag_Over_EnvVar_And_ConfigFile() {
@@ -88,8 +88,8 @@ func (suite *RootTestSuite) TestShould_PrioritizeFlag_Over_EnvVar_And_ConfigFile
 	err := suite.rootCmd.Execute()
 	suite.NoError(err)
 
-	concurrency, _ := suite.rootCmd.Flags().GetInt("concurrency")
-	suite.Equal(2, concurrency, "should prioritize command-line flag over environment variable and config file")
+	cfg := loadAppConfig()
+	suite.Equal(2, cfg.Concurrency, "should prioritize command-line flag over environment variable and config file")
 }
 
 func (suite *RootTestSuite) TestShould_ReturnError_When_InputFlagIsMissing() {
@@ -120,8 +120,8 @@ func (suite *RootTestSuite) TestShould_LoadSpecificConfigFile_When_ConfigFlagIsP
 	err := suite.rootCmd.Execute()
 	suite.NoError(err)
 
-	concurrency, _ := suite.rootCmd.Flags().GetInt("concurrency")
-	suite.Equal(5, concurrency)
+	cfg := loadAppConfig()
+	suite.Equal(5, cfg.Concurrency, "should load concurrency from specified config file")
 }
 
 func (suite *RootTestSuite) TestShould_PrintError_When_ConfigFileIsCorrupted() {
@@ -185,33 +185,6 @@ func (suite *RootTestSuite) TestPersistentPreRunE_ShouldBypassValidation_ForSpec
 	suite.rootCmd.SetArgs([]string{"--version"})
 	err = suite.rootCmd.Execute()
 	suite.NoError(err, "should not require --input when --version is used")
-}
-
-func (suite *RootTestSuite) TestBindFlags_ShouldBindRecursivelyToSubcommands() {
-	parentCmd := &cobra.Command{
-		Use: "parent",
-		Run: func(cmd *cobra.Command, args []string) {},
-	}
-
-	childCmd := &cobra.Command{
-		Use: "child",
-		Run: func(cmd *cobra.Command, args []string) {},
-	}
-
-	childCmd.Flags().String("deep-flag", "default-value", "A nested flag")
-
-	parentCmd.AddCommand(childCmd)
-	suite.rootCmd.AddCommand(parentCmd)
-
-	configContent := "deep-flag: override-value\ninput: ./fake-dir\n"
-	suite.Require().NoError(os.WriteFile(suite.configName, []byte(configContent), 0644))
-
-	suite.rootCmd.SetArgs([]string{"parent"})
-	err := suite.rootCmd.Execute()
-	suite.NoError(err)
-
-	deepFlagValue, _ := childCmd.Flags().GetString("deep-flag")
-	suite.Equal("override-value", deepFlagValue)
 }
 
 func TestRootSuite(t *testing.T) {

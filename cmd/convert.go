@@ -12,6 +12,7 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
 	"github.com/felipesimis/go-compactify-cli/internal/validation"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type ConvertParams struct {
@@ -52,24 +53,25 @@ and the images will be converted accordingly.`,
 	cmd.Flags().IntP("quality", "q", image.DefaultQuality, "Compression quality (1-100)")
 	cmd.MarkFlagRequired("format")
 
+	viper.BindPFlag("quality", cmd.Flags().Lookup("quality"))
+
 	return cmd
 }
 
 func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		format, _ := cmd.Flags().GetString("format")
-		quality, _ := cmd.Flags().GetInt("quality")
+		appConfig := loadAppConfig()
 
+		format, _ := cmd.Flags().GetString("format")
 		formatValidation := &validation.FormatValidation{Format: format}
-		qualityValidation := &validation.QualityValidation{Quality: quality}
+		qualityValidation := &validation.QualityValidation{Quality: appConfig.Quality}
 		validationComposite := validation.ValidationComposite{Validations: []validation.Validation{formatValidation, qualityValidation}}
 		err := validationComposite.Validate()
 		if err != nil {
 			return err
 		}
 		cmd.SilenceUsage = true
-		appConfig := loadAppConfig(cmd)
 
 		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
@@ -77,7 +79,7 @@ func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       fmt.Sprintf("-converted.%s", format),
 			ProgressBarMessage: "Converting images",
-			ExtraParams:        ConvertParams{Format: format, Quality: quality},
+			ExtraParams:        ConvertParams{Format: format, Quality: appConfig.Quality},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ConvertParams)
 				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,

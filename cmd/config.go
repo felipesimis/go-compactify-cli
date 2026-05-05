@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type AppConfig struct {
@@ -13,20 +13,13 @@ type AppConfig struct {
 	Quality       int
 }
 
-func loadAppConfig(cmd *cobra.Command) AppConfig {
-	concurrency, _ := cmd.Flags().GetInt("concurrency")
-	inputDir, _ := cmd.Flags().GetString("input")
-	outputDir, _ := cmd.Flags().GetString("output")
-	dryRun, _ := cmd.Flags().GetBool("dry-run")
-	stripMetadata, _ := cmd.Flags().GetBool("strip-metadata")
-	quality, _ := cmd.Flags().GetInt("quality")
-
+func loadAppConfig() AppConfig {
 	return AppConfig{
-		Concurrency:   concurrency,
-		InputDir:      inputDir,
-		OutputDir:     outputDir,
-		DryRun:        dryRun,
-		StripMetadata: stripMetadata,
-		Quality:       quality,
+		Concurrency:   viper.GetInt("concurrency"),
+		InputDir:      viper.GetString("input"),
+		OutputDir:     viper.GetString("output"),
+		DryRun:        viper.GetBool("dry-run"),
+		StripMetadata: viper.GetBool("strip-metadata"),
+		Quality:       viper.GetInt("quality"),
 	}
 }

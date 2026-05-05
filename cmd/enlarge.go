@@ -54,7 +54,7 @@ func runEnlarge(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			return err
 		}
 		cmd.SilenceUsage = true
-		appConfig := loadAppConfig(cmd)
+		appConfig := loadAppConfig()
 
 		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,

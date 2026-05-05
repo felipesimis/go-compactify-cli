@@ -55,7 +55,7 @@ func runResize(fs filesystem.FileSystem, processorFactory image.ProcessorFactory
 			return err
 		}
 		cmd.SilenceUsage = true
-		appConfig := loadAppConfig(cmd)
+		appConfig := loadAppConfig()
 
 		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
