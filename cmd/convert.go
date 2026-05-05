@@ -75,7 +75,7 @@ func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			ExtraParams:        ConvertParams{Format: format},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ConvertParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, image.WithConvert(extraParams.Format))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithConvert(extraParams.Format))
 			},
 		})
 	}

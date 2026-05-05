@@ -214,6 +214,13 @@ func (suite *BimgImageTestSuite) TestProcess_ThumbnailShouldOverrideExplicitResi
 	suite.NotEqual(800, size.Width)
 }
 
+func (suite *BimgImageTestSuite) TestProcess_ShouldApplyStripMetadata_WhenOptionIsProvided() {
+	processedImg, err := suite.img.Process(WithStripMetadata())
+	suite.NoError(err)
+	suite.NotEmpty(processedImg)
+	suite.Less(len(processedImg), suite.originalLength)
+}
+
 func (suite *BimgImageTestSuite) TestMapStringToImageType_ShouldReturnError_WhenInputIsInvalid() {
 	result, err := mapStringToImageType("unknown")
 	suite.ErrorIs(err, ErrUnsupportedImageType)

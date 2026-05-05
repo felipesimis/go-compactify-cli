@@ -177,7 +177,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenConte
 	cancel()
 
 	stats, params := suite.defaultProcessingParams()
-	err := HandleImageProcessing(ctx, params, stats, nil, nil)
+	err := HandleImageProcessing(ctx, params, stats, nil, GlobalConfig{})
 
 	suite.ErrorIs(err, context.Canceled)
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
@@ -187,7 +187,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenOpenF
 	suite.mockFS.On("OpenFile", "test.jpg").Return(nil, errors.New("open error"))
 
 	stats, params := suite.defaultProcessingParams()
-	err := HandleImageProcessing(context.Background(), params, stats, nil, nil)
+	err := HandleImageProcessing(context.Background(), params, stats, nil, GlobalConfig{})
 
 	suite.ErrorContains(err, "open error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
@@ -197,7 +197,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenReadF
 	suite.mockFS.On("OpenFile", "test.jpg").Return(errorReader{}, nil)
 
 	stats, params := suite.defaultProcessingParams()
-	err := HandleImageProcessing(context.Background(), params, stats, nil, nil)
+	err := HandleImageProcessing(context.Background(), params, stats, nil, GlobalConfig{})
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "forced read error")
@@ -214,7 +214,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWrite
 		return &fakeProcessor{resultBytes: []byte("new-data"), err: nil}
 	}
 
-	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory)
+	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, GlobalConfig{})
 	suite.ErrorContains(err, "write error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
@@ -225,7 +225,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenProce
 	stats, params := suite.defaultProcessingParams()
 	fakeFactory := func([]byte) image.ImageProcessor { return &fakeProcessor{err: errors.New("processing error")} }
 
-	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory)
+	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, GlobalConfig{})
 	suite.ErrorContains(err, "processing error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
@@ -242,13 +242,39 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSucceed_WhenAl
 
 	fakeFactory := func([]byte) image.ImageProcessor { return &fakeProcessor{resultBytes: processedData} }
 
-	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory)
+	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, GlobalConfig{})
 
 	suite.NoError(err)
 	suite.Equal(uint32(1), stats.ProcessedImages.Load())
 	suite.Equal(uint32(0), stats.SkippedImages.Load())
 	suite.Equal(uint64(len(originalData)), stats.InitialSize.Load())
 	suite.Equal(uint64(len(processedData)), stats.FinalSize.Load())
+}
+
+func (suite *ProcessingTestSuite) TestBuildGlobalOptions_ShouldReturnCorrectOptions() {
+	tests := []struct {
+		name           string
+		globalCfg      GlobalConfig
+		expectedLength int
+	}{
+		{
+			name:           "Should include WithStripMetadata when flag is true",
+			globalCfg:      GlobalConfig{StripMetadata: true},
+			expectedLength: 1,
+		},
+		{
+			name:           "Should return empty slice when flag is false",
+			globalCfg:      GlobalConfig{StripMetadata: false},
+			expectedLength: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			opts := buildGlobalOptions(tt.globalCfg)
+			suite.Equal(tt.expectedLength, len(opts))
+		})
+	}
 }
 
 func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCreateDirFails() {
@@ -443,7 +469,7 @@ func BenchmarkHandleImageProcessing(b *testing.B) {
 	b.ResetTimer()
 
 	for range b.N {
-		err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory)
+		err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, GlobalConfig{})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -470,7 +496,7 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory)
+			err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, GlobalConfig{})
 			if err != nil {
 				b.Fatal(err)
 			}

@@ -24,6 +24,7 @@ Designed with **software engineering excellence** in mind, the project follows s
     - Intelligent resizing and cropping.
     - Grayscale, flipping, and color palette optimization.
     - Lossless compression.
+    - Privacy-first EXIF metadata stripping (removes GPS/Camera info while preserving color profiles).
 - 📊 **Detailed Analytics**: Execution summary with a side-by-side "Impact Dashboard" (Original vs. Processed).
 
 ---
@@ -45,6 +46,7 @@ Compactify follows a strict precedence order (from highest to lowest). This allo
 | `COMPACTIFY_INPUT` | `-i, --input` |
 | `COMPACTIFY_OUTPUT` | `-o, --output` |
 | `COMPACTIFY_DRY_RUN` | `--dry-run` |
+| `COMPACTIFY_STRIP_METADATA` | `--strip-metadata` |
 | `COMPACTIFY_CONFIG` | `--config` |
 
 ---

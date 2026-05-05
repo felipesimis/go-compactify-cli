@@ -100,6 +100,7 @@ func HandleImageProcessing(
 	params processing.FileProcessingParams,
 	stats *utils.ImageProcessingStats,
 	processorFactory image.ProcessorFactory,
+	globalCfg GlobalConfig,
 	opts ...image.ProcessOption,
 ) error {
 	select {
@@ -130,8 +131,11 @@ func HandleImageProcessing(
 	imgBytes := buf.Bytes()
 	stats.InitialSize.Add(uint64(len(imgBytes)))
 
+	finalOpts := append([]image.ProcessOption{}, opts...)
+	finalOpts = append(finalOpts, buildGlobalOptions(globalCfg)...)
+
 	processor := processorFactory(imgBytes)
-	newImg, err := processor.Process(opts...)
+	newImg, err := processor.Process(finalOpts...)
 	if err != nil {
 		stats.SkippedImages.Add(1)
 		return err
@@ -147,6 +151,14 @@ func HandleImageProcessing(
 	stats.FinalSize.Add(uint64(len(newImg)))
 	stats.ProcessedImages.Add(1)
 	return nil
+}
+
+func buildGlobalOptions(global GlobalConfig) []image.ProcessOption {
+	var opts []image.ProcessOption
+	if global.StripMetadata {
+		opts = append(opts, image.WithStripMetadata())
+	}
+	return opts
 }
 
 func resolveOutputDir(global GlobalConfig, config OperationConfig) (string, error) {

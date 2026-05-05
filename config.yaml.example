@@ -17,3 +17,9 @@
 # --- Security ---
 # If set to true, no files will be written to disk by default.
 # dry-run: false
+
+# --- Privacy & Security ---
+# Remove EXIF metadata (e.g., GPS coordinates, Camera model, timestamps) from images.
+# This ensures privacy before sharing files. As a side effect, it also reduces file size.
+# Note: This intentionally preserves ICC Color Profiles to maintain color accuracy.
+# strip-metadata: false

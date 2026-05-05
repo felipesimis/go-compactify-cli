@@ -66,7 +66,7 @@ func runResize(fs filesystem.FileSystem, processorFactory image.ProcessorFactory
 			ExtraParams:        ResizeParams{Width: width, Height: height},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ResizeParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, image.WithResize(extraParams.Width, extraParams.Height))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithResize(extraParams.Width, extraParams.Height))
 			},
 		})
 	}

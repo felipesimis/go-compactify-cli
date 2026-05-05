@@ -35,7 +35,7 @@ func runLossless(fs filesystem.FileSystem, processorFactory image.ProcessorFacto
 			OutputSuffix:       "-lossless",
 			ProgressBarMessage: "Applying lossless compression",
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-				return HandleImageProcessing(ctx, params, stats, processorFactory, image.WithLosslessCompress())
+				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithLosslessCompress())
 			},
 		})
 	}
