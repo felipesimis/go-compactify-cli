@@ -1,29 +1,25 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-type GlobalConfig struct {
+type AppConfig struct {
 	Concurrency   int
 	InputDir      string
 	OutputDir     string
 	DryRun        bool
 	StripMetadata bool
+	Quality       int
 }
 
-func loadGlobalConfig(cmd *cobra.Command) GlobalConfig {
-	concurrency, _ := cmd.Flags().GetInt("concurrency")
-	inputDir, _ := cmd.Flags().GetString("input")
-	outputDir, _ := cmd.Flags().GetString("output")
-	dryRun, _ := cmd.Flags().GetBool("dry-run")
-	stripMetadata, _ := cmd.Flags().GetBool("strip-metadata")
-
-	return GlobalConfig{
-		Concurrency:   concurrency,
-		InputDir:      inputDir,
-		OutputDir:     outputDir,
-		DryRun:        dryRun,
-		StripMetadata: stripMetadata,
+func loadAppConfig() AppConfig {
+	return AppConfig{
+		Concurrency:   viper.GetInt("concurrency"),
+		InputDir:      viper.GetString("input"),
+		OutputDir:     viper.GetString("output"),
+		DryRun:        viper.GetBool("dry-run"),
+		StripMetadata: viper.GetBool("strip-metadata"),
+		Quality:       viper.GetInt("quality"),
 	}
 }

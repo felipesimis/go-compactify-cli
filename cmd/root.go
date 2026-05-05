@@ -16,7 +16,6 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/ui"
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -37,6 +36,10 @@ func NewRootCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			initConfig(cmd)
 
+			if err := viper.BindPFlags(cmd.Flags()); err != nil {
+				return err
+			}
+
 			isHelp := cmd.Name() == "help" || cmd.Flags().Changed("help")
 			isInit := cmd.Name() == "init"
 			isVersion := cmd.Flags().Changed("version")
@@ -44,7 +47,7 @@ func NewRootCmd() *cobra.Command {
 				return nil
 			}
 
-			cfg := loadGlobalConfig(cmd)
+			cfg := loadAppConfig()
 			if cfg.InputDir == "" {
 				return errors.New("required flag \"input\" (-i) not set")
 			}
@@ -62,6 +65,10 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringP("output", "o", "", "Output directory (default: auto-creates sibling directory)")
 	cmd.PersistentFlags().Bool("dry-run", false, "Preview operations without modifying files")
 	cmd.PersistentFlags().Bool("strip-metadata", false, "Strip EXIF data for privacy (GPS, camera info) and reduced file size")
+
+	if err := viper.BindPFlags(cmd.PersistentFlags()); err != nil {
+		fmt.Fprintf(cmd.ErrOrStderr(), "%s: %v\n", ui.Error("Error binding persistent flags"), err)
+	}
 
 	return cmd
 }
@@ -121,23 +128,5 @@ func initConfig(cmd *cobra.Command) {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			fmt.Fprintf(cmd.OutOrStderr(), "%s: %v\n", ui.Error("Error reading config file"), err)
 		}
-	}
-
-	bindFlags(cmd)
-}
-
-func bindFlags(cmd *cobra.Command) {
-	bind := func(flag *pflag.Flag) {
-		if !flag.Changed && viper.IsSet(flag.Name) {
-			value := viper.Get(flag.Name)
-			flag.Value.Set(fmt.Sprintf("%v", value))
-		}
-	}
-
-	cmd.Flags().VisitAll(bind)
-	cmd.PersistentFlags().VisitAll(bind)
-
-	for _, child := range cmd.Commands() {
-		bindFlags(child)
 	}
 }

@@ -9,8 +9,10 @@ import (
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
 	"github.com/felipesimis/go-compactify-cli/internal/image"
+	"github.com/felipesimis/go-compactify-cli/internal/validation"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -61,6 +63,7 @@ func SetupTestConfig(createCmd func(filesystem.FileSystem, image.ProcessorFactor
 			f.Changed = false
 		})
 	}
+	viper.BindPFlags(cmd.Flags())
 
 	cmd.SetOut(outBuf)
 	cmd.SetErr(outBuf)
@@ -106,4 +109,27 @@ func AssertImageProcessed(suite *suite.Suite, config *TestConfig, expectedOutput
 	suite.Contains(output, expectedOutputDir)
 	expectedCountStr := fmt.Sprintf("%d images", len(filenames))
 	suite.Contains(output, expectedCountStr)
+}
+
+func AssertEncodingFlagsBehaviors(suite *suite.Suite, cmdFactory func(filesystem.FileSystem, image.ProcessorFactory) *cobra.Command, validBaseArgs ...string) {
+	cmd, _ := SetupTestConfig(cmdFactory)
+	flag := cmd.Flags().Lookup("quality")
+	suite.NotNil(flag, "Expected 'quality' flag to be injected by addEncodingFlags")
+	if flag != nil {
+		suite.Equal("75", flag.DefValue, "Expected default quality to be 75")
+	}
+
+	cmdParsing, _ := SetupTestConfig(cmdFactory)
+	argsParsing := append(validBaseArgs, "--quality", "abc")
+	cmdParsing.SetArgs(argsParsing)
+	errParsing := cmdParsing.Execute()
+	suite.Error(errParsing)
+	suite.Contains(errParsing.Error(), "invalid argument \"abc\" for \"-q, --quality\"")
+
+	cmdValidation, _ := SetupTestConfig(cmdFactory)
+	argsValidation := append(validBaseArgs, "--quality", "150")
+	cmdValidation.SetArgs(argsValidation)
+	errValidation := cmdValidation.Execute()
+	suite.Error(errValidation)
+	suite.ErrorIs(errValidation, validation.ErrInvalidQuality)
 }

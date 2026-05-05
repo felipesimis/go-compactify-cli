@@ -129,6 +129,10 @@ func (b *bimgImageWrapper) Process(opts ...ProcessOption) ([]byte, error) {
 		bimgOpts.Lossless = true
 	}
 
+	if domainOpts.quality > 0 && !domainOpts.lossless {
+		bimgOpts.Quality = domainOpts.quality
+	}
+
 	if domainOpts.stripMetadata {
 		bimgOpts.StripMetadata = true
 	}

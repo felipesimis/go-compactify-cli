@@ -5,40 +5,20 @@
 ### ⚠️ Breaking Changes
 - **Dimensions Validation**: Increased minimum allowed width and height from `1` to `10` pixels to ensure processing stability.
 
-### 🏗️ Architectural Refactor (Image Engine)
-- **Functional Options Pattern**: Completely overhauled the `ImageProcessor` interface to use a variadic functional options pattern (`Process(opts ...ProcessOption)`).
-- **Single-Pass CGO Execution**: Refactored the `bimg` wrapper to aggregate all transformation intents into a single `bimg.Options` struct, ensuring only one memory allocation and CGO call per image.
-- **Decoupled Command Logic**: CLI commands now only construct "intents" via `With*` constructors, delegating execution to the central orchestration helper.
-- **Test Infrastructure Modernization**: Replaced complex behavioral mocks with high-performance `FakeImageProcessor` stubs, eliminating `reflect`-based panics during variadic function comparisons.
-
-### 🚀 CI/CD & Infrastructure
-- **Pre-push Security Gate**: Configured a `pre-push` hook to execute the full End-to-End (E2E) suite, ensuring binary stability and CGO integration are verified before code is synchronized with the remote repository.
-- **Local Quality Gates**: Integrated Lefthook for pre-commit validation, ensuring `fmt`, `vet`, and `test` execution prior to code tracking.
-- **Commit Culture Enforcement**: Added strict Git hook validation for the Conventional Commits specification.
-- **Continuous Integration Pipeline**: Implemented a GitHub Actions workflow (`.github/workflows/ci.yaml`) to automatically validate code quality, unit tests, and cross-platform compilation (including CGO/libvips dependencies) on all pushes and pull requests.
-
 ### 🚀 Added & Changed
-- **Privacy & Security**: Introduced the global `--strip-metadata` flag and its corresponding environment/config mappings. This feature safely strips sensitive EXIF data (such as GPS coordinates and camera models) to protect user privacy while preserving ICC color profiles for color accuracy.
-- **Multi-layer Configuration Hierarchy**: Implemented a robust precedence engine where Flags > Environment Variables > Config File > Defaults. This ensures maximum flexibility for local development and CI/CD environments.
-- **Environment Variable Mapping**: Integrated automatic mapping for all global settings using the COMPACTIFY_ prefix (e.g., COMPACTIFY_CONCURRENCY).
-- **Resilient Versioning**: Added intelligent version string sanitization that handles both v-prefixed tags and raw version strings, preventing redundant visual prefixes in the UI.
-- **Performance UX**: Added automated warnings when concurrency levels exceed safe hardware limits ($2 \times \text{CPU cores}$), preventing system instability.
+- **Standardized Encoding Control**: Added the `--quality` (`-q`) flag to all commands that perform lossy image re-encoding (e.g., `crop`, `resize`, `convert`, `flip`, `grayscale`, `palette`, `thumbnail`). This gives the user explicit control over output quality and prevents silent image degradation.
+- **Multi-layer Configuration**: Implemented a robust precedence engine where Flags > Environment Variables > Config File > Defaults. This ensures maximum flexibility for local development and CI/CD environments.
 - **Config Initialization**: Added `init` command (with `initialize` and `config` aliases) to generate a default `config.yaml` file, simplifying global settings management.
 - **Overwrite Protection**: Implemented a security check in the `init` command that prevents accidental overwriting of existing configurations unless the `--force` (`-f`) flag is provided.
+- **Environment Variable Mapping**: Integrated automatic mapping for all global settings using the `COMPACTIFY_` prefix (e.g., `COMPACTIFY_CONCURRENCY`, `COMPACTIFY_QUALITY`).
+- **Privacy & Security**: Introduced the global `--strip-metadata` flag. This feature safely strips sensitive EXIF data (such as GPS coordinates and camera models) to protect user privacy while preserving ICC color profiles for color accuracy.
+- **Performance UX**: Added automated warnings when concurrency levels exceed safe hardware limits ($2 \times \text{CPU cores}$), preventing system instability.
 - **Standardized Success Feedback**: Integrated a new `Success` component in the UI package to provide consistent, high-fidelity visual confirmation for CLI operations.
+- **Resilient Versioning**: Added intelligent version string sanitization that handles both v-prefixed tags and raw version strings, preventing redundant visual prefixes in the UI.
 
-### 🛠 Engineering & Maintenance
-- **End-to-End (E2E) Integration Testing**: Established a black-box E2E testing pipeline (`test/e2e`) that compiles the native binary and validates the full command lifecycle—from flag parsing to actual filesystem `I/O` operations—ensuring the compiled `CGO` binary functions flawlessly with real image data.
-- **Command Architecture Overhaul**: Refactored the entire CLI command layer to implement strict Dependency Injection. Commands no longer rely on global processor instantiation, enabling highly decoupled and testable orchestration.
-- **Automated Mock Lifecycle**: Centralized mock validation using the `TearDownTest` hook across packages, eliminating boilerplate assertions and preventing unverified mock expectations.
-- **Deterministic I/O Testing**: Injected `io.Writer` interfaces across the operation handlers to capture standard output, enabling 100% test coverage of CLI orchestration without polluting the console.
-- **Path Resolution Hardening**: Added comprehensive edge-case testing for output directory resolution, fixing a path relative calculation issue and ensuring correct fallback behaviors when modifiers are not present.
-- **Factory Pattern Implementation**: Extracted the `ProcessorFactory` into the domain layer to enforce clean architectural boundaries between the image processing engine and the CLI routing logic.
-- **Full Root Orchestration Coverage**: Achieved 100% logic coverage for cmd/root.go, including edge cases for corrupted configurations and missing required flags.
-- **I/O Dependency Injection**: Refactored the root command to use OutOrStderr() and ExecuteContext, eliminating global state dependencies and enabling 100% thread-safe integration testing.
-- **Strategic Test Interception**: Implemented buffer-based testing for standard streams.
-- **Integration Test Suite**: Achieved 100% logic and interface coverage for the `init` command using `testify/suite`, including validation of filesystem edge cases and Cobra command orchestration.
-- **Theme Harmonization**: Refactored UI color constants (e.g., `colorErrorBorder`) to ensure a symmetrical and maintainable naming convention across the theme package.
+### 🛠 Performance & Stability
+- **Single-Pass CGO Execution**: Refactored the internal engine to aggregate all transformation intents into a single options struct, ensuring only one memory allocation and CGO call per image pipeline, significantly reducing memory footprint.
+- **Path Resolution Hardening**: Fixed a path relative calculation issue and ensured correct fallback behaviors when modifiers are not present.
 
 ## [1.5.0] - 2026-04-28
 

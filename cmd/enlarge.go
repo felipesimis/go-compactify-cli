@@ -38,6 +38,7 @@ and the image will be enlarged accordingly, keeping its original aspect ratio.`,
 	cmd.Flags().IntP("height", "H", 0, "Desired height of the image")
 	cmd.MarkFlagRequired("width")
 	cmd.MarkFlagRequired("height")
+	addEncodingFlags(cmd)
 
 	return cmd
 }
@@ -45,18 +46,20 @@ and the image will be enlarged accordingly, keeping its original aspect ratio.`,
 func runEnlarge(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		appConfig := loadAppConfig()
 
 		width, _ := cmd.Flags().GetInt("width")
 		height, _ := cmd.Flags().GetInt("height")
-		dimensionValidation := &validation.DimensionsValidation{Width: width, Height: height}
-		err := dimensionValidation.Validate()
-		if err != nil {
+		validationComposite := validation.ValidationComposite{Validations: []validation.Validation{
+			&validation.DimensionsValidation{Width: width, Height: height},
+			&validation.QualityValidation{Quality: appConfig.Quality},
+		}}
+		if err := validationComposite.Validate(); err != nil {
 			return err
 		}
 		cmd.SilenceUsage = true
-		globalConfig := loadGlobalConfig(cmd)
 
-		return RunOperation(globalConfig, OperationConfig{
+		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
 			FileSystem:         fs,
 			Out:                cmd.OutOrStdout(),
@@ -65,7 +68,8 @@ func runEnlarge(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			ExtraParams:        EnlargeParams{Width: width, Height: height},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(EnlargeParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithEnlarge(extraParams.Width, extraParams.Height))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,
+					image.WithEnlarge(extraParams.Width, extraParams.Height))
 			},
 		})
 	}

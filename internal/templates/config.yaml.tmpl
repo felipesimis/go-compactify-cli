@@ -2,17 +2,29 @@
 # This file allows you to define global patterns for the CLI.
 # Flags passed directly on the command line will always have priority over these values.
 
-# Number of concurrent operations (Default: number of system CPUs)
+# --- Performance ---
+# Define the number of concurrent workers.
+# (Default: number of system CPUs)
 concurrency: %d
 
-# Default input directory (Commented out to prevent accidental runs)
-# input: "./images"
+# --- Processing ---
+# Compression quality for lossy operations like crop, resize, and convert (1-100).
+# Provides a standard balance between file size and visual fidelity.
+# (Default: 75)
+# quality: 75
 
-# Default output directory
+# --- Path (Optional) ---
+# CAUTION: If you set these paths, they will override the default behavior of using 
+# the current working directory for both input and output.
+# input: "./images"
 # output: "./compacted"
 
-# Execute without writing changes to disk
+# --- Security ---
+# Execute without writing changes to disk by default.
 dry-run: false
 
+# --- Privacy & Security ---
 # Remove EXIF metadata (e.g., GPS coordinates, Camera model, timestamps) from images.
+# This ensures privacy before sharing files and reduces file size.
+# Note: This preserves ICC Color Profiles to maintain color accuracy.
 # strip-metadata: false

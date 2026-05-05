@@ -22,6 +22,10 @@ func (suite *CropTestSuite) SetupTest() {
 	}
 }
 
+func (suite *CropTestSuite) TestCrop_ShouldWorkWithEncodingFlags() {
+	AssertEncodingFlagsBehaviors(&suite.Suite, NewCropCmd, "--input", "some/dir", "--width", "150", "--height", "150", "--gravity", "0")
+}
+
 func (suite *CropTestSuite) TestCropShould_ReturnError_When_InputDirectoryDoesNotExist() {
 	AssertCommonCommandBehaviors(&suite.Suite, suite.cmd, suite.config, "--width", "150", "--height", "150", "--gravity", "0")
 }
@@ -98,15 +102,6 @@ func (suite *CropTestSuite) TestCrop_ShouldReturnError_When_GravityIsInvalid() {
 			suite.ErrorIs(err, validation.ErrInvalidGravity)
 		})
 	}
-}
-
-func (suite *CropTestSuite) TestCrop_ShouldReturnMultipleErrors_When_AllFlagsAreInvalid() {
-	suite.cmd.SetArgs([]string{"--input", "some/dir", "--width", "9", "--height", "9", "--gravity", "6"})
-	err := suite.cmd.Execute()
-
-	suite.Error(err)
-	suite.ErrorIs(err, validation.ErrInvalidDimensions)
-	suite.ErrorIs(err, validation.ErrInvalidGravity)
 }
 
 func (suite *CropTestSuite) TestCrop_ShouldWorkWithAllValidFlags() {

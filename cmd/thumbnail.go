@@ -34,22 +34,26 @@ This command allows you to generate smaller versions of images, which can be use
 	cmd.Flags().IntP("width", "w", 0, "Desired width of the thumbnail")
 	cmd.MarkFlagRequired("width")
 
+	addEncodingFlags(cmd)
 	return cmd
 }
 
 func runThumbnail(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		appConfig := loadAppConfig()
+
 		width, _ := cmd.Flags().GetInt("width")
-		dimensionValidation := &validation.WidthValidation{Width: width, MinWidth: 50, MaxWidth: 1024}
-		err := dimensionValidation.Validate()
-		if err != nil {
+		validationComposite := validation.ValidationComposite{Validations: []validation.Validation{
+			&validation.WidthValidation{Width: width, MinWidth: 50, MaxWidth: 1024},
+			&validation.QualityValidation{Quality: appConfig.Quality},
+		}}
+		if err := validationComposite.Validate(); err != nil {
 			return err
 		}
 		cmd.SilenceUsage = true
-		globalConfig := loadGlobalConfig(cmd)
 
-		return RunOperation(globalConfig, OperationConfig{
+		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
 			FileSystem:         fs,
 			Out:                cmd.OutOrStdout(),
@@ -58,7 +62,7 @@ func runThumbnail(fs filesystem.FileSystem, processorFactory image.ProcessorFact
 			ExtraParams:        ThumbnailParams{Width: width},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ThumbnailParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithThumbnail(extraParams.Width))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithThumbnail(extraParams.Width))
 			},
 		})
 	}

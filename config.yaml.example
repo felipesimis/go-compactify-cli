@@ -1,25 +1,30 @@
-# Compactify Configuration Example
-# Rename this file to config.yaml to activate.
+# Compactify Configuration
+# This file allows you to define global patterns for the CLI.
+# Flags passed directly on the command line will always have priority over these values.
 
 # --- Performance ---
 # Define the number of concurrent workers.
-# The default is the number of logical CPUs on the system.
-# concurrency: 4
+# (Default: number of system CPUs)
+concurrency: 4
+
+# --- Processing ---
+# Compression quality for lossy operations like crop, resize, and convert (1-100).
+# Provides a standard balance between file size and visual fidelity.
+# (Default: 75)
+# quality: 75
 
 # --- Path (Optional) ---
-# CAUTION: If you set these paths, they will override the default behavior of using the current working directory 
-# for both input and output. This means that all commands will use these paths by default, unless you explicitly use 
-# flags to specify different paths.
-
-# input: "~/images"
+# CAUTION: If you set these paths, they will override the default behavior of using 
+# the current working directory for both input and output.
+# input: "./images"
 # output: "./transformed"
 
 # --- Security ---
-# If set to true, no files will be written to disk by default.
-# dry-run: false
+# Execute without writing changes to disk by default.
+dry-run: false
 
 # --- Privacy & Security ---
 # Remove EXIF metadata (e.g., GPS coordinates, Camera model, timestamps) from images.
-# This ensures privacy before sharing files. As a side effect, it also reduces file size.
-# Note: This intentionally preserves ICC Color Profiles to maintain color accuracy.
+# This ensures privacy before sharing files and reduces file size.
+# Note: This preserves ICC Color Profiles to maintain color accuracy.
 # strip-metadata: false

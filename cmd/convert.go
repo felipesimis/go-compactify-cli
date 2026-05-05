@@ -49,6 +49,7 @@ and the images will be converted accordingly.`,
 
 	cmd.Flags().StringP("format", "f", "", `Desired format of the images. Available options: webp, jpeg, png`)
 	cmd.MarkFlagRequired("format")
+	addEncodingFlags(cmd)
 
 	return cmd
 }
@@ -56,17 +57,19 @@ and the images will be converted accordingly.`,
 func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		format, _ := cmd.Flags().GetString("format")
+		appConfig := loadAppConfig()
 
-		formatValidation := &validation.FormatValidation{Format: format}
-		err := formatValidation.Validate()
-		if err != nil {
+		format, _ := cmd.Flags().GetString("format")
+		validationComposite := validation.ValidationComposite{Validations: []validation.Validation{
+			&validation.FormatValidation{Format: format},
+			&validation.QualityValidation{Quality: appConfig.Quality},
+		}}
+		if err := validationComposite.Validate(); err != nil {
 			return err
 		}
 		cmd.SilenceUsage = true
-		globalConfig := loadGlobalConfig(cmd)
 
-		return RunOperation(globalConfig, OperationConfig{
+		return RunOperation(appConfig, OperationConfig{
 			Ctx:                ctx,
 			FileSystem:         fs,
 			Out:                cmd.OutOrStdout(),
@@ -75,7 +78,7 @@ func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			ExtraParams:        ConvertParams{Format: format},
 			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
 				extraParams := params.ExtraParams.(ConvertParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, globalConfig, image.WithConvert(extraParams.Format))
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithConvert(extraParams.Format))
 			},
 		})
 	}
