@@ -4,8 +4,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/felipesimis/go-compactify-cli/internal/utils"
 )
 
 type FileReader interface {
@@ -32,8 +30,10 @@ type File interface {
 }
 
 type FileInfo struct {
-	Path string
-	Size int64
+	Path    string
+	RelPath string
+	Size    int64
+	IsDir   bool
 }
 
 type OSOperations interface {
@@ -60,7 +60,7 @@ func NewFileSystem() FileSystem {
 func (fs *FileSystemWrapper) ReadDir(path string) ([]FileInfo, error) {
 	dir, err := fs.os.Open(path)
 	if err != nil {
-		return nil, &ErrOpenDir{Err: err}
+		return nil, &ErrOpenDir{Path: path, Err: err}
 	}
 	defer dir.Close()
 
@@ -75,12 +75,12 @@ func (fs *FileSystemWrapper) readDir(dir Dir, path string) ([]FileInfo, error) {
 
 	var files []FileInfo
 	for _, fi := range fileInfos {
-		if !fi.IsDir() && utils.IsValidImage(fi.Name()) {
-			files = append(files, FileInfo{
-				Path: filepath.Join(path, fi.Name()),
-				Size: fi.Size(),
-			})
-		}
+		files = append(files, FileInfo{
+			Path:    filepath.Join(path, fi.Name()),
+			RelPath: fi.Name(),
+			Size:    fi.Size(),
+			IsDir:   fi.IsDir(),
+		})
 	}
 	return files, nil
 }
@@ -124,7 +124,7 @@ func (fs *FileSystemWrapper) CreateSiblingDir(path, suffix string) (string, erro
 	newDir := filepath.Join(parentDir, filepath.Base(path)+suffix)
 	err := fs.os.Mkdir(newDir, os.ModePerm)
 	if err != nil {
-		return "", &ErrCreateSiblingDir{Err: err}
+		return "", &ErrCreateSiblingDir{Path: path, Err: err}
 	}
 	return newDir, nil
 }
@@ -154,17 +154,31 @@ func (fs *FileSystemWrapper) WriteFile(name string, data []byte) error {
 }
 
 func (fs *FileSystemWrapper) Walk(root string, walkFn func(path string, info FileInfo) error) error {
-	return fs.os.Walk(root, func(path string, d os.DirEntry, err error) error {
+	err := fs.os.Walk(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() && utils.IsValidImage(d.Name()) {
-			info, err := d.Info()
-			if err != nil {
-				return err
-			}
-			return walkFn(path, FileInfo{Path: path, Size: info.Size()})
+
+		relPath, err := filepath.Rel(root, path)
+		if err != nil {
+			return &ErrRelPath{Root: root, Target: path, Err: err}
 		}
-		return nil
+
+		info, err := d.Info()
+		if err != nil {
+			return &ErrFileInfo{Path: path, Err: err}
+		}
+
+		return walkFn(path, FileInfo{
+			Path:    path,
+			RelPath: relPath,
+			Size:    info.Size(),
+			IsDir:   d.IsDir(),
+		})
 	})
+
+	if err != nil {
+		return &ErrWalk{Path: root, Err: err}
+	}
+	return nil
 }
