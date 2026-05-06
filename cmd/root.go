@@ -65,6 +65,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringP("output", "o", "", "Output directory (default: auto-creates sibling directory)")
 	cmd.PersistentFlags().Bool("dry-run", false, "Preview operations without modifying files")
 	cmd.PersistentFlags().Bool("strip-metadata", false, "Strip EXIF data for privacy (GPS, camera info) and reduced file size")
+	cmd.PersistentFlags().BoolP("recursive", "r", false, "Recursively process images in subdirectories and mirror folder structure")
 
 	if err := viper.BindPFlags(cmd.PersistentFlags()); err != nil {
 		fmt.Fprintf(cmd.ErrOrStderr(), "%s: %v\n", ui.Error("Error binding persistent flags"), err)
