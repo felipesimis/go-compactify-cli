@@ -28,7 +28,7 @@ var bufferPool = sync.Pool{
 }
 
 type OutputPathModifier interface {
-	ModifyOutputPath(originalPath, outputDir string) string
+	ModifyOutputPath(relPath, outputDir string) string
 }
 
 type OperationConfig struct {
@@ -44,22 +44,27 @@ type OperationConfig struct {
 func RunOperation(app AppConfig, config OperationConfig) error {
 	if app.DryRun {
 		config.FileSystem = filesystem.NewDryRunFileSystem(config.FileSystem)
-
 		fmt.Fprintln(config.Out, ui.Warn("DRY-RUN MODE: No files will be modified or created on disk."))
 	}
 
-	files, err := config.FileSystem.ReadDir(app.InputDir)
+	finalOutputDir, err := resolveOutputDir(app, config)
+	if err != nil {
+		return err
+	}
+
+	if app.Recursive {
+		fmt.Fprintln(config.Out, fmt.Sprintf("🔍 Analyzing directories recursively in %s...", app.InputDir))
+	} else {
+		fmt.Fprintln(config.Out, fmt.Sprintf("🔍 Analyzing files in %s...", app.InputDir))
+	}
+
+	files, err := processing.DiscoverAndPrepare(config.FileSystem, app.InputDir, finalOutputDir, app.Recursive)
 	if err != nil {
 		return err
 	}
 	if len(files) == 0 {
 		fmt.Fprintln(config.Out, ui.Warn(fmt.Sprintf("No files found in directory: %s", app.InputDir)))
 		return nil
-	}
-
-	finalOutputDir, err := resolveOutputDir(app, config)
-	if err != nil {
-		return err
 	}
 
 	stats := &utils.ImageProcessingStats{}
@@ -141,7 +146,7 @@ func HandleImageProcessing(
 		return err
 	}
 
-	outputPath := determineOutputPath(params)
+	outputPath := resolveImageDestination(params)
 	err = params.FS.WriteFile(outputPath, newImg)
 	if err != nil {
 		stats.SkippedImages.Add(1)
@@ -174,17 +179,17 @@ func resolveOutputDir(appConfig AppConfig, config OperationConfig) (string, erro
 	return config.FileSystem.CreateSiblingDir(appConfig.InputDir, config.OutputSuffix)
 }
 
-func determineOutputPath(params processing.FileProcessingParams) string {
+func resolveImageDestination(params processing.FileProcessingParams) string {
+	relPath := params.File.RelPath
+	if relPath == "" {
+		relPath = filepath.Base(params.File.Path)
+	}
+
 	if modifier, ok := params.ExtraParams.(OutputPathModifier); ok {
-		return modifier.ModifyOutputPath(params.File.Path, params.OutputDir)
+		return modifier.ModifyOutputPath(relPath, params.OutputDir)
 	}
 
-	relativePath, err := filepath.Rel(params.InputDir, params.File.Path)
-	if err != nil {
-		relativePath = filepath.Base(params.File.Path)
-	}
-
-	return utils.BuildOutputPath(params.OutputDir, relativePath)
+	return utils.BuildOutputPath(params.OutputDir, relPath)
 }
 
 func RenderProcessSummary(r *utils.Result) string {

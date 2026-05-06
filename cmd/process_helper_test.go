@@ -53,6 +53,14 @@ func (m *mockHelperFS) ReadDir(path string) ([]filesystem.FileInfo, error) {
 	return args.Get(0).([]filesystem.FileInfo), args.Error(1)
 }
 
+func (m *mockHelperFS) Walk(root string, walkFn func(path string, info filesystem.FileInfo) error) error {
+	args := m.Called(root, walkFn)
+	if fn, ok := args.Get(0).(func(string, func(string, filesystem.FileInfo) error) error); ok {
+		return fn(root, walkFn)
+	}
+	return args.Error(0)
+}
+
 type errorReader struct{}
 
 func (e errorReader) Read(p []byte) (n int, err error) { return 0, errors.New("forced read error") }
@@ -129,7 +137,8 @@ func (suite *ProcessingTestSuite) TestRunOperation_ShouldWrapFileSystemAndPrintW
 
 func (suite *ProcessingTestSuite) TestRunOperation_ShouldReturnError_WhenReadDirFails() {
 	expectedErr := errors.New("directory does not exist")
-	suite.mockFS.On("ReadDir", "input").Return(nil, expectedErr)
+	suite.mockFS.On("CreateSiblingDir", "input", "").Return("input-suffix", nil).Once()
+	suite.mockFS.On("ReadDir", "input").Return(nil, expectedErr).Once()
 
 	appConfig, opCfg := suite.defaultOperationConfigs()
 	err := RunOperation(appConfig, opCfg)
@@ -138,9 +147,6 @@ func (suite *ProcessingTestSuite) TestRunOperation_ShouldReturnError_WhenReadDir
 }
 
 func (suite *ProcessingTestSuite) TestRunOperation_ShouldReturnError_WhenOutputDirResolutionFails() {
-	suite.mockFS.On("ReadDir", "input").Return([]filesystem.FileInfo{
-		{Path: "/input/test.jpg", Size: 100},
-	}, nil)
 	expectedErr := errors.New("permission denied")
 	suite.mockFS.On("CreateDir", "/forbidden_output").Return(expectedErr)
 
@@ -153,7 +159,7 @@ func (suite *ProcessingTestSuite) TestRunOperation_ShouldReturnError_WhenOutputD
 }
 
 func (suite *ProcessingTestSuite) TestRunOperation_ShouldSucceed_WhenValidInputs() {
-	suite.mockFS.On("ReadDir", "input").Return([]filesystem.FileInfo{{Path: "input/test.jpg", Size: 100}}, nil)
+	suite.mockFS.On("ReadDir", "input").Return([]filesystem.FileInfo{{Path: "input/test.jpg", RelPath: "test.jpg", Size: 100, IsDir: false}}, nil)
 	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("input-suffix", nil)
 
 	out := new(bytes.Buffer)
@@ -322,43 +328,43 @@ func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCre
 	suite.Empty(out)
 }
 
-func (suite *ProcessingTestSuite) TestDetermineOutputPath_ShouldUseModifier_WhenProvided() {
+func (suite *ProcessingTestSuite) TestResolveImageDestination_ShouldUseModifier_WhenProvided() {
 	mockModifier := new(mockPathModifier)
 	expectedPath := "custom_output_path.png"
-	mockModifier.On("ModifyOutputPath", "/input/original.jpg", "/output").Return(expectedPath)
+	mockModifier.On("ModifyOutputPath", "original.jpg", "/output").Return(expectedPath)
 
 	params := processing.FileProcessingParams{
-		File:        filesystem.FileInfo{Path: "/input/original.jpg"},
+		File:        filesystem.FileInfo{Path: "/input/original.jpg", RelPath: "original.jpg"},
 		OutputDir:   "/output",
 		ExtraParams: mockModifier,
 	}
 
-	result := determineOutputPath(params)
+	result := resolveImageDestination(params)
 
 	suite.Equal(expectedPath, result)
 }
 
-func (suite *ProcessingTestSuite) TestDetermineOutputPath_ShouldFallbackToDefault_WhenInterfaceNotImplemented() {
+func (suite *ProcessingTestSuite) TestResolveImageDestination_ShouldFallbackToDefault_WhenInterfaceNotImplemented() {
 	params := processing.FileProcessingParams{
 		InputDir:  "/base/input",
-		File:      filesystem.FileInfo{Path: "/base/input/subfolder/test.jpg"},
+		File:      filesystem.FileInfo{Path: "/base/input/subfolder/test.jpg", RelPath: "subfolder/test.jpg"},
 		OutputDir: "/base/output",
 	}
 
-	result := determineOutputPath(params)
+	result := resolveImageDestination(params)
 
 	expectedPath := filepath.Join("/base/output", "subfolder", "test.jpg")
 	suite.Equal(expectedPath, result)
 }
 
-func (suite *ProcessingTestSuite) TestDetermineOutputPath_ShouldFallbackToBase_WhenRelFails() {
+func (suite *ProcessingTestSuite) TestResolveImageDestination_ShouldFallbackToBase_WhenRelFails() {
 	params := processing.FileProcessingParams{
 		InputDir:  "/base/input",
-		File:      filesystem.FileInfo{Path: "base/../test.jpg"},
+		File:      filesystem.FileInfo{Path: "base/../test.jpg", RelPath: ""},
 		OutputDir: "/base/output",
 	}
 
-	result := determineOutputPath(params)
+	result := resolveImageDestination(params)
 
 	expectedPath := filepath.Join("/base/output", "test.jpg")
 	suite.Equal(expectedPath, result)
