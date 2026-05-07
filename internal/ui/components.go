@@ -28,6 +28,10 @@ func Success(message string) string {
 	return renderCallout("✅", message, colorSuccessBorder, colorSuccessText)
 }
 
+func Info(message string) string {
+	return renderCallout("ℹ️", message, colorInfoBorder, colorInfoText)
+}
+
 type Item struct {
 	Label         string
 	Value         string

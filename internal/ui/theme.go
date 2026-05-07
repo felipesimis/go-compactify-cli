@@ -19,6 +19,9 @@ var (
 	colorSuccessBorder = lipgloss.Color("#10B981")
 	colorSuccessText   = lipgloss.Color("#F0FDF4")
 
+	colorInfoBorder = lipgloss.Color("#3B82F6")
+	colorInfoText   = lipgloss.Color("#EFF6FF")
+
 	styleCalloutBase = lipgloss.NewStyle().
 				Border(lipgloss.ThickBorder(), false, false, false, true).
 				Padding(0, 2).
