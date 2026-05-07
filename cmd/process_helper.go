@@ -47,7 +47,7 @@ func RunOperation(app AppConfig, config OperationConfig) error {
 		fmt.Fprintln(config.Out, ui.Warn("DRY-RUN MODE: No files will be modified or created on disk."))
 	}
 
-	finalOutputDir, err := resolveOutputDir(app, config)
+	outputRootDir, err := resolveRootOutputDir(app, config)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func RunOperation(app AppConfig, config OperationConfig) error {
 		fmt.Fprintln(config.Out, ui.Info(fmt.Sprintf("Analyzing files in %s ...", app.InputDir)))
 	}
 
-	files, err := processing.DiscoverAndPrepare(config.FileSystem, app.InputDir, finalOutputDir, app.Recursive)
+	files, err := processing.DiscoverAndPrepare(config.FileSystem, app.InputDir, outputRootDir, app.Recursive)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func RunOperation(app AppConfig, config OperationConfig) error {
 		Files:         files,
 		FS:            config.FileSystem,
 		InputDir:      app.InputDir,
-		OutputDir:     finalOutputDir,
+		OutputDir:     outputRootDir,
 		ProgressBar:   progressBar,
 		ExtraParams:   config.ExtraParams,
 		ProcessorFunc: wrappedProcessor,
@@ -90,7 +90,7 @@ func RunOperation(app AppConfig, config OperationConfig) error {
 	resultBuilder.SetTotalImages(totalImages).
 		SetSkippedImages(stats.SkippedImages.Load()).
 		SetProcessedImages(stats.ProcessedImages.Load()).
-		SetOutputDirectory(finalOutputDir).
+		SetOutputDirectory(outputRootDir).
 		SetOriginalBytes(stats.InitialSize.Load()).
 		SetProcessedBytes(stats.FinalSize.Load()).
 		SetErrors(processErrors)
@@ -169,7 +169,7 @@ func buildAppOptions(appConfig AppConfig) []image.ProcessOption {
 	return opts
 }
 
-func resolveOutputDir(appConfig AppConfig, config OperationConfig) (string, error) {
+func resolveRootOutputDir(appConfig AppConfig, config OperationConfig) (string, error) {
 	if appConfig.OutputDir != "" {
 		if err := config.FileSystem.CreateDir(appConfig.OutputDir); err != nil {
 			return "", err

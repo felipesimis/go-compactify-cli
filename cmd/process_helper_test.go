@@ -313,49 +313,49 @@ func (suite *ProcessingTestSuite) TestBuildAppConfigOptions_ShouldReturnCorrectO
 	}
 }
 
-func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCreateDirFails() {
+func (suite *ProcessingTestSuite) TestResolveRootOutputDir_ShouldReturnError_WhenCreateDirFails() {
 	suite.mockFS.On("CreateDir", "invalid_output").Return(errors.New("create dir error"))
 
 	appConfig, opCfg := suite.defaultOperationConfigs()
 	appConfig.OutputDir = "invalid_output"
-	out, err := resolveOutputDir(appConfig, opCfg)
+	rootOutDir, err := resolveRootOutputDir(appConfig, opCfg)
 
 	suite.ErrorContains(err, "create dir error")
-	suite.Empty(out)
+	suite.Empty(rootOutDir)
 }
 
-func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnCustomDir_WhenProvidedAndCreated() {
+func (suite *ProcessingTestSuite) TestResolveRootOutputDir_ShouldReturnCustomDir_WhenProvidedAndCreated() {
 	suite.mockFS.On("CreateDir", "valid_output").Return(nil)
 
 	appConfig, opCfg := suite.defaultOperationConfigs()
 	appConfig.OutputDir = "valid_output"
 
-	out, err := resolveOutputDir(appConfig, opCfg)
+	rootOutDir, err := resolveRootOutputDir(appConfig, opCfg)
 
 	suite.NoError(err)
-	suite.Equal("valid_output", out)
+	suite.Equal("valid_output", rootOutDir)
 }
 
-func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnSibling_WhenNoCustomDirProvided() {
+func (suite *ProcessingTestSuite) TestResolveRootOutputDir_ShouldReturnSibling_WhenNoCustomDirProvided() {
 	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("input-suffix", nil)
 
 	appConfig, opCfg := suite.defaultOperationConfigs()
 	opCfg.OutputSuffix = "-suffix"
-	out, err := resolveOutputDir(appConfig, opCfg)
+	rootOutDir, err := resolveRootOutputDir(appConfig, opCfg)
 
 	suite.NoError(err)
-	suite.Equal("input-suffix", out)
+	suite.Equal("input-suffix", rootOutDir)
 }
 
-func (suite *ProcessingTestSuite) TestResolveOutputDir_ShouldReturnError_WhenCreateSiblingDirFails() {
+func (suite *ProcessingTestSuite) TestResolveRootOutputDir_ShouldReturnError_WhenCreateSiblingDirFails() {
 	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("", errors.New("create sibling dir error"))
 
 	appConfig, opCfg := suite.defaultOperationConfigs()
 	opCfg.OutputSuffix = "-suffix"
-	out, err := resolveOutputDir(appConfig, opCfg)
+	rootOutDir, err := resolveRootOutputDir(appConfig, opCfg)
 
 	suite.ErrorContains(err, "create sibling dir error")
-	suite.Empty(out)
+	suite.Empty(rootOutDir)
 }
 
 func (suite *ProcessingTestSuite) TestResolveImageDestination_ShouldUseModifier_WhenProvided() {
