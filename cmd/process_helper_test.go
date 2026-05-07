@@ -158,6 +158,36 @@ func (suite *ProcessingTestSuite) TestRunOperation_ShouldReturnError_WhenOutputD
 	suite.ErrorIs(err, expectedErr)
 }
 
+func (suite *ProcessingTestSuite) TestRunOperation_ShouldPrintInfoRecursiveMessage_WhenRecursiveFlagIsSet() {
+	out := new(bytes.Buffer)
+	appConfig, opCfg := suite.defaultOperationConfigs()
+	appConfig.Recursive = true
+	opCfg.Out = out
+
+	suite.mockFS.On("CreateSiblingDir", "input", "").Return("input-suffix", nil).Once()
+	suite.mockFS.On("Walk", "input", mock.Anything).Return(nil).Once()
+
+	err := RunOperation(appConfig, opCfg)
+
+	suite.NoError(err)
+	suite.Contains(out.String(), "Analyzing directories recursively in input")
+}
+
+func (suite *ProcessingTestSuite) TestRunOperation_ShouldPrintInfoNormalMessage_WhenRecursiveFlagIsDisabled() {
+	out := new(bytes.Buffer)
+	appConfig, opCfg := suite.defaultOperationConfigs()
+	appConfig.Recursive = false
+	opCfg.Out = out
+
+	suite.mockFS.On("CreateSiblingDir", "input", "").Return("input-suffix", nil).Once()
+	suite.mockFS.On("ReadDir", "input").Return([]filesystem.FileInfo{}, nil).Once()
+
+	err := RunOperation(appConfig, opCfg)
+
+	suite.NoError(err)
+	suite.Contains(out.String(), "Analyzing files in input")
+}
+
 func (suite *ProcessingTestSuite) TestRunOperation_ShouldSucceed_WhenValidInputs() {
 	suite.mockFS.On("ReadDir", "input").Return([]filesystem.FileInfo{{Path: "input/test.jpg", RelPath: "test.jpg", Size: 100, IsDir: false}}, nil)
 	suite.mockFS.On("CreateSiblingDir", "input", "-suffix").Return("input-suffix", nil)

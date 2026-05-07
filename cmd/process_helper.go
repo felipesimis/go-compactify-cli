@@ -53,9 +53,9 @@ func RunOperation(app AppConfig, config OperationConfig) error {
 	}
 
 	if app.Recursive {
-		fmt.Fprintln(config.Out, fmt.Sprintf("🔍 Analyzing directories recursively in %s...", app.InputDir))
+		fmt.Fprintln(config.Out, fmt.Sprintf("🔍 Analyzing directories recursively in %s ...", app.InputDir))
 	} else {
-		fmt.Fprintln(config.Out, fmt.Sprintf("🔍 Analyzing files in %s...", app.InputDir))
+		fmt.Fprintln(config.Out, fmt.Sprintf("🔍 Analyzing files in %s ...", app.InputDir))
 	}
 
 	files, err := processing.DiscoverAndPrepare(config.FileSystem, app.InputDir, finalOutputDir, app.Recursive)
