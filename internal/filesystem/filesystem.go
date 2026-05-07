@@ -159,9 +159,12 @@ func (fs *FileSystemWrapper) Walk(root string, walkFn func(path string, info Fil
 			return err
 		}
 
-		relPath, err := filepath.Rel(root, path)
-		if err != nil {
-			return &ErrRelPath{Root: root, Target: path, Err: err}
+		relPath := "."
+		if len(path) > len(root) {
+			relPath = path[len(root):]
+			if len(relPath) > 0 && os.IsPathSeparator(relPath[0]) {
+				relPath = relPath[1:]
+			}
 		}
 
 		info, err := d.Info()

@@ -170,6 +170,63 @@ func (suite *FileSystemTestSuite) TestWalk_CallbackError() {
 	suite.EqualError(err, (&ErrWalk{Path: suite.path, Err: expectedErr}).Error())
 }
 
+func (suite *FileSystemTestSuite) TestWalk_RelativePathExtraction() {
+	tests := []struct {
+		name            string
+		root            string
+		path            string
+		expectedRelPath string
+	}{
+		{
+			name:            "Standard nested file",
+			root:            "/fake/input",
+			path:            "/fake/input/folder/image.jpg",
+			expectedRelPath: "folder/image.jpg",
+		},
+		{
+			name:            "Root with trailing slash",
+			root:            "/fake/input/",
+			path:            "/fake/input/folder/image.jpg",
+			expectedRelPath: "folder/image.jpg",
+		},
+		{
+			name:            "Path exactly matches root",
+			root:            "/fake/input",
+			path:            "/fake/input",
+			expectedRelPath: ".",
+		},
+		{
+			name:            "Path is subdirectory of root",
+			root:            "/fake/input",
+			path:            "/fake/input/folder",
+			expectedRelPath: "folder",
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			suite.SetupTest()
+
+			suite.mockOS.On("Walk", tt.root, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+				walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+
+				suite.mockDir.On("IsDir").Return(false).Once()
+				suite.mockDir.On("Info").Return(FakeFileInfo{size: 100}, nil).Once()
+
+				_ = walkFn(tt.path, suite.mockDir, nil)
+			}).Once()
+		})
+
+		var capturedRelPath string
+		err := suite.fs.Walk(tt.root, func(path string, info FileInfo) error {
+			capturedRelPath = info.RelPath
+			return nil
+		})
+		suite.NoError(err)
+		suite.Equal(tt.expectedRelPath, capturedRelPath)
+	}
+}
+
 func (suite *FileSystemTestSuite) TestWalk_ShouldProcessAllEntries() {
 	tests := []struct {
 		name     string
@@ -208,36 +265,6 @@ func (suite *FileSystemTestSuite) TestWalk_ShouldProcessAllEntries() {
 			suite.True(called)
 		})
 	}
-}
-
-func (suite *FileSystemTestSuite) TestWalk_RelPathError() {
-	root := "/absolute/root"
-	incompatiblePath := "relative/path/file.jpg"
-	simulatedErr := errors.New("rel: simulated error")
-
-	suite.mockOS.On("Walk", root, mock.Anything).Return(simulatedErr).Run(func(args mock.Arguments) {
-		walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
-
-		innerErr := walkFn(incompatiblePath, suite.mockDir, nil)
-		suite.Error(innerErr)
-
-		var errRel *ErrRelPath
-		suite.True(errors.As(innerErr, &errRel), "internal error should be wrapped in ErrRelPath")
-	}).Once()
-
-	err := suite.fs.Walk(root, func(path string, info FileInfo) error {
-		return nil
-	})
-
-	suite.Error(err)
-	var errWalk *ErrWalk
-	suite.True(errors.As(err, &errWalk), "final error should be wrapped in ErrWalk")
-	suite.ErrorIs(err, simulatedErr)
-	suite.EqualError(err, (&ErrWalk{Path: root, Err: simulatedErr}).Error())
-
-	innerMockErr := &ErrRelPath{Root: root, Target: incompatiblePath, Err: simulatedErr}
-	suite.Contains(innerMockErr.Error(), "failed to calculate relative path")
-	suite.Equal(simulatedErr, innerMockErr.Unwrap())
 }
 
 func (suite *FileSystemTestSuite) TestWalk_InfoError() {

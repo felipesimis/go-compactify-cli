@@ -72,17 +72,6 @@ func (e *ErrWalk) Error() string {
 }
 func (e *ErrWalk) Unwrap() error { return e.Err }
 
-type ErrRelPath struct {
-	Root   string
-	Target string
-	Err    error
-}
-
-func (e *ErrRelPath) Error() string {
-	return fmt.Sprintf("failed to calculate relative path for '%s' against root '%s': %v", e.Target, e.Root, e.Err)
-}
-func (e *ErrRelPath) Unwrap() error { return e.Err }
-
 type ErrFileInfo struct {
 	Path string
 	Err  error
