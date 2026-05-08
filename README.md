@@ -14,18 +14,18 @@ Designed with **software engineering excellence** in mind, the project follows s
 ---
 
 ## ✨ Key Features
-
-- 🚀 **High Performance**: Uses `libvips` for low memory footprint and extreme speed.
-- 🧠 **Hardware-Aware**: Intelligent concurrency management using a semaphore pattern to optimize CPU utilization.
-- 🛡️ **Safety First**: Built-in `Dry Run` mode allows users to simulate filesystem operations before committing changes, preventing accidental data loss.
+- 🚀 **High Performance**: Uses `libvips` for low memory footprint and extreme speed, now featuring instant directory traversal for massive folder trees.
+- 🧠 **Hardware-Aware**: Intelligent concurrency management that automatically scales to your host's CPU cores, maximizing throughput while preventing system freezes.
+- 📁 **Deep Recursive Processing**: Seamlessly processes nested directory trees, mirroring the exact folder hierarchy in the output destination without breaking a sweat.
+- 🛡️ **Safety First**: Built-in `DryRun` mode allows users to simulate filesystem operations before committing changes, preventing accidental data loss.
 - ⚙️ **Multi-layer Configuration**: Support for Config Files, Environment Variables, and Flags with a strict precedence order.
 - 🛠️ **Versatile Processing**:
-    - Format conversion (JPEG, PNG, WebP, etc.)
-    - Intelligent resizing and cropping.
-    - Grayscale, flipping, and color palette optimization.
-    - Lossless compression.
-    - Granular control over output encoding (`--quality`).
-    - Privacy-first EXIF metadata stripping (removes GPS/Camera info while preserving color profiles).
+  - Format conversion (JPEG, PNG, WebP, etc.)
+  - Intelligent resizing and cropping.
+  - Grayscale, flipping, and color palette optimization.
+  - Lossless compression.
+  - Granular control over output encoding (`--quality`).
+  - Privacy-first EXIF metadata stripping (removes GPS/Camera info while preserving color profiles).
 - 📊 **Detailed Analytics**: Execution summary with a side-by-side "Impact Dashboard" (Original vs. Processed).
 
 ---
@@ -41,15 +41,16 @@ Compactify follows a strict precedence order (from highest to lowest). This allo
 
 ### Environment Variables Mapping
 
-| Environment Variable | Flag Equivalent |
-| :--- | :--- |
-| `COMPACTIFY_CONCURRENCY` | `-c, --concurrency` |
-| `COMPACTIFY_INPUT` | `-i, --input` |
-| `COMPACTIFY_OUTPUT` | `-o, --output` |
-| `COMPACTIFY_QUALITY` | `-q, --quality` |
-| `COMPACTIFY_DRY_RUN` | `--dry-run` |
-| `COMPACTIFY_STRIP_METADATA` | `--strip-metadata` |
-| `COMPACTIFY_CONFIG` | `--config` |
+| Environment Variable         | Flag Equivalent         |
+| :---                         | :---                    |
+| `COMPACTIFY_CONCURRENCY`     | `-c, --concurrency`     |
+| `COMPACTIFY_INPUT`           | `-i, --input`           |
+| `COMPACTIFY_OUTPUT`          | `-o, --output`          |
+| `COMPACTIFY_QUALITY`         | `-q, --quality`         |
+| `COMPACTIFY_RECURSIVE`       | `-R, --recursive`       |
+| `COMPACTIFY_DRY_RUN`         | `--dry-run`             |
+| `COMPACTIFY_STRIP_METADATA`  | `--strip-metadata`      |
+| `COMPACTIFY_CONFIG`          | `--config`              |
 
 ---
 
@@ -58,8 +59,10 @@ Compactify follows a strict precedence order (from highest to lowest). This allo
 ### 🧩 Intent-Based Architecture (Functional Options)
 The core logic is strictly isolated from external dependencies. By using the **Functional Options Pattern**, the CLI layer remains "intent-based," only specifying what should happen (e.g., `WithResize`). The underlying `bimg` engine then translates these intents into a single, optimized `libvips` operation, preventing redundant memory allocations and ensuring high-performance **single-pass CGO execution**.
 
-### 🌊 Concurrency Model
-To handle thousands of images efficiently, Compactify uses a **Semaphore Pattern** (`chan struct{}`). This prevents goroutine explosion and ensures the tool respects the host machine's hardware limits.
+### 🌊 Concurrency Model & Memory Management
+To handle massive workloads efficiently, Compactify uses a **Semaphore Pattern** coupled with a **Collector Goroutine**. 
+- The semaphore strictly bounds the number of active `libvips` threads to the host's logical cores (or user definition).
+- The Collector Goroutine asynchronously drains error channels, guaranteeing that the application's memory footprint remains statically flat ($O(C)$) regardless of whether you process 10 or 1,000,000 images.
 
 ### 🛡️ The Dry-Run Pattern
 Implementing the `FileReaderWriter` interface, the tool supports a non-destructive simulation mode. This is critical for CLI tools that perform destructive operations, providing a "safety net" for the user.
@@ -130,6 +133,9 @@ Clone the repository:
 ```bash
 # Initialize a default configuration file
 ./compactify init
+
+# Process an entire nested directory tree recursively, maintaining folder structure
+./compactify convert --format webp -i ./massive_library -o ./optimized_library --recursive
 
 # Batch resize all images with a high concurrency
 ./compactify resize -w 800 -H 600 -i ./images --concurrency 12
