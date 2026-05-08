@@ -2,6 +2,7 @@ package processing
 
 import (
 	"fmt"
+	"runtime"
 	"sync"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
@@ -42,12 +43,21 @@ type ProcessFilesParams struct {
 func ProcessFiles(params ProcessFilesParams) []error {
 	concurrency := params.Concurrency
 	if concurrency <= 0 {
-		concurrency = 1
+		concurrency = runtime.NumCPU()
 	}
 
 	sem := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
-	errChan := make(chan error, len(params.Files))
+	errChan := make(chan error, concurrency)
+
+	var processErrors []error
+	errDone := make(chan struct{})
+	go func() {
+		for err := range errChan {
+			processErrors = append(processErrors, err)
+		}
+		close(errDone)
+	}()
 
 	for _, file := range params.Files {
 		wg.Add(1)
@@ -76,10 +86,7 @@ func ProcessFiles(params ProcessFilesParams) []error {
 	wg.Wait()
 	close(sem)
 	close(errChan)
+	<-errDone
 
-	var processErrors []error
-	for err := range errChan {
-		processErrors = append(processErrors, err)
-	}
 	return processErrors
 }
