@@ -8,7 +8,7 @@ import (
 )
 
 func DiscoverAndPrepare(fs filesystem.FileSystem, inputDir, outputDir string, recursive bool) ([]filesystem.FileInfo, error) {
-	var filesToProcess []filesystem.FileInfo
+	filesToProcess := make([]filesystem.FileInfo, 0, 1024)
 
 	if recursive {
 		err := fs.Walk(inputDir, func(path string, info filesystem.FileInfo) error {
