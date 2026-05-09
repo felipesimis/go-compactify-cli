@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type FileReader interface {
@@ -154,17 +155,24 @@ func (fs *FileSystemWrapper) WriteFile(name string, data []byte) error {
 }
 
 func (fs *FileSystemWrapper) Walk(root string, walkFn func(path string, info FileInfo) error) error {
+	cleanRoot := filepath.Clean(root)
+
 	err := fs.os.Walk(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		relPath := "."
-		if len(path) > len(root) {
-			relPath = path[len(root):]
+		relPath := path
+		if cleanRoot == "." {
+			relPath = path
+		} else if strings.HasPrefix(path, cleanRoot) {
+			relPath = path[len(cleanRoot):]
 			if len(relPath) > 0 && os.IsPathSeparator(relPath[0]) {
 				relPath = relPath[1:]
 			}
+		}
+		if relPath == "" {
+			relPath = "."
 		}
 
 		info, err := d.Info()

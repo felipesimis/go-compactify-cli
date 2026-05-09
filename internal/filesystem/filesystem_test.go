@@ -201,6 +201,18 @@ func (suite *FileSystemTestSuite) TestWalk_RelativePathExtraction() {
 			path:            "/fake/input/folder",
 			expectedRelPath: "folder",
 		},
+		{
+			name:            "Root is current directory dot",
+			root:            ".",
+			path:            "image.jpg",
+			expectedRelPath: "image.jpg",
+		},
+		{
+			name:            "Nested file with dot root",
+			root:            ".",
+			path:            "folder/image.jpg",
+			expectedRelPath: "folder/image.jpg",
+		},
 	}
 
 	for _, tt := range tests {
@@ -215,15 +227,18 @@ func (suite *FileSystemTestSuite) TestWalk_RelativePathExtraction() {
 
 				_ = walkFn(tt.path, suite.mockDir, nil)
 			}).Once()
-		})
 
-		var capturedRelPath string
-		err := suite.fs.Walk(tt.root, func(path string, info FileInfo) error {
-			capturedRelPath = info.RelPath
-			return nil
+			var capturedRelPath string
+			err := suite.fs.Walk(tt.root, func(path string, info FileInfo) error {
+				capturedRelPath = info.RelPath
+				return nil
+			})
+
+			suite.NoError(err)
+			suite.Equal(tt.expectedRelPath, capturedRelPath)
+			suite.mockOS.AssertExpectations(suite.T())
+			suite.mockDir.AssertExpectations(suite.T())
 		})
-		suite.NoError(err)
-		suite.Equal(tt.expectedRelPath, capturedRelPath)
 	}
 }
 
@@ -263,6 +278,8 @@ func (suite *FileSystemTestSuite) TestWalk_ShouldProcessAllEntries() {
 			})
 			suite.NoError(err)
 			suite.True(called)
+			suite.mockOS.AssertExpectations(suite.T())
+			suite.mockDir.AssertExpectations(suite.T())
 		})
 	}
 }
