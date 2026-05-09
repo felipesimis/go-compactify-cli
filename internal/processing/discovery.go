@@ -11,14 +11,13 @@ func DiscoverAndPrepare(fs filesystem.FileSystem, inputDir, outputDir string, re
 	filesToProcess := make([]filesystem.FileInfo, 0, 1024)
 
 	if recursive {
+		absOutput, _ := filepath.Abs(outputDir)
+
 		err := fs.Walk(inputDir, func(path string, info filesystem.FileInfo) error {
 			if info.IsDir {
-				if info.RelPath == "." {
-					return nil
-				}
-				destDir := filepath.Join(outputDir, info.RelPath)
-				if err := fs.CreateDir(destDir); err != nil {
-					return err
+				absPath, _ := filepath.Abs(path)
+				if absPath == absOutput {
+					return filepath.SkipDir
 				}
 				return nil
 			}

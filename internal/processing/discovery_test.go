@@ -23,11 +23,6 @@ func (m *mockDiscoveryFS) Walk(root string, walkFn func(path string, info filesy
 	return args.Error(0)
 }
 
-func (m *mockDiscoveryFS) CreateDir(name string) error {
-	args := m.Called(name)
-	return args.Error(0)
-}
-
 func (m *mockDiscoveryFS) ReadDir(path string) ([]filesystem.FileInfo, error) {
 	args := m.Called(path)
 	if args.Get(0) == nil {
@@ -51,9 +46,9 @@ func (suite *DiscoveryTestSuite) TearDownTest() {
 
 func (suite *DiscoveryTestSuite) TestDiscover_Recursive_Success() {
 	suite.mockFS.On("Walk", "input", mock.Anything).Return(func(root string, walkFn func(string, filesystem.FileInfo) error) error {
-		// Simulates a root directory (should be ignored for creation but not for discovery)
+		// Simulates a root directory call
 		_ = walkFn("input", filesystem.FileInfo{IsDir: true, RelPath: "."})
-		// Simulates a subdirectory (should trigger a CreateDir call)
+		// Simulates a subdirectory
 		_ = walkFn("input/folder", filesystem.FileInfo{IsDir: true, RelPath: "folder"})
 		// Simulates a valid image file (should be collected)
 		_ = walkFn("input/folder/img.jpg", filesystem.FileInfo{IsDir: false, RelPath: "folder/img.jpg"})
@@ -62,8 +57,6 @@ func (suite *DiscoveryTestSuite) TestDiscover_Recursive_Success() {
 		return nil
 	})
 
-	suite.mockFS.On("CreateDir", filepath.Join("output", "folder")).Return(nil).Once()
-
 	files, err := DiscoverAndPrepare(suite.mockFS, "input", "output", true)
 
 	suite.NoError(err)
@@ -71,23 +64,22 @@ func (suite *DiscoveryTestSuite) TestDiscover_Recursive_Success() {
 	suite.Equal("folder/img.jpg", files[0].RelPath)
 }
 
-func (suite *DiscoveryTestSuite) TestDiscover_Recursive_WalkError() {
-	expectedErr := errors.New("walk error")
-	suite.mockFS.On("Walk", "input", mock.Anything).Return(expectedErr)
+func (suite *DiscoveryTestSuite) TestDiscover_Recursive_ShouldSkipOutputDirectory_WhenDestinationIsInsideInput() {
+	suite.mockFS.On("Walk", "input", mock.Anything).Return(func(root string, walkFn func(string, filesystem.FileInfo) error) error {
+		err := walkFn("output", filesystem.FileInfo{IsDir: true, RelPath: "../output"})
+		suite.Equal(filepath.SkipDir, err, "Should skip the output directory to prevent recursive loops")
+		return nil
+	})
 
 	files, err := DiscoverAndPrepare(suite.mockFS, "input", "output", true)
 
-	suite.ErrorIs(err, expectedErr)
-	suite.Nil(files)
+	suite.NoError(err)
+	suite.Empty(files, "Should not collect any files since output directory is skipped")
 }
 
-func (suite *DiscoveryTestSuite) TestDiscover_Recursive_CreateDirError() {
-	expectedErr := errors.New("mkdir error")
-
-	suite.mockFS.On("CreateDir", filepath.Join("output", "folder")).Return(expectedErr).Once()
-	suite.mockFS.On("Walk", "input", mock.Anything).Return(func(root string, walkFn func(string, filesystem.FileInfo) error) error {
-		return walkFn("input/folder", filesystem.FileInfo{IsDir: true, RelPath: "folder"})
-	})
+func (suite *DiscoveryTestSuite) TestDiscover_Recursive_WalkError() {
+	expectedErr := errors.New("walk error")
+	suite.mockFS.On("Walk", "input", mock.Anything).Return(expectedErr)
 
 	files, err := DiscoverAndPrepare(suite.mockFS, "input", "output", true)
 
