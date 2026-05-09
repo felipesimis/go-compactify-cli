@@ -7,15 +7,23 @@ import (
 	"github.com/felipesimis/go-compactify-cli/internal/utils"
 )
 
+var filepathAbs = filepath.Abs
+
 func DiscoverAndPrepare(fs filesystem.FileSystem, inputDir, outputDir string, recursive bool) ([]filesystem.FileInfo, error) {
 	filesToProcess := make([]filesystem.FileInfo, 0, 1024)
 
 	if recursive {
-		absOutput, _ := filepath.Abs(outputDir)
+		absOutput, err := filepathAbs(outputDir)
+		if err != nil {
+			return nil, err
+		}
 
-		err := fs.Walk(inputDir, func(path string, info filesystem.FileInfo) error {
+		err = fs.Walk(inputDir, func(path string, info filesystem.FileInfo) error {
 			if info.IsDir {
-				absPath, _ := filepath.Abs(path)
+				absPath, err := filepathAbs(path)
+				if err != nil {
+					return err
+				}
 				if absPath == absOutput {
 					return filepath.SkipDir
 				}

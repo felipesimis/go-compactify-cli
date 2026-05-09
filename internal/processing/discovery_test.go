@@ -77,6 +77,43 @@ func (suite *DiscoveryTestSuite) TestDiscover_Recursive_ShouldSkipOutputDirector
 	suite.Empty(files, "Should not collect any files since output directory is skipped")
 }
 
+func (suite *DiscoveryTestSuite) TestDiscover_Recursive_ShouldReturnError_WhenFilepathAbsThrows() {
+	originalAbs := filepathAbs
+	defer func() { filepathAbs = originalAbs }()
+
+	expectedErr := errors.New("abs error")
+	filepathAbs = func(path string) (string, error) {
+		return "", expectedErr
+	}
+
+	files, err := DiscoverAndPrepare(suite.mockFS, "input", "output", true)
+
+	suite.ErrorIs(err, expectedErr)
+	suite.Nil(files)
+}
+
+func (suite *DiscoveryTestSuite) TestDiscover_Recursive_ShouldReturnError_WhenFilepathAbsFailsInsideWalk() {
+	originalAbs := filepathAbs
+	defer func() { filepathAbs = originalAbs }()
+
+	expectedErr := errors.New("abs error")
+	filepathAbs = func(path string) (string, error) {
+		if path == "output" {
+			return "/fake/absolute/output", nil
+		}
+		return "", expectedErr
+	}
+
+	suite.mockFS.On("Walk", "input", mock.Anything).Return(func(root string, walkFn func(string, filesystem.FileInfo) error) error {
+		return walkFn("input/folder", filesystem.FileInfo{IsDir: true, RelPath: "folder"})
+	})
+
+	files, err := DiscoverAndPrepare(suite.mockFS, "input", "output", true)
+
+	suite.ErrorIs(err, expectedErr)
+	suite.Nil(files)
+}
+
 func (suite *DiscoveryTestSuite) TestDiscover_Recursive_WalkError() {
 	expectedErr := errors.New("walk error")
 	suite.mockFS.On("Walk", "input", mock.Anything).Return(expectedErr)
