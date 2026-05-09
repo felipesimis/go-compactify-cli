@@ -147,6 +147,13 @@ func HandleImageProcessing(
 	}
 
 	outputPath := resolveImageDestination(params)
+
+	destDir := filepath.Dir(outputPath)
+	if err := params.FS.CreateDir(destDir); err != nil {
+		stats.SkippedImages.Add(1)
+		return err
+	}
+
 	err = params.FS.WriteFile(outputPath, newImg)
 	if err != nil {
 		stats.SkippedImages.Add(1)

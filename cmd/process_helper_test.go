@@ -240,8 +240,25 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenReadF
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
 
+func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenCreateDirFails() {
+	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
+	suite.mockFS.On("CreateDir", "output").Return(errors.New("create dir error"))
+
+	stats, params := suite.defaultProcessingParams()
+	params.OutputDir = "output"
+
+	fakeFactory := func([]byte) image.ImageProcessor {
+		return &fakeProcessor{resultBytes: []byte("new-data")}
+	}
+
+	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, AppConfig{})
+	suite.ErrorContains(err, "create dir error")
+	suite.Equal(uint32(1), stats.SkippedImages.Load())
+}
+
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWriteFileFails() {
 	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
+	suite.mockFS.On("CreateDir", "output").Return(nil)
 	suite.mockFS.On("WriteFile", mock.Anything, mock.Anything).Return(errors.New("write error"))
 
 	stats, params := suite.defaultProcessingParams()
@@ -270,6 +287,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSucceed_WhenAl
 	originalData, processedData := []byte("original"), []byte("new-data")
 
 	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader(originalData)), nil)
+	suite.mockFS.On("CreateDir", "out").Return(nil)
 	suite.mockFS.On("WriteFile", filepath.Join("out", "test.jpg"), processedData).Return(nil)
 
 	stats, params := suite.defaultProcessingParams()

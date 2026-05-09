@@ -13,9 +13,15 @@ type ProgressBarInterface interface {
 	Finish()
 }
 
+type ProcessorFS interface {
+	filesystem.FileReader
+	filesystem.FileWriter
+	CreateDir(path string) error
+}
+
 type FileProcessingParams struct {
 	File        filesystem.FileInfo
-	FS          FileReaderWriter
+	FS          ProcessorFS
 	InputDir    string
 	OutputDir   string
 	ProgressBar ProgressBarInterface
@@ -24,14 +30,9 @@ type FileProcessingParams struct {
 
 type fileProcessorFunc func(FileProcessingParams) error
 
-type FileReaderWriter interface {
-	filesystem.FileReader
-	filesystem.FileWriter
-}
-
 type ProcessFilesParams struct {
 	Files         []filesystem.FileInfo
-	FS            FileReaderWriter
+	FS            ProcessorFS
 	InputDir      string
 	OutputDir     string
 	ProgressBar   ProgressBarInterface

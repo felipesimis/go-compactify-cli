@@ -40,6 +40,11 @@ func (m *MockFileSystem) WriteFile(path string, data []byte) error {
 	return args.Error(0)
 }
 
+func (m *MockFileSystem) CreateDir(path string) error {
+	args := m.Called(path)
+	return args.Error(0)
+}
+
 type MockProgressBar struct {
 	mock.Mock
 }
