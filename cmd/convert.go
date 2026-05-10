@@ -75,10 +75,9 @@ func runConvert(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       fmt.Sprintf("-converted.%s", format),
 			ProgressBarMessage: "Converting images",
-			ExtraParams:        ConvertParams{Format: format},
 			ProcessorFunc: func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error {
-				extraParams := task.ExtraParams.(ConvertParams)
-				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig, image.WithConvert(extraParams.Format))
+				modifier := ConvertParams{Format: format}
+				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig, modifier, image.WithConvert(format))
 			},
 		})
 	}

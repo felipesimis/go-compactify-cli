@@ -43,7 +43,7 @@ func runPalette(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			OutputSuffix:       "-palette",
 			ProgressBarMessage: "Enabling palette on images",
 			ProcessorFunc: func(ctx context.Context, params processing.FileTask, stats *utils.ImageProcessingStats) error {
-				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithPalette())
+				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, nil, image.WithPalette())
 			},
 		})
 	}

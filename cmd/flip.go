@@ -44,7 +44,7 @@ func runFlip(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) 
 			OutputSuffix:       "-flipped",
 			ProgressBarMessage: "Flipping images",
 			ProcessorFunc: func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error {
-				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig, image.WithFlip())
+				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig, nil, image.WithFlip())
 			},
 		})
 	}

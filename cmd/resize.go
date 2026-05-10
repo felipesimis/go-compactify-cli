@@ -11,11 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ResizeParams struct {
-	Width  int
-	Height int
-}
-
 func NewResizeCmd(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "resize",
@@ -65,11 +60,9 @@ func runResize(fs filesystem.FileSystem, processorFactory image.ProcessorFactory
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       "-resized",
 			ProgressBarMessage: "Resizing images",
-			ExtraParams:        ResizeParams{Width: width, Height: height},
 			ProcessorFunc: func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error {
-				extraParams := task.ExtraParams.(ResizeParams)
-				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig,
-					image.WithResize(extraParams.Width, extraParams.Height))
+				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig, nil,
+					image.WithResize(width, height))
 			},
 		})
 	}

@@ -37,7 +37,6 @@ type OperationConfig struct {
 	Out                io.Writer
 	OutputSuffix       string
 	ProgressBarMessage string
-	ExtraParams        interface{}
 	ProcessorFunc      func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error
 }
 
@@ -81,7 +80,6 @@ func RunOperation(app AppConfig, config OperationConfig) error {
 		InputDir:    app.InputDir,
 		OutputDir:   outputRootDir,
 		ProgressBar: progressBar,
-		ExtraParams: config.ExtraParams,
 		Handler:     wrappedProcessor,
 		Concurrency: app.Concurrency,
 	}
@@ -106,6 +104,7 @@ func HandleImageProcessing(
 	stats *utils.ImageProcessingStats,
 	processorFactory image.ProcessorFactory,
 	appConfig AppConfig,
+	modifier OutputPathModifier,
 	opts ...image.ProcessOption,
 ) error {
 	select {
@@ -146,7 +145,7 @@ func HandleImageProcessing(
 		return err
 	}
 
-	outputPath := resolveImageDestination(task)
+	outputPath := resolveImageDestination(task.File, task.OutputDir, modifier)
 
 	destDir := filepath.Dir(outputPath)
 	if err := task.FS.CreateDir(destDir); err != nil {
@@ -186,17 +185,17 @@ func resolveRootOutputDir(appConfig AppConfig, config OperationConfig) (string, 
 	return config.FileSystem.CreateSiblingDir(appConfig.InputDir, config.OutputSuffix)
 }
 
-func resolveImageDestination(task processing.FileTask) string {
-	relPath := task.File.RelPath
+func resolveImageDestination(file filesystem.FileInfo, outputDir string, modifier OutputPathModifier) string {
+	relPath := file.RelPath
 	if relPath == "" {
-		relPath = filepath.Base(task.File.Path)
+		relPath = filepath.Base(file.Path)
 	}
 
-	if modifier, ok := task.ExtraParams.(OutputPathModifier); ok {
-		return modifier.ModifyOutputPath(relPath, task.OutputDir)
+	if modifier != nil {
+		return modifier.ModifyOutputPath(relPath, outputDir)
 	}
 
-	return utils.BuildOutputPath(task.OutputDir, relPath)
+	return utils.BuildOutputPath(outputDir, relPath)
 }
 
 func RenderProcessSummary(r *utils.Result) string {

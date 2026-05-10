@@ -25,7 +25,6 @@ type FileTask struct {
 	InputDir    string
 	OutputDir   string
 	ProgressBar ProgressBarInterface
-	ExtraParams interface{}
 }
 
 type fileTaskHandler func(task FileTask) error
@@ -36,7 +35,6 @@ type FileBatchConfig struct {
 	InputDir    string
 	OutputDir   string
 	ProgressBar ProgressBarInterface
-	ExtraParams interface{}
 	Handler     fileTaskHandler
 	Concurrency int
 }
@@ -74,7 +72,6 @@ func RunFileBatch(config FileBatchConfig) []error {
 				InputDir:    config.InputDir,
 				OutputDir:   config.OutputDir,
 				ProgressBar: config.ProgressBar,
-				ExtraParams: config.ExtraParams,
 			})
 			config.ProgressBar.Increment()
 

@@ -11,10 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ThumbnailParams struct {
-	Width int
-}
-
 func NewThumbnailCmd(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "thumbnail",
@@ -59,10 +55,8 @@ func runThumbnail(fs filesystem.FileSystem, processorFactory image.ProcessorFact
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       "-thumbnail",
 			ProgressBarMessage: "Creating thumbnails",
-			ExtraParams:        ThumbnailParams{Width: width},
 			ProcessorFunc: func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error {
-				extraParams := task.ExtraParams.(ThumbnailParams)
-				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig, image.WithThumbnail(extraParams.Width))
+				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig, nil, image.WithThumbnail(width))
 			},
 		})
 	}
