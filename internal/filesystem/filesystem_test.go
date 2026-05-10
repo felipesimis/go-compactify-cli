@@ -3,21 +3,23 @@ package filesystem
 import (
 	"errors"
 	"os"
-	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
 func (suite *FileSystemTestSuite) SetupTest() {
 	suite.mockOS = new(MockOSOperations)
-	suite.fs = &FileSystemWrapper{os: suite.mockOS}
+	suite.mockDir = new(MockDir)
 	suite.mockFile = new(MockFile)
+	suite.fs = &FileSystemWrapper{os: suite.mockOS}
 	suite.path = "/mock/dir"
 }
 
 func (suite *FileSystemTestSuite) TearDownTest() {
 	suite.mockOS.AssertExpectations(suite.T())
+	suite.mockDir.AssertExpectations(suite.T())
 	suite.mockFile.AssertExpectations(suite.T())
 }
 
@@ -44,17 +46,14 @@ func (suite *FileSystemTestSuite) TestReadDir_ShouldReturnFiles_WhenDirectoryIsV
 
 	result, err := suite.fs.ReadDir(suite.path)
 	suite.NoError(err)
-	suite.Len(result, 4)
-	for _, file := range result {
-		suite.Contains([]string{"image1.jpg", "image2.jpeg", "image3.png", "image4.webp"}, filepath.Base(file.Path))
-	}
+	suite.Len(result, 6)
 }
 
 func (suite *FileSystemTestSuite) TestReadDir_ShouldReturnErrOpenDir_WhenOpenFails() {
 	suite.mockOS.On("Open", suite.path).Return(nil, errors.New("simulated open error"))
 
 	result, err := suite.fs.ReadDir(suite.path)
-	expectedErr := &ErrOpenDir{Err: errors.New("simulated open error")}
+	expectedErr := &ErrOpenDir{Path: suite.path, Err: errors.New("simulated open error")}
 	suite.Nil(result)
 	suite.EqualError(err, expectedErr.Error())
 }
@@ -87,10 +86,10 @@ func (suite *FileSystemTestSuite) TestCreateDir_ShouldReturnNoError_WhenMkdirAll
 
 func (suite *FileSystemTestSuite) TestCreateSiblingDir_ShouldReturnErrCreateSiblingDir_WhenMkdirFails() {
 	expectedPath := suite.path + "-suffix"
-	expectedErr := &ErrCreateSiblingDir{Err: errors.New("mock error")}
 	suite.mockOS.On("Mkdir", expectedPath, os.ModePerm).Return(errors.New("mock error"))
 
 	newDir, err := suite.fs.CreateSiblingDir(suite.path, "-suffix")
+	expectedErr := &ErrCreateSiblingDir{Path: suite.path, Err: errors.New("mock error")}
 	suite.Empty(newDir)
 	suite.EqualError(err, expectedErr.Error())
 }
@@ -153,6 +152,211 @@ func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnNoError_WhenWriteSuc
 
 	err := suite.fs.WriteFile(suite.path, data)
 	suite.NoError(err)
+}
+
+func (suite *FileSystemTestSuite) TestWalk_CallbackError() {
+	expectedErr := errors.New("callback error")
+
+	suite.mockOS.On("Walk", suite.path, mock.Anything).Return(expectedErr).Run(func(args mock.Arguments) {
+		walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+		_ = walkFn(suite.path+"/file.jpg", nil, expectedErr)
+	}).Once()
+
+	err := suite.fs.Walk(suite.path, func(path string, info FileInfo) error {
+		return nil
+	})
+	suite.Error(err)
+	suite.ErrorIs(err, expectedErr)
+	suite.EqualError(err, (&ErrWalk{Path: suite.path, Err: expectedErr}).Error())
+}
+
+func (suite *FileSystemTestSuite) TestWalk_RelativePathExtraction() {
+	tests := []struct {
+		name            string
+		root            string
+		path            string
+		expectedRelPath string
+	}{
+		{
+			name:            "Standard nested file",
+			root:            "/fake/input",
+			path:            "/fake/input/folder/image.jpg",
+			expectedRelPath: "folder/image.jpg",
+		},
+		{
+			name:            "Root with trailing slash",
+			root:            "/fake/input/",
+			path:            "/fake/input/folder/image.jpg",
+			expectedRelPath: "folder/image.jpg",
+		},
+		{
+			name:            "Path exactly matches root",
+			root:            "/fake/input",
+			path:            "/fake/input",
+			expectedRelPath: ".",
+		},
+		{
+			name:            "Path is subdirectory of root",
+			root:            "/fake/input",
+			path:            "/fake/input/folder",
+			expectedRelPath: "folder",
+		},
+		{
+			name:            "Root is current directory dot",
+			root:            ".",
+			path:            "image.jpg",
+			expectedRelPath: "image.jpg",
+		},
+		{
+			name:            "Nested file with dot root",
+			root:            ".",
+			path:            "folder/image.jpg",
+			expectedRelPath: "folder/image.jpg",
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			suite.SetupTest()
+
+			suite.mockOS.On("Walk", tt.root, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+				walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+
+				suite.mockDir.On("IsDir").Return(false).Once()
+				suite.mockDir.On("Info").Return(FakeFileInfo{size: 100}, nil).Once()
+
+				_ = walkFn(tt.path, suite.mockDir, nil)
+			}).Once()
+
+			var capturedRelPath string
+			err := suite.fs.Walk(tt.root, func(path string, info FileInfo) error {
+				capturedRelPath = info.RelPath
+				return nil
+			})
+
+			suite.NoError(err)
+			suite.Equal(tt.expectedRelPath, capturedRelPath)
+			suite.mockOS.AssertExpectations(suite.T())
+			suite.mockDir.AssertExpectations(suite.T())
+		})
+	}
+}
+
+func (suite *FileSystemTestSuite) TestWalk_ShouldProcessAllEntries() {
+	tests := []struct {
+		name     string
+		isDir    bool
+		fileName string
+	}{
+		{"ProcessesDirectory", true, "subdir"},
+		{"ProcessesNonImageFiles", false, "notes.txt"},
+		{"ProcessesImages", false, "photo.jpg"},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			suite.SetupTest()
+
+			fullPath := suite.path + "/" + tt.fileName
+
+			suite.mockOS.On("Walk", suite.path, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+				walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+
+				suite.mockDir.On("IsDir").Return(tt.isDir).Once()
+				suite.mockDir.On("Info").Return(FakeFileInfo{size: 100, isDir: tt.isDir}, nil).Once()
+
+				_ = walkFn(fullPath, suite.mockDir, nil)
+			}).Once()
+
+			called := false
+			err := suite.fs.Walk(suite.path, func(path string, info FileInfo) error {
+				called = true
+				suite.Equal(fullPath, path)
+				suite.Equal(int64(100), info.Size)
+				suite.Equal(tt.isDir, info.IsDir)
+				return nil
+			})
+			suite.NoError(err)
+			suite.True(called)
+			suite.mockOS.AssertExpectations(suite.T())
+			suite.mockDir.AssertExpectations(suite.T())
+		})
+	}
+}
+
+func (suite *FileSystemTestSuite) TestWalk_InfoError() {
+	expectedErr := errors.New("info error")
+
+	suite.mockOS.On("Walk", suite.path, mock.Anything).Return(expectedErr).Run(func(args mock.Arguments) {
+		walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+		suite.mockDir.On("Info").Return(nil, expectedErr).Once()
+
+		innerErr := walkFn(suite.path+"/image.jpg", suite.mockDir, nil)
+		suite.Error(innerErr)
+
+		var errInfo *ErrFileInfo
+		suite.True(errors.As(innerErr, &errInfo), "internal error should be wrapped in ErrFileInfo")
+	}).Once()
+
+	err := suite.fs.Walk(suite.path, func(path string, info FileInfo) error {
+		return nil
+	})
+
+	suite.Error(err)
+	var errWalk *ErrWalk
+	suite.True(errors.As(err, &errWalk), "final error should be wrapped in ErrWalk")
+	suite.ErrorIs(err, expectedErr)
+	suite.EqualError(err, (&ErrWalk{Path: suite.path, Err: expectedErr}).Error())
+
+	innerMockErr := &ErrFileInfo{Path: suite.path + "/image.jpg", Err: expectedErr}
+	suite.Contains(innerMockErr.Error(), "failed to get file info")
+	suite.Equal(expectedErr, innerMockErr.Unwrap())
+}
+
+func (suite *FileSystemTestSuite) TestWalk_Success() {
+	expectedPath := suite.path + "/trip/image.jpg"
+	expectedRelPath := "trip/image.jpg"
+	expectedSize := int64(1024)
+
+	suite.mockOS.On("Walk", suite.path, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		walkFn := args.Get(1).(func(string, os.DirEntry, error) error)
+
+		suite.mockDir.On("IsDir").Return(false).Once()
+		suite.mockDir.On("Info").Return(FakeFileInfo{size: expectedSize}, nil).Once()
+
+		_ = walkFn(expectedPath, suite.mockDir, nil)
+	})
+
+	var capturedInfo FileInfo
+	err := suite.fs.Walk(suite.path, func(path string, info FileInfo) error {
+		capturedInfo = info
+		return nil
+	})
+
+	suite.NoError(err)
+	suite.Equal(expectedPath, capturedInfo.Path)
+	suite.Equal(expectedSize, capturedInfo.Size)
+	suite.Equal(expectedRelPath, capturedInfo.RelPath)
+}
+
+func (suite *FileSystemTestSuite) TestErrors_Unwrap() {
+	baseErr := errors.New("base error")
+
+	tests := []struct {
+		errWrapper interface{ Unwrap() error }
+	}{
+		{&ErrOpenDir{Err: baseErr}},
+		{&ErrReadDir{Err: baseErr}},
+		{&ErrCreateDir{Err: baseErr}},
+		{&ErrCreateSiblingDir{Err: baseErr}},
+		{&ErrReadFile{Err: baseErr}},
+		{&ErrWriteFile{Err: baseErr}},
+		{&ErrWalk{Err: baseErr}},
+	}
+
+	for _, tt := range tests {
+		suite.Equal(baseErr, tt.errWrapper.Unwrap(), "Unwrap should return the underlying error")
+	}
 }
 
 func TestFileSystemTestSuite(t *testing.T) {

@@ -38,3 +38,7 @@ func (d *DryRunFileSystem) OpenFile(path string) (io.ReadCloser, error) {
 func (d *DryRunFileSystem) WriteFile(path string, data []byte) error {
 	return nil
 }
+
+func (d *DryRunFileSystem) Walk(root string, walkFn func(path string, info FileInfo) error) error {
+	return d.original.Walk(root, walkFn)
+}

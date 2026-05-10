@@ -4,8 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/felipesimis/go-compactify-cli/internal/utils"
+	"strings"
 )
 
 type FileReader interface {
@@ -19,6 +18,7 @@ type FileWriter interface {
 
 type FileSystem interface {
 	ReadDir(path string) ([]FileInfo, error)
+	Walk(root string, walkFn func(path string, info FileInfo) error) error
 	CreateDir(name string) error
 	CreateSiblingDir(path, suffix string) (string, error)
 	FileReader
@@ -31,8 +31,10 @@ type File interface {
 }
 
 type FileInfo struct {
-	Path string
-	Size int64
+	Path    string
+	RelPath string
+	Size    int64
+	IsDir   bool
 }
 
 type OSOperations interface {
@@ -41,6 +43,7 @@ type OSOperations interface {
 	Open(name string) (File, error)
 	ReadFile(name string) ([]byte, error)
 	WriteFile(name string, data []byte, perm os.FileMode) error
+	Walk(root string, walkFn func(path string, d os.DirEntry, err error) error) error
 }
 
 type FileSystemWrapper struct {
@@ -58,7 +61,7 @@ func NewFileSystem() FileSystem {
 func (fs *FileSystemWrapper) ReadDir(path string) ([]FileInfo, error) {
 	dir, err := fs.os.Open(path)
 	if err != nil {
-		return nil, &ErrOpenDir{Err: err}
+		return nil, &ErrOpenDir{Path: path, Err: err}
 	}
 	defer dir.Close()
 
@@ -73,12 +76,12 @@ func (fs *FileSystemWrapper) readDir(dir Dir, path string) ([]FileInfo, error) {
 
 	var files []FileInfo
 	for _, fi := range fileInfos {
-		if !fi.IsDir() && utils.IsValidImage(fi.Name()) {
-			files = append(files, FileInfo{
-				Path: filepath.Join(path, fi.Name()),
-				Size: fi.Size(),
-			})
-		}
+		files = append(files, FileInfo{
+			Path:    filepath.Join(path, fi.Name()),
+			RelPath: fi.Name(),
+			Size:    fi.Size(),
+			IsDir:   fi.IsDir(),
+		})
 	}
 	return files, nil
 }
@@ -105,6 +108,10 @@ func (o *OSWrapper) WriteFile(name string, data []byte, perm os.FileMode) error 
 	return os.WriteFile(name, data, perm)
 }
 
+func (o *OSWrapper) Walk(root string, walkFn func(path string, d os.DirEntry, err error) error) error {
+	return filepath.WalkDir(root, walkFn)
+}
+
 func (fs *FileSystemWrapper) CreateDir(name string) error {
 	err := fs.os.MkdirAll(name, os.ModePerm)
 	if err != nil {
@@ -118,7 +125,7 @@ func (fs *FileSystemWrapper) CreateSiblingDir(path, suffix string) (string, erro
 	newDir := filepath.Join(parentDir, filepath.Base(path)+suffix)
 	err := fs.os.Mkdir(newDir, os.ModePerm)
 	if err != nil {
-		return "", &ErrCreateSiblingDir{Err: err}
+		return "", &ErrCreateSiblingDir{Path: path, Err: err}
 	}
 	return newDir, nil
 }
@@ -143,6 +150,46 @@ func (fs *FileSystemWrapper) WriteFile(name string, data []byte) error {
 	err := fs.os.WriteFile(name, data, 0644)
 	if err != nil {
 		return &ErrWriteFile{Path: name, Err: err}
+	}
+	return nil
+}
+
+func (fs *FileSystemWrapper) Walk(root string, walkFn func(path string, info FileInfo) error) error {
+	cleanRoot := filepath.Clean(root)
+
+	err := fs.os.Walk(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath := path
+		if cleanRoot == "." {
+			relPath = path
+		} else if strings.HasPrefix(path, cleanRoot) {
+			relPath = path[len(cleanRoot):]
+			if len(relPath) > 0 && os.IsPathSeparator(relPath[0]) {
+				relPath = relPath[1:]
+			}
+		}
+		if relPath == "" {
+			relPath = "."
+		}
+
+		info, err := d.Info()
+		if err != nil {
+			return &ErrFileInfo{Path: path, Err: err}
+		}
+
+		return walkFn(path, FileInfo{
+			Path:    path,
+			RelPath: relPath,
+			Size:    info.Size(),
+			IsDir:   d.IsDir(),
+		})
+	})
+
+	if err != nil {
+		return &ErrWalk{Path: root, Err: err}
 	}
 	return nil
 }

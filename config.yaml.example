@@ -19,6 +19,10 @@ concurrency: 4
 # input: "./images"
 # output: "./transformed"
 
+# Process directories recursively, recreating the original folder structure in the output.
+# (Default: false)
+# recursive: false
+
 # --- Security ---
 # Execute without writing changes to disk by default.
 dry-run: false

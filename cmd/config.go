@@ -11,6 +11,7 @@ type AppConfig struct {
 	DryRun        bool
 	StripMetadata bool
 	Quality       int
+	Recursive     bool
 }
 
 func loadAppConfig() AppConfig {
@@ -21,5 +22,6 @@ func loadAppConfig() AppConfig {
 		DryRun:        viper.GetBool("dry-run"),
 		StripMetadata: viper.GetBool("strip-metadata"),
 		Quality:       viper.GetInt("quality"),
+		Recursive:     viper.GetBool("recursive"),
 	}
 }

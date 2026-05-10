@@ -2,8 +2,13 @@ package processing
 
 import (
 	"errors"
+	"fmt"
 	"io"
+	"runtime"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/felipesimis/go-compactify-cli/internal/filesystem"
 	"github.com/stretchr/testify/mock"
@@ -32,6 +37,11 @@ func (m *MockFileSystem) OpenFile(path string) (io.ReadCloser, error) {
 
 func (m *MockFileSystem) WriteFile(path string, data []byte) error {
 	args := m.Called(path, data)
+	return args.Error(0)
+}
+
+func (m *MockFileSystem) CreateDir(path string) error {
+	args := m.Called(path)
 	return args.Error(0)
 }
 
@@ -104,11 +114,44 @@ func (suite *ProcessingTestSuite) TestProcessFiles_ShouldReturnErrors_WhenSomeFi
 }
 
 func (suite *ProcessingTestSuite) TestProcessFiles_ShouldUseDefaultConcurrency_WhenZeroIsProvided() {
-	suite.params.Concurrency = 0
-	suite.setupSuccessMocks()
+	expectedConcurrency := runtime.NumCPU()
+	numFiles := expectedConcurrency * 3
+	var testFiles []filesystem.FileInfo
+	for i := range numFiles {
+		testFiles = append(testFiles, filesystem.FileInfo{Path: fmt.Sprintf("img%d.jpg", i)})
+	}
 
-	errs := ProcessFiles(suite.params)
+	var activeWorkers, maxWorkers int32
+	var mu sync.Mutex
+
+	spyProcessor := func(params FileProcessingParams) error {
+		current := atomic.AddInt32(&activeWorkers, 1)
+
+		mu.Lock()
+		if current > maxWorkers {
+			maxWorkers = current
+		}
+		mu.Unlock()
+
+		time.Sleep(10 * time.Millisecond)
+		atomic.AddInt32(&activeWorkers, -1)
+		return nil
+	}
+
+	suite.mockProgressBar.On("Increment").Times(numFiles)
+
+	customParams := ProcessFilesParams{
+		Files:         testFiles,
+		FS:            suite.mockFS,
+		ProgressBar:   suite.mockProgressBar,
+		ProcessorFunc: spyProcessor,
+		Concurrency:   0,
+	}
+
+	errs := ProcessFiles(customParams)
+
 	suite.Empty(errs)
+	suite.Equal(int32(expectedConcurrency), maxWorkers)
 }
 
 func TestProcessingTestSuite(t *testing.T) {

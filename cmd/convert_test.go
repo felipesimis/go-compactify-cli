@@ -112,46 +112,46 @@ func (suite *ConvertTestSuite) TestConvert_ShouldReturnError_When_InvalidFormat(
 
 func (suite *ConvertTestSuite) TestModifyOutputPath_ShouldReturnFormattedPath_WhenConditionsMet() {
 	tests := []struct {
-		name         string
-		format       string
-		originalPath string
-		outputDir    string
-		expected     string
+		name      string
+		format    string
+		relPath   string
+		outputDir string
+		expected  string
 	}{
 		{
-			name:         "ShouldReplaceExtension_WhenFormatIsProvided",
-			format:       "png",
-			originalPath: "/path/to/image.jpg",
-			outputDir:    "/output",
-			expected:     filepath.Join("/output", "image.png"),
+			name:      "ShouldReplaceExtensionAndKeepSubfolder_WhenFormatIsProvided",
+			format:    "png",
+			relPath:   filepath.Join("vacation", "beach", "image.jpg"),
+			outputDir: "/output",
+			expected:  filepath.Join("/output", "vacation", "beach", "image.png"),
 		},
 		{
-			name:         "ShouldReturnEmpty_WhenFormatIsEmpty",
-			format:       "",
-			originalPath: "/input/image.jpg",
-			outputDir:    "/output",
-			expected:     "",
+			name:      "ShouldReturnEmpty_WhenFormatIsEmpty",
+			format:    "",
+			relPath:   filepath.Join("input", "image.jpg"),
+			outputDir: "/output",
+			expected:  "",
 		},
 		{
-			name:         "ShouldHandleMultipleDots_WhenFileNameIsComplex",
-			format:       "webp",
-			originalPath: "my.awesome.image.jpg",
-			outputDir:    "/out",
-			expected:     filepath.Join("/out", "my.awesome.image.webp"),
+			name:      "ShouldHandleMultipleDots_WhenFileNameIsComplex",
+			format:    "webp",
+			relPath:   "my.awesome.image.jpg",
+			outputDir: "/out",
+			expected:  filepath.Join("/out", "my.awesome.image.webp"),
 		},
 		{
-			name:         "ShouldAddExtension_WhenOriginalFileHasNone",
-			format:       "jpg",
-			originalPath: "image",
-			outputDir:    "/out",
-			expected:     filepath.Join("/out", "image.jpg"),
+			name:      "ShouldAddExtension_WhenOriginalFileHasNone",
+			format:    "jpg",
+			relPath:   "image",
+			outputDir: "/out",
+			expected:  filepath.Join("/out", "image.jpg"),
 		},
 	}
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			c := ConvertParams{Format: tt.format}
-			result := c.ModifyOutputPath(tt.originalPath, tt.outputDir)
+			result := c.ModifyOutputPath(tt.relPath, tt.outputDir)
 			suite.Equal(tt.expected, result)
 		})
 	}

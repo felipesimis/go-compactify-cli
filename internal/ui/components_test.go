@@ -22,6 +22,7 @@ func (s *CalloutTestSuite) TestCallouts() {
 		{"Warn", Warn, "⚠️"},
 		{"Error", Error, "❌"},
 		{"Success", Success, "✅"},
+		{"Info", Info, "ℹ️"},
 	}
 
 	scenarios := []struct {

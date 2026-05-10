@@ -14,60 +14,109 @@ Designed with **software engineering excellence** in mind, the project follows s
 ---
 
 ## ✨ Key Features
+- 🚀 **High Performance**: Uses `libvips` for low memory footprint and extreme speed, featuring instant directory traversal.
+- 🧠 **Hardware-Aware**: Intelligent concurrency management that automatically scales to your host's CPU cores.
+- 📁 **Deep Recursive Processing**: Seamlessly processes nested directory trees, mirroring the exact folder hierarchy.
+- 🛡️ **Safety First**: Built-in `DryRun` mode to simulate filesystem operations before committing changes.
+- ⚙️ **Multi-layer Configuration**: Precedence order: Flags > Env Vars > Config File > Defaults.
+- 🛠️ **Versatile Processing**: Format conversion, resizing, cropping, grayscale, flipping, and lossless compression.
+- 📊 **Detailed Analytics**: Execution summary with a side-by-side "Impact Dashboard".
 
-- 🚀 **High Performance**: Uses `libvips` for low memory footprint and extreme speed.
-- 🧠 **Hardware-Aware**: Intelligent concurrency management using a semaphore pattern to optimize CPU utilization.
-- 🛡️ **Safety First**: Built-in `Dry Run` mode allows users to simulate filesystem operations before committing changes, preventing accidental data loss.
-- ⚙️ **Multi-layer Configuration**: Support for Config Files, Environment Variables, and Flags with a strict precedence order.
-- 🛠️ **Versatile Processing**:
-    - Format conversion (JPEG, PNG, WebP, etc.)
-    - Intelligent resizing and cropping.
-    - Grayscale, flipping, and color palette optimization.
-    - Lossless compression.
-    - Granular control over output encoding (`--quality`).
-    - Privacy-first EXIF metadata stripping (removes GPS/Camera info while preserving color profiles).
-- 📊 **Detailed Analytics**: Execution summary with a side-by-side "Impact Dashboard" (Original vs. Processed).
+---
+
+## 🚀 Common Use Cases (How-To Guide)
+
+This section provides direct answers to common developer questions. Each example is copy-paste ready.
+
+### How do I process a massive library recursively while maintaining folder structure?
+Use the `--recursive` (or `-r`) flag to mirror the input hierarchy in the output destination:
+```bash
+./compactify convert --format webp -i ./massive_library -o ./optimized_library --recursive
+```
+
+### How do I batch resize images with custom concurrency for high-end hardware?
+Use the `--concurrency` flag to override the automatic CPU detection:
+```bash
+./compactify resize -w 800 -H 600 -i ./images --concurrency 16
+```
+
+### How can I preview changes without actually modifying any files?
+Use the `--dry-run` flag to simulate the operation and verify output paths:
+```bash
+./compactify convert --format webp -i ./assets --dry-run
+```
+
+### How do I optimize images and strip sensitive EXIF/GPS metadata for privacy?
+Add the `--strip-metadata` flag to remove camera and location info while preserving color profiles:
+```bash
+./compactify convert --format jpeg -i ./input -o ./output --strip-metadata
+```
+
+### How do I balance file size and visual quality?
+Use the --quality (or -q) flag on any transformation command (1-100). Default is 75:
+```bash
+./compactify crop -w 800 -H 600 -q 85 -i ./assets
+```
+
+### How do I optimize images without losing any quality?
+Use the `lossless` command to apply format-specific lossless optimizations:
+```bash
+./compactify lossless -i ./photos -o ./optimized_photos
+```
+
+### How do I specify a custom configuration file?
+Use the `init` command or the `--config` flag to point to your YAML configuration (see `config.yaml.example` for reference):
+```bash
+./compactify init
+```
+
+### How do I set global settings using environment variables?
+Prefix settings with `COMPACTIFY_`. For example, to set concurrency to 10:
+```bash
+export COMPACTIFY_CONCURRENCY=10
+./compactify lossless
+```
 
 ---
 
 ## ⚙️ Configuration Hierarchy
-
-Compactify follows a strict precedence order (from highest to lowest). This allows for flexible deployments in local, CI/CD, or Docker environments:
-
+Compactify follows a strict precedence order (from highest to lowest):
 1. **Command Line Flags** (e.g., `--concurrency 10`)
 2. **Environment Variables** (prefixed with `COMPACTIFY_`)
 3. **Configuration File** (`config.yaml`)
-4. **Hardware Defaults** (automatically calculated based on CPU cores)
+4. **Hardware Defaults** (automatically calculated)
 
 ### Environment Variables Mapping
-
-| Environment Variable | Flag Equivalent |
-| :--- | :--- |
-| `COMPACTIFY_CONCURRENCY` | `-c, --concurrency` |
-| `COMPACTIFY_INPUT` | `-i, --input` |
-| `COMPACTIFY_OUTPUT` | `-o, --output` |
-| `COMPACTIFY_QUALITY` | `-q, --quality` |
-| `COMPACTIFY_DRY_RUN` | `--dry-run` |
-| `COMPACTIFY_STRIP_METADATA` | `--strip-metadata` |
-| `COMPACTIFY_CONFIG` | `--config` |
+| Environment Variable         | Flag Equivalent         |
+| :---                         | :---                    |
+| `COMPACTIFY_CONCURRENCY`     | `-c, --concurrency`     |
+| `COMPACTIFY_INPUT`           | `-i, --input`           |
+| `COMPACTIFY_OUTPUT`          | `-o, --output`          |
+| `COMPACTIFY_QUALITY`         | `-q, --quality`         |
+| `COMPACTIFY_RECURSIVE`       | `-r, --recursive`       |
+| `COMPACTIFY_DRY_RUN`         | `--dry-run`             |
+| `COMPACTIFY_STRIP_METADATA`  | `--strip-metadata`      |
+| `COMPACTIFY_CONFIG`          | `--config`              |
 
 ---
 
 ## 🏗 Architecture & Engineering Decisions
 
-### 🧩 Intent-Based Architecture (Functional Options)
-The core logic is strictly isolated from external dependencies. By using the **Functional Options Pattern**, the CLI layer remains "intent-based," only specifying what should happen (e.g., `WithResize`). The underlying `bimg` engine then translates these intents into a single, optimized `libvips` operation, preventing redundant memory allocations and ensuring high-performance **single-pass CGO execution**.
+#### 🧩 Intent-Based Architecture
+By using the **Functional Options Pattern**, the CLI layer remains "intent-based". The underlying `bimg` engine translates these into a single `libvips` operation, ensuring **single-pass CGO execution** and reducing memory allocations.
 
-### 🌊 Concurrency Model
-To handle thousands of images efficiently, Compactify uses a **Semaphore Pattern** (`chan struct{}`). This prevents goroutine explosion and ensures the tool respects the host machine's hardware limits.
+### 🌊 Concurrency & Memory
+Uses a **Semaphore Pattern** and a **Collector Goroutine**. The memory footprint remains statically flat ($O(C)$) regardless of the number of images, as the orchestration balances discovery and execution in parallel.
 
-### 🛡️ The Dry-Run Pattern
-Implementing the `FileReaderWriter` interface, the tool supports a non-destructive simulation mode. This is critical for CLI tools that perform destructive operations, providing a "safety net" for the user.
+### 🛡️ Segregated Filesystem Abstraction
+Instead of raw OS calls, the project uses a specialized interface for workers. This enables:
+- **Dry-Run Mode**: Safely simulate operations without touching the disk.
+- **Lazy Creation**: Directories are created "just-in-time", only when a processed file is ready to be saved, preventing empty "ghost" folders.
+- **Infinite Loop Prevention**: Intelligent path detection that prevents the engine from recursively processing its own output when the destination resides within the source tree.
 
 ---
 
 ## 📂 Project Structure
-
 ```text
 .
 ├── cmd/                # CLI command implementations (Cobra)
@@ -83,19 +132,16 @@ Implementing the `FileReaderWriter` interface, the tool supports a non-destructi
 │   └── progress/       # Terminal progress bar implementation
 └── main.go             # Application entrypoint
 ```
+
 ---
 
 ## 🚀 Getting Started
 
 ### 📥 1. Pre-compiled Binaries (Recommended)
-The fastest way to use Compactify. No system dependencies (Go or libvips) are required.
-1. Download the latest release for your OS from the [Releases Page](https://github.com/felipesimis/go-compactify-cli/releases).
-2. Extract the archive and run the executable via terminal.
-   * *Windows users: Keep the provided DLLs in the same folder as the executable.*
+1. Download the latest release from the [Releases Page](https://github.com/felipesimis/go-compactify-cli/releases).
+2. Extract and run. (*Windows: Keep DLLs in the same folder*).
 
 ### 🐳 2. Running with Docker
-Perfect for consistent environments without installing native dependencies. Requires [Docker](https://docs.docker.com/get-docker/) installed.
-
 ```bash
 # Build the image locally
 docker build -t compactify-cli .
@@ -104,91 +150,39 @@ docker build -t compactify-cli .
 docker run --rm -v "$(pwd):/workspace" compactify-cli lossless -i /workspace/images
 ```
 > [!IMPORTANT]
-> Path Mapping: When using Docker, all input (-i) and output (-o) paths must be relative to the /workspace directory inside the container.
+> Paths must be relative to the `/workspace` directory inside the container.
 
-### 🛠 3. Building from Source (Developers)
-Building from source requires [Go](https://golang.org/doc/install) 1.21+ and [libvips](https://www.libvips.org/) headers installed in your system.
-
+### 🛠 3. Building from Source
+Requires [Go](https://golang.org/doc/install) 1.26+ and [libvips](https://www.libvips.org/) headers.
 - **macOS**: `brew install vips`
 - **Linux**: `sudo apt install libvips-dev`
-- **Windows**: Follow the `vips` Windows installation guide.
-
-#### Installation (Native)
-
-Clone the repository:
-   ```bash
-   # Clone the repository
-   git clone https://github.com/felipesimis/go-compactify-cli.git
-   cd go-compactify-cli
-
-   # Build with version injection
-   go build -ldflags="-w -s -X 'github.com/felipesimis/go-compactify-cli/cmd.Version=$(git describe --tags --abbrev=0)'" -trimpath -o compactify .
-   ```
-
-#### Quick Start
 
 ```bash
-# Initialize a default configuration file
-./compactify init
-
-# Batch resize all images with a high concurrency
-./compactify resize -w 800 -H 600 -i ./images --concurrency 12
-
-# Convert all images to WebP without actually touching the files (Preview)
-./compactify convert --format webp -i ./assets --dry-run
-
-# Crop all images with specific compression quality
-./compactify crop -w 800 -H 600 -q 85 -i ./assets
-
-# Run lossless optimization with concurrency set via environment variable
-export COMPACTIFY_CONCURRENCY=10
-./compactify lossless
+git clone https://github.com/felipesimis/go-compactify-cli.git
+cd go-compactify-cli
+go build -ldflags="-w -s -X 'github.com/felipesimis/go-compactify-cli/cmd.Version=$(git describe --tags --abbrev=0)'" -trimpath -o compactify .
 ```
 
 ---
 
 ## 🧪 Testing Standards
+- **Unit & Integration**: High coverage via Dependency Injection and `testify/suite`.
+- **Functional Mocking**: `FakeImageProcessor` stubs for fast orchestration validation.
+- **E2E Tests**: Binary validation against real images for `CGO/libvips` stability.
 
-We aim for maximum reliability through a multi-tiered testing strategy.
-
-*   **Unit & Integration Tests**: Achieved high logic coverage through robust Dependency Injection and the use of testify/suite.
-*   **Functional Mocking**: Uses high-performance `FakeImageProcessor` stubs to validate orchestration without the overhead of native library calls.
-*   **End-to-End (E2E) Tests**: Validates the fully compiled binary against real image files to guarantee `CGO/libvips` stability.
-
-**Run all tests:**
-```bash
-make test
-```
-
-**Run all tests with coverage:**
-```bash
-make coverage
-```
-
-**Run a specific test:**
-```bash
-go test -v ./internal/filesystem -run TestReadDir
-```
-
-**Run E2E tests:**
-```bash
-make test-e2e
-```
+**Commands:**
+- All tests: `make test`
+- Coverage: `make coverage`
+- E2E tests: `make test-e2e`
 
 ---
 
 ## 🛠 Built With
-
-- [Go](https://golang.org/) - The programming language.
-- [bimg](https://github.com/h2non/bimg) - Go bindings for libvips.
-- [Cobra](https://github.com/spf13/cobra) - CLI framework.
-- [Testify](https://github.com/stretchr/testify) - Testing toolkit.
-- [Lipgloss](https://github.com/charmbracelet/lipgloss) - Styling library.
+- [Go](https://golang.org/) | [bimg](https://github.com/h2non/bimg) | [Cobra](https://github.com/spf13/cobra) | [Testify](https://github.com/stretchr/testify) | [Lipgloss](https://github.com/charmbracelet/lipgloss)
 
 ---
 
 ## 📄 License
-
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ---

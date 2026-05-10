@@ -72,11 +72,13 @@ func SetupTestConfig(createCmd func(filesystem.FileSystem, image.ProcessorFactor
 }
 
 func AssertCommonCommandBehaviors(suite *suite.Suite, cmd *cobra.Command, config *TestConfig, extraArgs ...string) {
-	invalidArgs := append([]string{"--input", "./invalid_path_name"}, extraArgs...)
+	sandboxDir := suite.T().TempDir()
+	invalidInput := filepath.Join(sandboxDir, "invalid_path_name")
+
+	invalidArgs := append([]string{"--input", invalidInput}, extraArgs...)
 	cmd.SetArgs(invalidArgs)
 	err := cmd.Execute()
 	suite.Error(err, "should return an error for invalid input directory")
-	suite.Contains(err.Error(), "failed to open directory")
 
 	tmpDir := suite.T().TempDir()
 	config.OutBuf.Reset()

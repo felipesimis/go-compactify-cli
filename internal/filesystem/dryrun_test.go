@@ -52,6 +52,11 @@ func (m *MockFileSystem) WriteFile(path string, data []byte) error {
 	return args.Error(0)
 }
 
+func (m *MockFileSystem) Walk(root string, walkFn func(path string, info FileInfo) error) error {
+	args := m.Called(root, walkFn)
+	return args.Error(0)
+}
+
 type DryRunFileSystemTestSuite struct {
 	suite.Suite
 	dryRunFs FileSystem
@@ -90,17 +95,28 @@ func (suite *DryRunFileSystemTestSuite) TestOpenFile_ShouldReturnFile_WhenCalled
 func (suite *DryRunFileSystemTestSuite) TestCreateDir_ShouldReturnNoError_WhenCalled() {
 	err := suite.dryRunFs.CreateDir("test/newdir")
 	suite.NoError(err)
+	suite.mockFS.AssertNotCalled(suite.T(), "CreateDir", "test/newdir")
 }
 
 func (suite *DryRunFileSystemTestSuite) TestWriteFile_ShouldReturnNoError_WhenCalled() {
 	err := suite.dryRunFs.WriteFile("test/file.jpg", []byte("file content"))
 	suite.NoError(err)
+	suite.mockFS.AssertNotCalled(suite.T(), "WriteFile", "test/file.jpg", []byte("file content"))
 }
 
 func (suite *DryRunFileSystemTestSuite) TestCreateSiblingDir_ShouldReturnNewPath_WhenCalled() {
 	path, err := suite.dryRunFs.CreateSiblingDir("test/input", "-suffix")
 	suite.NoError(err)
 	suite.Equal("test/input-suffix", filepath.ToSlash(path))
+	suite.mockFS.AssertNotCalled(suite.T(), "CreateSiblingDir", "test/input", "-suffix")
+}
+
+func (suite *DryRunFileSystemTestSuite) TestWalk_IsDelegated() {
+	suite.mockFS.On("Walk", "test/root", mock.Anything).Return(nil)
+	err := suite.dryRunFs.Walk("test/root", func(path string, info FileInfo) error {
+		return nil
+	})
+	suite.NoError(err)
 }
 
 func TestDryRunFileSystemTestSuite(t *testing.T) {

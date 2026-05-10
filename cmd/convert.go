@@ -18,14 +18,14 @@ type ConvertParams struct {
 	Format string
 }
 
-func (c ConvertParams) ModifyOutputPath(originalPath, outputDir string) string {
+func (c ConvertParams) ModifyOutputPath(relPath, outputDir string) string {
 	if c.Format == "" {
 		return ""
 	}
 
-	fileName := filepath.Base(originalPath)
-	fileNameWithoutExt := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	newFilename := fmt.Sprintf("%s.%s", fileNameWithoutExt, c.Format)
+	fileExt := filepath.Ext(relPath)
+	relPathWithoutExt := strings.TrimSuffix(relPath, fileExt)
+	newFilename := fmt.Sprintf("%s.%s", relPathWithoutExt, c.Format)
 	return filepath.Join(outputDir, newFilename)
 }
 
