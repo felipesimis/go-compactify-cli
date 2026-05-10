@@ -114,6 +114,9 @@ Instead of raw OS calls, the project uses a specialized interface for workers. T
 - **Lazy Creation**: Directories are created "just-in-time", only when a processed file is ready to be saved, preventing empty "ghost" folders.
 - **Infinite Loop Prevention**: Intelligent path detection that prevents the engine from recursively processing its own output when the destination resides within the source tree.
 
+#### 🧬 Domain-Driven & Strongly Typed
+The core orchestration engine strictly avoids "Tramp Data" (passing generic `interface{}` or `any` bags across layers). It leverages Go closures and explicit domain types to ensure that every component receives only the data it requires, maintaining high cohesion, compile-time validation, and zero unsafe type assertions.
+
 ---
 
 ## 📂 Project Structure

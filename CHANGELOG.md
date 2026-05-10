@@ -26,6 +26,10 @@
 - **Single-Pass CGO Execution**: Refactored the internal engine to aggregate all transformation intents into a single options struct, ensuring only one memory allocation and CGO call per image pipeline, significantly reducing memory footprint.
 - **Path Resolution Hardening**: Fixed a path relative calculation issue and ensured correct fallback behaviors when modifiers are not present.
 
+### 🛠 Architecture & Refactoring
+- **Domain-Driven Renaming**: Refactored core orchestration to use `RunFileBatch` and `FileTask`, aligning the code with domain-specific semantics instead of generic function parameters.
+- **Type Safety Hardening**: Eliminated the `ExtraParams interface{}` in favor of explicit `OutputPathModifier` interfaces and Go closures. This removes unsafe type assertions and enforces compile-time safety across the processing pipeline.
+
 ## [1.5.0] - 2026-04-28
 
 ### 🚀 Added & Changed
