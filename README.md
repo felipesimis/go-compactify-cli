@@ -102,14 +102,17 @@ Compactify follows a strict precedence order (from highest to lowest):
 
 ## 🏗 Architecture & Engineering Decisions
 
-### 🧩 Intent-Based Architecture
+#### 🧩 Intent-Based Architecture
 By using the **Functional Options Pattern**, the CLI layer remains "intent-based". The underlying `bimg` engine translates these into a single `libvips` operation, ensuring **single-pass CGO execution** and reducing memory allocations.
 
 ### 🌊 Concurrency & Memory
-Uses a **Semaphore Pattern** and a **Collector Goroutine**. The memory footprint remains statically flat ($O(C)$) regardless of whether you process 10 or 1,000,000 images.
+Uses a **Semaphore Pattern** and a **Collector Goroutine**. The memory footprint remains statically flat ($O(C)$) regardless of the number of images, as the orchestration balances discovery and execution in parallel.
 
-### 🛡️ The Dry-Run Pattern
-Implements the `FileReaderWriter` interface to intercept and simulate filesystem operations, providing a critical safety net for destructive CLI operations.
+### 🛡️ Segregated Filesystem Abstraction
+Instead of raw OS calls, the project uses a specialized interface for workers. This enables:
+- **Dry-Run Mode**: Safely simulate operations without touching the disk.
+- **Lazy Creation**: Directories are created "just-in-time", only when a processed file is ready to be saved, preventing empty "ghost" folders.
+- **Infinite Loop Prevention**: Intelligent path detection that prevents the engine from recursively processing its own output when the destination resides within the source tree.
 
 ---
 
@@ -150,7 +153,7 @@ docker run --rm -v "$(pwd):/workspace" compactify-cli lossless -i /workspace/ima
 > Paths must be relative to the `/workspace` directory inside the container.
 
 ### 🛠 3. Building from Source
-Requires [Go](https://golang.org/doc/install) 1.21+ and [libvips](https://www.libvips.org/) headers.
+Requires [Go](https://golang.org/doc/install) 1.26+ and [libvips](https://www.libvips.org/) headers.
 - **macOS**: `brew install vips`
 - **Linux**: `sudo apt install libvips-dev`
 
