@@ -66,9 +66,9 @@ func runEnlarge(fs filesystem.FileSystem, processorFactory image.ProcessorFactor
 			OutputSuffix:       fmt.Sprintf("-enlarged-%dx%d", width, height),
 			ProgressBarMessage: "Enlarging images",
 			ExtraParams:        EnlargeParams{Width: width, Height: height},
-			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-				extraParams := params.ExtraParams.(EnlargeParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,
+			ProcessorFunc: func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error {
+				extraParams := task.ExtraParams.(EnlargeParams)
+				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig,
 					image.WithEnlarge(extraParams.Width, extraParams.Height))
 			},
 		})

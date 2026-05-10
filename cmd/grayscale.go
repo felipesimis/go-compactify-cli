@@ -43,8 +43,8 @@ func runGrayscale(fs filesystem.FileSystem, processorFactory image.ProcessorFact
 			Out:                cmd.OutOrStdout(),
 			OutputSuffix:       "-grayscale",
 			ProgressBarMessage: "Creating grayscale images",
-			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithGrayscale())
+			ProcessorFunc: func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error {
+				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig, image.WithGrayscale())
 			},
 		})
 	}

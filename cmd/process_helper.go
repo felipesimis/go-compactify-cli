@@ -38,7 +38,7 @@ type OperationConfig struct {
 	OutputSuffix       string
 	ProgressBarMessage string
 	ExtraParams        interface{}
-	ProcessorFunc      func(ctx context.Context, p processing.FileProcessingParams, stats *utils.ImageProcessingStats) error
+	ProcessorFunc      func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error
 }
 
 func RunOperation(app AppConfig, config OperationConfig) error {
@@ -72,20 +72,20 @@ func RunOperation(app AppConfig, config OperationConfig) error {
 	progressBar := progress.NewProgressBar(config.Out, len(files), app.Concurrency, config.ProgressBarMessage)
 	defer progressBar.Finish()
 
-	wrappedProcessor := func(p processing.FileProcessingParams) error {
-		return config.ProcessorFunc(config.Ctx, p, stats)
+	wrappedProcessor := func(task processing.FileTask) error {
+		return config.ProcessorFunc(config.Ctx, task, stats)
 	}
-	params := processing.ProcessFilesParams{
-		Files:         files,
-		FS:            config.FileSystem,
-		InputDir:      app.InputDir,
-		OutputDir:     outputRootDir,
-		ProgressBar:   progressBar,
-		ExtraParams:   config.ExtraParams,
-		ProcessorFunc: wrappedProcessor,
-		Concurrency:   app.Concurrency,
+	fileBatchConfig := processing.FileBatchConfig{
+		Files:       files,
+		FS:          config.FileSystem,
+		InputDir:    app.InputDir,
+		OutputDir:   outputRootDir,
+		ProgressBar: progressBar,
+		ExtraParams: config.ExtraParams,
+		Handler:     wrappedProcessor,
+		Concurrency: app.Concurrency,
 	}
-	processErrors := processing.ProcessFiles(params)
+	processErrors := processing.RunFileBatch(fileBatchConfig)
 	totalImages := uint32(len(files))
 	resultBuilder.SetTotalImages(totalImages).
 		SetSkippedImages(stats.SkippedImages.Load()).
@@ -102,7 +102,7 @@ func RunOperation(app AppConfig, config OperationConfig) error {
 
 func HandleImageProcessing(
 	ctx context.Context,
-	params processing.FileProcessingParams,
+	task processing.FileTask,
 	stats *utils.ImageProcessingStats,
 	processorFactory image.ProcessorFactory,
 	appConfig AppConfig,
@@ -117,10 +117,10 @@ func HandleImageProcessing(
 
 	buf := bufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	buf.Grow(int(params.File.Size))
+	buf.Grow(int(task.File.Size))
 	defer bufferPool.Put(buf)
 
-	file, err := params.FS.OpenFile(params.File.Path)
+	file, err := task.FS.OpenFile(task.File.Path)
 	if err != nil {
 		stats.SkippedImages.Add(1)
 		return err
@@ -146,15 +146,15 @@ func HandleImageProcessing(
 		return err
 	}
 
-	outputPath := resolveImageDestination(params)
+	outputPath := resolveImageDestination(task)
 
 	destDir := filepath.Dir(outputPath)
-	if err := params.FS.CreateDir(destDir); err != nil {
+	if err := task.FS.CreateDir(destDir); err != nil {
 		stats.SkippedImages.Add(1)
 		return err
 	}
 
-	err = params.FS.WriteFile(outputPath, newImg)
+	err = task.FS.WriteFile(outputPath, newImg)
 	if err != nil {
 		stats.SkippedImages.Add(1)
 		return err
@@ -186,17 +186,17 @@ func resolveRootOutputDir(appConfig AppConfig, config OperationConfig) (string, 
 	return config.FileSystem.CreateSiblingDir(appConfig.InputDir, config.OutputSuffix)
 }
 
-func resolveImageDestination(params processing.FileProcessingParams) string {
-	relPath := params.File.RelPath
+func resolveImageDestination(task processing.FileTask) string {
+	relPath := task.File.RelPath
 	if relPath == "" {
-		relPath = filepath.Base(params.File.Path)
+		relPath = filepath.Base(task.File.Path)
 	}
 
-	if modifier, ok := params.ExtraParams.(OutputPathModifier); ok {
-		return modifier.ModifyOutputPath(relPath, params.OutputDir)
+	if modifier, ok := task.ExtraParams.(OutputPathModifier); ok {
+		return modifier.ModifyOutputPath(relPath, task.OutputDir)
 	}
 
-	return utils.BuildOutputPath(params.OutputDir, relPath)
+	return utils.BuildOutputPath(task.OutputDir, relPath)
 }
 
 func RenderProcessSummary(r *utils.Result) string {

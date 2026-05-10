@@ -62,7 +62,7 @@ type ProcessingTestSuite struct {
 	mockFS          *MockFileSystem
 	mockProgressBar *MockProgressBar
 	files           []filesystem.FileInfo
-	params          ProcessFilesParams
+	config          FileBatchConfig
 }
 
 func (suite *ProcessingTestSuite) SetupTest() {
@@ -72,13 +72,13 @@ func (suite *ProcessingTestSuite) SetupTest() {
 		{Path: "image1.jpg"},
 		{Path: "image2.jpg"},
 	}
-	suite.params = ProcessFilesParams{
+	suite.config = FileBatchConfig{
 		Files:       suite.files,
 		FS:          suite.mockFS,
 		OutputDir:   "output",
 		ProgressBar: suite.mockProgressBar,
-		ProcessorFunc: func(params FileProcessingParams) error {
-			_, err := params.FS.ReadFile(params.File.Path)
+		Handler: func(task FileTask) error {
+			_, err := task.FS.ReadFile(task.File.Path)
 			return err
 		},
 		Concurrency: 1,
@@ -96,24 +96,24 @@ func (suite *ProcessingTestSuite) setupSuccessMocks() {
 	suite.mockProgressBar.On("Increment").Twice()
 }
 
-func (suite *ProcessingTestSuite) TestProcessFiles_ShouldSucceed_WhenAllFilesAreProcessedSuccessfully() {
+func (suite *ProcessingTestSuite) TestRunFileBatch_ShouldSucceed_WhenAllFilesAreProcessedSuccessfully() {
 	suite.setupSuccessMocks()
-	errs := ProcessFiles(suite.params)
+	errs := RunFileBatch(suite.config)
 	suite.Empty(errs)
 }
 
-func (suite *ProcessingTestSuite) TestProcessFiles_ShouldReturnErrors_WhenSomeFilesFail() {
+func (suite *ProcessingTestSuite) TestRunFileBatch_ShouldReturnErrors_WhenSomeFilesFail() {
 	suite.mockFS.On("ReadFile", "image1.jpg").Return(nil, errors.New("read error"))
 	suite.mockFS.On("ReadFile", "image2.jpg").Return([]byte("content2"), nil)
 	suite.mockProgressBar.On("Increment").Twice()
 
-	errs := ProcessFiles(suite.params)
+	errs := RunFileBatch(suite.config)
 	suite.Len(errs, 1)
 	suite.Contains(errs[0].Error(), "read error")
 	suite.Contains(errs[0].Error(), "image1.jpg")
 }
 
-func (suite *ProcessingTestSuite) TestProcessFiles_ShouldUseDefaultConcurrency_WhenZeroIsProvided() {
+func (suite *ProcessingTestSuite) TestRunFileBatch_ShouldUseDefaultConcurrency_WhenZeroIsProvided() {
 	expectedConcurrency := runtime.NumCPU()
 	numFiles := expectedConcurrency * 3
 	var testFiles []filesystem.FileInfo
@@ -124,7 +124,7 @@ func (suite *ProcessingTestSuite) TestProcessFiles_ShouldUseDefaultConcurrency_W
 	var activeWorkers, maxWorkers int32
 	var mu sync.Mutex
 
-	spyProcessor := func(params FileProcessingParams) error {
+	spyProcessor := func(task FileTask) error {
 		current := atomic.AddInt32(&activeWorkers, 1)
 
 		mu.Lock()
@@ -140,15 +140,15 @@ func (suite *ProcessingTestSuite) TestProcessFiles_ShouldUseDefaultConcurrency_W
 
 	suite.mockProgressBar.On("Increment").Times(numFiles)
 
-	customParams := ProcessFilesParams{
-		Files:         testFiles,
-		FS:            suite.mockFS,
-		ProgressBar:   suite.mockProgressBar,
-		ProcessorFunc: spyProcessor,
-		Concurrency:   0,
+	customConfig := FileBatchConfig{
+		Files:       testFiles,
+		FS:          suite.mockFS,
+		ProgressBar: suite.mockProgressBar,
+		Handler:     spyProcessor,
+		Concurrency: 0,
 	}
 
-	errs := ProcessFiles(customParams)
+	errs := RunFileBatch(customConfig)
 
 	suite.Empty(errs)
 	suite.Equal(int32(expectedConcurrency), maxWorkers)

@@ -79,9 +79,9 @@ func runCrop(fs filesystem.FileSystem, processorFactory image.ProcessorFactory) 
 			OutputSuffix:       fmt.Sprintf("-cropped_%dx%d", width, height),
 			ProgressBarMessage: "Cropping images",
 			ExtraParams:        CropParams{Width: width, Height: height, Gravity: gravity},
-			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-				extraParams := params.ExtraParams.(CropParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,
+			ProcessorFunc: func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error {
+				extraParams := task.ExtraParams.(CropParams)
+				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig,
 					image.WithCrop(extraParams.Width, extraParams.Height, extraParams.Gravity))
 			},
 		})

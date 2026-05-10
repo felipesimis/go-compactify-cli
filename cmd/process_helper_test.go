@@ -103,13 +103,13 @@ func (suite *ProcessingTestSuite) TearDownTest() {
 	suite.mockFS.AssertExpectations(suite.T())
 }
 
-func (suite *ProcessingTestSuite) defaultProcessingParams() (*utils.ImageProcessingStats, processing.FileProcessingParams) {
+func (suite *ProcessingTestSuite) defaultProcessingTask() (*utils.ImageProcessingStats, processing.FileTask) {
 	stats := &utils.ImageProcessingStats{}
-	params := processing.FileProcessingParams{
+	task := processing.FileTask{
 		File: filesystem.FileInfo{Path: "test.jpg", Size: 100},
 		FS:   suite.mockFS,
 	}
-	return stats, params
+	return stats, task
 }
 
 func (suite *ProcessingTestSuite) defaultOperationConfigs() (AppConfig, OperationConfig) {
@@ -196,7 +196,7 @@ func (suite *ProcessingTestSuite) TestRunOperation_ShouldSucceed_WhenValidInputs
 	appConfig, opCfg := suite.defaultOperationConfigs()
 	opCfg.Out = out
 	opCfg.OutputSuffix = "-suffix"
-	opCfg.ProcessorFunc = func(ctx context.Context, p processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
+	opCfg.ProcessorFunc = func(ctx context.Context, p processing.FileTask, stats *utils.ImageProcessingStats) error {
 		stats.ProcessedImages.Add(1)
 		return nil
 	}
@@ -212,8 +212,8 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenConte
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	stats, params := suite.defaultProcessingParams()
-	err := HandleImageProcessing(ctx, params, stats, nil, AppConfig{})
+	stats, task := suite.defaultProcessingTask()
+	err := HandleImageProcessing(ctx, task, stats, nil, AppConfig{})
 
 	suite.ErrorIs(err, context.Canceled)
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
@@ -222,8 +222,8 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenConte
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenOpenFileFails() {
 	suite.mockFS.On("OpenFile", "test.jpg").Return(nil, errors.New("open error"))
 
-	stats, params := suite.defaultProcessingParams()
-	err := HandleImageProcessing(context.Background(), params, stats, nil, AppConfig{})
+	stats, task := suite.defaultProcessingTask()
+	err := HandleImageProcessing(context.Background(), task, stats, nil, AppConfig{})
 
 	suite.ErrorContains(err, "open error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
@@ -232,8 +232,8 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenOpenF
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenReadFails() {
 	suite.mockFS.On("OpenFile", "test.jpg").Return(errorReader{}, nil)
 
-	stats, params := suite.defaultProcessingParams()
-	err := HandleImageProcessing(context.Background(), params, stats, nil, AppConfig{})
+	stats, task := suite.defaultProcessingTask()
+	err := HandleImageProcessing(context.Background(), task, stats, nil, AppConfig{})
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "forced read error")
@@ -244,14 +244,14 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenCreat
 	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
 	suite.mockFS.On("CreateDir", "output").Return(errors.New("create dir error"))
 
-	stats, params := suite.defaultProcessingParams()
-	params.OutputDir = "output"
+	stats, task := suite.defaultProcessingTask()
+	task.OutputDir = "output"
 
 	fakeFactory := func([]byte) image.ImageProcessor {
 		return &fakeProcessor{resultBytes: []byte("new-data")}
 	}
 
-	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, AppConfig{})
+	err := HandleImageProcessing(context.Background(), task, stats, fakeFactory, AppConfig{})
 	suite.ErrorContains(err, "create dir error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
@@ -261,13 +261,13 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWrite
 	suite.mockFS.On("CreateDir", "output").Return(nil)
 	suite.mockFS.On("WriteFile", mock.Anything, mock.Anything).Return(errors.New("write error"))
 
-	stats, params := suite.defaultProcessingParams()
-	params.OutputDir = "output"
+	stats, task := suite.defaultProcessingTask()
+	task.OutputDir = "output"
 	fakeFactory := func([]byte) image.ImageProcessor {
 		return &fakeProcessor{resultBytes: []byte("new-data"), err: nil}
 	}
 
-	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, AppConfig{})
+	err := HandleImageProcessing(context.Background(), task, stats, fakeFactory, AppConfig{})
 	suite.ErrorContains(err, "write error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
@@ -275,10 +275,10 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWrite
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenProcessingFails() {
 	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
 
-	stats, params := suite.defaultProcessingParams()
+	stats, task := suite.defaultProcessingTask()
 	fakeFactory := func([]byte) image.ImageProcessor { return &fakeProcessor{err: errors.New("processing error")} }
 
-	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, AppConfig{})
+	err := HandleImageProcessing(context.Background(), task, stats, fakeFactory, AppConfig{})
 	suite.ErrorContains(err, "processing error")
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
@@ -290,13 +290,13 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSucceed_WhenAl
 	suite.mockFS.On("CreateDir", "out").Return(nil)
 	suite.mockFS.On("WriteFile", filepath.Join("out", "test.jpg"), processedData).Return(nil)
 
-	stats, params := suite.defaultProcessingParams()
-	params.File.Size = int64(len(originalData))
-	params.OutputDir = "out"
+	stats, task := suite.defaultProcessingTask()
+	task.File.Size = int64(len(originalData))
+	task.OutputDir = "out"
 
 	fakeFactory := func([]byte) image.ImageProcessor { return &fakeProcessor{resultBytes: processedData} }
 
-	err := HandleImageProcessing(context.Background(), params, stats, fakeFactory, AppConfig{})
+	err := HandleImageProcessing(context.Background(), task, stats, fakeFactory, AppConfig{})
 
 	suite.NoError(err)
 	suite.Equal(uint32(1), stats.ProcessedImages.Load())
@@ -381,38 +381,38 @@ func (suite *ProcessingTestSuite) TestResolveImageDestination_ShouldUseModifier_
 	expectedPath := "custom_output_path.png"
 	mockModifier.On("ModifyOutputPath", "original.jpg", "/output").Return(expectedPath)
 
-	params := processing.FileProcessingParams{
+	task := processing.FileTask{
 		File:        filesystem.FileInfo{Path: "/input/original.jpg", RelPath: "original.jpg"},
 		OutputDir:   "/output",
 		ExtraParams: mockModifier,
 	}
 
-	result := resolveImageDestination(params)
+	result := resolveImageDestination(task)
 
 	suite.Equal(expectedPath, result)
 }
 
 func (suite *ProcessingTestSuite) TestResolveImageDestination_ShouldFallbackToDefault_WhenInterfaceNotImplemented() {
-	params := processing.FileProcessingParams{
+	task := processing.FileTask{
 		InputDir:  "/base/input",
 		File:      filesystem.FileInfo{Path: "/base/input/subfolder/test.jpg", RelPath: "subfolder/test.jpg"},
 		OutputDir: "/base/output",
 	}
 
-	result := resolveImageDestination(params)
+	result := resolveImageDestination(task)
 
 	expectedPath := filepath.Join("/base/output", "subfolder", "test.jpg")
 	suite.Equal(expectedPath, result)
 }
 
 func (suite *ProcessingTestSuite) TestResolveImageDestination_ShouldFallbackToBase_WhenRelFails() {
-	params := processing.FileProcessingParams{
+	task := processing.FileTask{
 		InputDir:  "/base/input",
 		File:      filesystem.FileInfo{Path: "base/../test.jpg", RelPath: ""},
 		OutputDir: "/base/output",
 	}
 
-	result := resolveImageDestination(params)
+	result := resolveImageDestination(task)
 
 	expectedPath := filepath.Join("/base/output", "test.jpg")
 	suite.Equal(expectedPath, result)
@@ -509,7 +509,7 @@ func BenchmarkHandleImageProcessing(b *testing.B) {
 	fs := filesystem.NewFileSystem()
 	stats := &utils.ImageProcessingStats{}
 
-	params := processing.FileProcessingParams{
+	task := processing.FileTask{
 		File: filesystem.FileInfo{
 			Path: "../test/testdata/sample.jpeg",
 			Size: 1024,
@@ -523,7 +523,7 @@ func BenchmarkHandleImageProcessing(b *testing.B) {
 	b.ResetTimer()
 
 	for range b.N {
-		err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, AppConfig{})
+		err := HandleImageProcessing(ctx, task, stats, mockProcessorFactory, AppConfig{})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -535,7 +535,7 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 
 	fs := filesystem.NewFileSystem()
 	stats := &utils.ImageProcessingStats{}
-	params := processing.FileProcessingParams{
+	task := processing.FileTask{
 		File: filesystem.FileInfo{
 			Path: "../test/testdata/large_image_sample.jpg",
 			Size: 10 * 1024 * 1024,
@@ -550,7 +550,7 @@ func BenchmarkHandleImageProcessingParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := HandleImageProcessing(ctx, params, stats, mockProcessorFactory, AppConfig{})
+			err := HandleImageProcessing(ctx, task, stats, mockProcessorFactory, AppConfig{})
 			if err != nil {
 				b.Fatal(err)
 			}

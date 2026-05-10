@@ -19,7 +19,7 @@ type ProcessorFS interface {
 	CreateDir(path string) error
 }
 
-type FileProcessingParams struct {
+type FileTask struct {
 	File        filesystem.FileInfo
 	FS          ProcessorFS
 	InputDir    string
@@ -28,21 +28,21 @@ type FileProcessingParams struct {
 	ExtraParams interface{}
 }
 
-type fileProcessorFunc func(FileProcessingParams) error
+type fileTaskHandler func(task FileTask) error
 
-type ProcessFilesParams struct {
-	Files         []filesystem.FileInfo
-	FS            ProcessorFS
-	InputDir      string
-	OutputDir     string
-	ProgressBar   ProgressBarInterface
-	ExtraParams   interface{}
-	ProcessorFunc fileProcessorFunc
-	Concurrency   int
+type FileBatchConfig struct {
+	Files       []filesystem.FileInfo
+	FS          ProcessorFS
+	InputDir    string
+	OutputDir   string
+	ProgressBar ProgressBarInterface
+	ExtraParams interface{}
+	Handler     fileTaskHandler
+	Concurrency int
 }
 
-func ProcessFiles(params ProcessFilesParams) []error {
-	concurrency := params.Concurrency
+func RunFileBatch(config FileBatchConfig) []error {
+	concurrency := config.Concurrency
 	if concurrency <= 0 {
 		concurrency = runtime.NumCPU()
 	}
@@ -60,7 +60,7 @@ func ProcessFiles(params ProcessFilesParams) []error {
 		close(errDone)
 	}()
 
-	for _, file := range params.Files {
+	for _, file := range config.Files {
 		wg.Add(1)
 		sem <- struct{}{}
 		go func(file filesystem.FileInfo) {
@@ -68,15 +68,15 @@ func ProcessFiles(params ProcessFilesParams) []error {
 				<-sem
 				wg.Done()
 			}()
-			err := params.ProcessorFunc(FileProcessingParams{
+			err := config.Handler(FileTask{
 				File:        file,
-				FS:          params.FS,
-				InputDir:    params.InputDir,
-				OutputDir:   params.OutputDir,
-				ProgressBar: params.ProgressBar,
-				ExtraParams: params.ExtraParams,
+				FS:          config.FS,
+				InputDir:    config.InputDir,
+				OutputDir:   config.OutputDir,
+				ProgressBar: config.ProgressBar,
+				ExtraParams: config.ExtraParams,
 			})
-			params.ProgressBar.Increment()
+			config.ProgressBar.Increment()
 
 			if err != nil {
 				errChan <- fmt.Errorf("error processing file '%s': %w", file.Path, err)

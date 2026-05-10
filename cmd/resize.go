@@ -66,9 +66,9 @@ func runResize(fs filesystem.FileSystem, processorFactory image.ProcessorFactory
 			OutputSuffix:       "-resized",
 			ProgressBarMessage: "Resizing images",
 			ExtraParams:        ResizeParams{Width: width, Height: height},
-			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-				extraParams := params.ExtraParams.(ResizeParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig,
+			ProcessorFunc: func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error {
+				extraParams := task.ExtraParams.(ResizeParams)
+				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig,
 					image.WithResize(extraParams.Width, extraParams.Height))
 			},
 		})

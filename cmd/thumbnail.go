@@ -60,9 +60,9 @@ func runThumbnail(fs filesystem.FileSystem, processorFactory image.ProcessorFact
 			OutputSuffix:       "-thumbnail",
 			ProgressBarMessage: "Creating thumbnails",
 			ExtraParams:        ThumbnailParams{Width: width},
-			ProcessorFunc: func(ctx context.Context, params processing.FileProcessingParams, stats *utils.ImageProcessingStats) error {
-				extraParams := params.ExtraParams.(ThumbnailParams)
-				return HandleImageProcessing(ctx, params, stats, processorFactory, appConfig, image.WithThumbnail(extraParams.Width))
+			ProcessorFunc: func(ctx context.Context, task processing.FileTask, stats *utils.ImageProcessingStats) error {
+				extraParams := task.ExtraParams.(ThumbnailParams)
+				return HandleImageProcessing(ctx, task, stats, processorFactory, appConfig, image.WithThumbnail(extraParams.Width))
 			},
 		})
 	}
