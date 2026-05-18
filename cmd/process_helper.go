@@ -69,7 +69,6 @@ func RunOperation(app AppConfig, config OperationConfig) error {
 	stats := &utils.ImageProcessingStats{}
 	resultBuilder := utils.NewResultBuilder(utils.RealTimeProvider{})
 	progressBar := progress.NewProgressBar(config.Out, len(files), app.Concurrency, config.ProgressBarMessage)
-	defer progressBar.Finish()
 
 	wrappedProcessor := func(task processing.FileTask) error {
 		return config.ProcessorFunc(config.Ctx, task, stats)
@@ -84,6 +83,7 @@ func RunOperation(app AppConfig, config OperationConfig) error {
 		Concurrency: app.Concurrency,
 	}
 	processErrors := processing.RunFileBatch(fileBatchConfig)
+	progressBar.Finish()
 	totalImages := uint32(len(files))
 	resultBuilder.SetTotalImages(totalImages).
 		SetSkippedImages(stats.SkippedImages.Load()).
