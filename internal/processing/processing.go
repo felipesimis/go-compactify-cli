@@ -51,17 +51,17 @@ func RunFileBatch(config FileBatchConfig) []error {
 
 	var processErrors []error
 	errDone := make(chan struct{})
-	go func() {
-		for err := range errChan {
+	go func(ch <-chan error) {
+		for err := range ch {
 			processErrors = append(processErrors, err)
 		}
 		close(errDone)
-	}()
+	}(errChan)
 
 	for _, file := range config.Files {
 		wg.Add(1)
 		sem <- struct{}{}
-		go func(file filesystem.FileInfo) {
+		go func(file filesystem.FileInfo, sendErr chan<- error) {
 			defer func() {
 				<-sem
 				wg.Done()
@@ -76,9 +76,9 @@ func RunFileBatch(config FileBatchConfig) []error {
 			config.ProgressBar.Increment()
 
 			if err != nil {
-				errChan <- fmt.Errorf("error processing file '%s': %w", file.Path, err)
+				sendErr <- fmt.Errorf("error processing file '%s': %w", file.Path, err)
 			}
-		}(file)
+		}(file, errChan)
 	}
 
 	wg.Wait()
