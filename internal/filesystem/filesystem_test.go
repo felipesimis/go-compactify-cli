@@ -3,6 +3,7 @@ package filesystem
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -347,6 +348,17 @@ func (suite *FileSystemTestSuite) TestStat_ShouldReturnErrFileInfo_WhenStatFails
 	expectedErrInfo := &ErrFileInfo{Path: suite.path, Err: expectedErr}
 	suite.EqualError(err, expectedErrInfo.Error())
 	suite.Equal(FileInfo{}, info)
+}
+
+func (suite *FileSystemTestSuite) TestStat_ShouldReturnFileInfo_WhenStatSucceeds() {
+	expectedSize := int64(2048)
+	suite.mockOS.On("Stat", suite.path).Return(FakeFileInfo{size: expectedSize}, nil)
+
+	info, err := suite.fs.Stat(suite.path)
+	suite.NoError(err)
+	suite.Equal(suite.path, info.Path)
+	suite.Equal(expectedSize, info.Size)
+	suite.Equal(filepath.Base(suite.path), info.RelPath)
 }
 
 func (suite *FileSystemTestSuite) TestErrors_Unwrap() {
