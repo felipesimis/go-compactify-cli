@@ -119,6 +119,13 @@ func (suite *DryRunFileSystemTestSuite) TestCreateSiblingDir_ShouldReturnNewPath
 	suite.mockFS.AssertNotCalled(suite.T(), "CreateSiblingDir", "test/input", "-suffix")
 }
 
+func (suite *DryRunFileSystemTestSuite) TestStat_ShouldReturnFileInfo_WhenCalled() {
+	suite.mockFS.On("Stat", "test/file.jpg").Return(FileInfo{Path: "test/file.jpg"}, nil)
+	info, err := suite.dryRunFs.Stat("test/file.jpg")
+	suite.NoError(err)
+	suite.Equal("test/file.jpg", info.Path)
+}
+
 func (suite *DryRunFileSystemTestSuite) TestWalk_IsDelegated() {
 	suite.mockFS.On("Walk", "test/root", mock.Anything).Return(nil)
 	err := suite.dryRunFs.Walk("test/root", func(path string, info FileInfo) error {
