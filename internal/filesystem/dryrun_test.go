@@ -52,6 +52,14 @@ func (m *MockFileSystem) WriteFile(path string, data []byte) error {
 	return args.Error(0)
 }
 
+func (m *MockFileSystem) Stat(path string) (FileInfo, error) {
+	args := m.Called(path)
+	if args.Get(0) == nil {
+		return FileInfo{}, args.Error(1)
+	}
+	return args.Get(0).(FileInfo), args.Error(1)
+}
+
 func (m *MockFileSystem) Walk(root string, walkFn func(path string, info FileInfo) error) error {
 	args := m.Called(root, walkFn)
 	return args.Error(0)

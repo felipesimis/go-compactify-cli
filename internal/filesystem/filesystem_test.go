@@ -339,6 +339,16 @@ func (suite *FileSystemTestSuite) TestWalk_Success() {
 	suite.Equal(expectedRelPath, capturedInfo.RelPath)
 }
 
+func (suite *FileSystemTestSuite) TestStat_ShouldReturnErrFileInfo_WhenStatFails() {
+	expectedErr := errors.New("mock stat error")
+	suite.mockOS.On("Stat", suite.path).Return(nil, expectedErr)
+
+	info, err := suite.fs.Stat(suite.path)
+	expectedErrInfo := &ErrFileInfo{Path: suite.path, Err: expectedErr}
+	suite.EqualError(err, expectedErrInfo.Error())
+	suite.Equal(FileInfo{}, info)
+}
+
 func (suite *FileSystemTestSuite) TestErrors_Unwrap() {
 	baseErr := errors.New("base error")
 

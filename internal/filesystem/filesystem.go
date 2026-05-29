@@ -21,6 +21,7 @@ type FileSystem interface {
 	Walk(root string, walkFn func(path string, info FileInfo) error) error
 	CreateDir(name string) error
 	CreateSiblingDir(path, suffix string) (string, error)
+	Stat(path string) (FileInfo, error)
 	FileReader
 	FileWriter
 }
@@ -44,6 +45,7 @@ type OSOperations interface {
 	ReadFile(name string) ([]byte, error)
 	WriteFile(name string, data []byte, perm os.FileMode) error
 	Walk(root string, walkFn func(path string, d os.DirEntry, err error) error) error
+	Stat(name string) (os.FileInfo, error)
 }
 
 type FileSystemWrapper struct {
@@ -112,6 +114,10 @@ func (o *OSWrapper) Walk(root string, walkFn func(path string, d os.DirEntry, er
 	return filepath.WalkDir(root, walkFn)
 }
 
+func (o *OSWrapper) Stat(name string) (os.FileInfo, error) {
+	return os.Stat(name)
+}
+
 func (fs *FileSystemWrapper) CreateDir(name string) error {
 	err := fs.os.MkdirAll(name, os.ModePerm)
 	if err != nil {
@@ -152,6 +158,19 @@ func (fs *FileSystemWrapper) WriteFile(name string, data []byte) error {
 		return &ErrWriteFile{Path: name, Err: err}
 	}
 	return nil
+}
+
+func (fs *FileSystemWrapper) Stat(path string) (FileInfo, error) {
+	file, err := fs.os.Stat(path)
+	if err != nil {
+		return FileInfo{}, &ErrFileInfo{Path: path, Err: err}
+	}
+	return FileInfo{
+		Path:    path,
+		Size:    file.Size(),
+		RelPath: filepath.Base(path),
+		IsDir:   file.IsDir(),
+	}, nil
 }
 
 func (fs *FileSystemWrapper) Walk(root string, walkFn func(path string, info FileInfo) error) error {

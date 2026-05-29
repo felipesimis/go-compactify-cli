@@ -65,6 +65,14 @@ func (m *MockOSOperations) Open(name string) (File, error) {
 	return args.Get(0).(File), args.Error(1)
 }
 
+func (m *MockOSOperations) Stat(name string) (os.FileInfo, error) {
+	args := m.Called(name)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(os.FileInfo), args.Error(1)
+}
+
 func (m *MockOSOperations) ReadFile(name string) ([]byte, error) {
 	args := m.Called(name)
 	if args.Get(0) == nil {
