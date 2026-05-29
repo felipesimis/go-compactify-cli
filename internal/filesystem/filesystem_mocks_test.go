@@ -81,6 +81,16 @@ func (m *MockOSOperations) ReadFile(name string) ([]byte, error) {
 	return args.Get(0).([]byte), args.Error(1)
 }
 
+func (m *MockOSOperations) Rename(oldPath, newPath string) error {
+	args := m.Called(oldPath, newPath)
+	return args.Error(0)
+}
+
+func (m *MockOSOperations) Remove(name string) error {
+	args := m.Called(name)
+	return args.Error(0)
+}
+
 func (m *MockOSOperations) WriteFile(name string, data []byte, perm os.FileMode) error {
 	args := m.Called(name, data, perm)
 	return args.Error(0)

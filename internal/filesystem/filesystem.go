@@ -46,6 +46,8 @@ type OSOperations interface {
 	WriteFile(name string, data []byte, perm os.FileMode) error
 	Walk(root string, walkFn func(path string, d os.DirEntry, err error) error) error
 	Stat(name string) (os.FileInfo, error)
+	Rename(oldPath, newPath string) error
+	Remove(name string) error
 }
 
 type FileSystemWrapper struct {
@@ -118,9 +120,16 @@ func (o *OSWrapper) Stat(name string) (os.FileInfo, error) {
 	return os.Stat(name)
 }
 
+func (o *OSWrapper) Rename(oldPath, newPath string) error {
+	return os.Rename(oldPath, newPath)
+}
+
+func (o *OSWrapper) Remove(name string) error {
+	return os.Remove(name)
+}
+
 func (fs *FileSystemWrapper) CreateDir(name string) error {
-	err := fs.os.MkdirAll(name, os.ModePerm)
-	if err != nil {
+	if err := fs.os.MkdirAll(name, os.ModePerm); err != nil {
 		return &ErrCreateDir{Path: name, Err: err}
 	}
 	return nil
@@ -129,8 +138,7 @@ func (fs *FileSystemWrapper) CreateDir(name string) error {
 func (fs *FileSystemWrapper) CreateSiblingDir(path, suffix string) (string, error) {
 	parentDir := filepath.Dir(path)
 	newDir := filepath.Join(parentDir, filepath.Base(path)+suffix)
-	err := fs.os.Mkdir(newDir, os.ModePerm)
-	if err != nil {
+	if err := fs.os.Mkdir(newDir, os.ModePerm); err != nil {
 		return "", &ErrCreateSiblingDir{Path: path, Err: err}
 	}
 	return newDir, nil
@@ -153,8 +161,14 @@ func (fs *FileSystemWrapper) OpenFile(path string) (io.ReadCloser, error) {
 }
 
 func (fs *FileSystemWrapper) WriteFile(name string, data []byte) error {
-	err := fs.os.WriteFile(name, data, 0644)
-	if err != nil {
+	tmpName := name + ".tmp"
+
+	if err := fs.os.WriteFile(tmpName, data, 0644); err != nil {
+		return &ErrWriteFile{Path: tmpName, Err: err}
+	}
+
+	if err := fs.os.Rename(tmpName, name); err != nil {
+		_ = fs.os.Remove(tmpName)
 		return &ErrWriteFile{Path: name, Err: err}
 	}
 	return nil

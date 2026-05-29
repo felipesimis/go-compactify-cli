@@ -139,17 +139,21 @@ func (suite *FileSystemTestSuite) TestOpenFile_ShouldReturnFile_WhenOpenSucceeds
 	suite.Equal(suite.mockFile, file)
 }
 
-func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnErrWriteFile_WhenWriteFails() {
-	expectedErr := &ErrWriteFile{Path: suite.path, Err: errors.New("mock error")}
-	suite.mockOS.On("WriteFile", suite.path, []byte("data"), os.FileMode(0644)).Return(expectedErr.Err)
+func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnErrWriteFile_WhenTempWriteFails() {
+	data := []byte("data")
+	tmpName := suite.path + ".tmp"
+	expectedErr := &ErrWriteFile{Path: tmpName, Err: errors.New("mock write error")}
+	suite.mockOS.On("WriteFile", tmpName, data, os.FileMode(0644)).Return(expectedErr.Err)
 
-	err := suite.fs.WriteFile(suite.path, []byte("data"))
+	err := suite.fs.WriteFile(suite.path, data)
 	suite.EqualError(err, expectedErr.Error())
 }
 
-func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnNoError_WhenWriteSucceeds() {
+func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnNoError_WhenWriteAndRenameSucceed() {
 	data := []byte("data")
-	suite.mockOS.On("WriteFile", suite.path, data, os.FileMode(0644)).Return(nil)
+	tmpName := suite.path + ".tmp"
+	suite.mockOS.On("WriteFile", tmpName, data, os.FileMode(0644)).Return(nil)
+	suite.mockOS.On("Rename", tmpName, suite.path).Return(nil)
 
 	err := suite.fs.WriteFile(suite.path, data)
 	suite.NoError(err)
