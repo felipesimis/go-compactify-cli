@@ -149,6 +149,18 @@ func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnErrWriteFile_WhenTem
 	suite.EqualError(err, expectedErr.Error())
 }
 
+func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnErrWriteFile_AndCleanup_WhenRenameFails() {
+	data := []byte("data")
+	tmpName := suite.path + ".tmp"
+	expectedErr := &ErrWriteFile{Path: suite.path, Err: errors.New("mock rename error")}
+	suite.mockOS.On("WriteFile", tmpName, data, os.FileMode(0644)).Return(nil)
+	suite.mockOS.On("Rename", tmpName, suite.path).Return(expectedErr.Err)
+	suite.mockOS.On("Remove", tmpName).Return(nil)
+
+	err := suite.fs.WriteFile(suite.path, data)
+	suite.EqualError(err, expectedErr.Error())
+}
+
 func (suite *FileSystemTestSuite) TestWriteFile_ShouldReturnNoError_WhenWriteAndRenameSucceed() {
 	data := []byte("data")
 	tmpName := suite.path + ".tmp"
