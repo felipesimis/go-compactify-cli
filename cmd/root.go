@@ -41,6 +41,16 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
+			if cpuProfile, _ := cmd.Flags().GetString("cpuprofile"); cpuProfile != "" {
+				f, err := os.Create(cpuProfile)
+				if err != nil {
+					return fmt.Errorf("could not create CPU profile: %v", err)
+				}
+				if err := pprof.StartCPUProfile(f); err != nil {
+					return fmt.Errorf("could not start CPU profile: %v", err)
+				}
+			}
+
 			isHelp := cmd.Name() == "help" || cmd.Flags().Changed("help")
 			isInit := cmd.Name() == "init"
 			isVersion := cmd.Flags().Changed("version")
@@ -58,6 +68,11 @@ func NewRootCmd() *cobra.Command {
 			}
 			return nil
 		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			if cpuProfile, _ := cmd.Flags().GetString("cpuprofile"); cpuProfile != "" {
+				pprof.StopCPUProfile()
+			}
+		},
 	}
 
 	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml or $HOME/.config/compactify/config.yaml)")
@@ -69,6 +84,9 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().BoolP("recursive", "r", false, "Recursively process images in subdirectories and mirror folder structure")
 
 	cmd.PersistentFlags().String("memprofile", "", "Write memory profile to this file")
+	cmd.PersistentFlags().MarkHidden("memprofile")
+	cmd.PersistentFlags().String("cpuprofile", "", "Write CPU profile to this file")
+	cmd.PersistentFlags().MarkHidden("cpuprofile")
 
 	if err := viper.BindPFlags(cmd.PersistentFlags()); err != nil {
 		fmt.Fprintf(cmd.ErrOrStderr(), "%s: %v\n", ui.Error("Error binding persistent flags"), err)
