@@ -180,6 +180,16 @@ go build -ldflags="-w -s -X 'github.com/felipesimis/go-compactify-cli/cmd.Versio
 
 ---
 
+## 🔬 Advanced Diagnostics (Developers)
+Compactify includes built-in, hidden diagnostic flags to generate native Go `pprof` profiles for performance auditing. These are hidden from the standard `--help` to preserve a clean UX.
+
+```bash
+# Generate CPU and Memory profiles during execution
+compactify resize -i ./images --cpuprofile cpu.prof --memprofile mem.prof
+
+# Analyze the profiles using Go tools
+go tool pprof cpu.prof
+
 ## 🛠 Built With
 - [Go](https://golang.org/) | [bimg](https://github.com/h2non/bimg) | [Cobra](https://github.com/spf13/cobra) | [Testify](https://github.com/stretchr/testify) | [Lipgloss](https://github.com/charmbracelet/lipgloss)
 

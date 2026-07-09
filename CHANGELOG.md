@@ -30,6 +30,9 @@
 - **Domain-Driven Renaming**: Refactored core orchestration to use `RunFileBatch` and `FileTask`, aligning the code with domain-specific semantics instead of generic function parameters.
 - **Type Safety Hardening**: Eliminated the `ExtraParams interface{}` in favor of explicit `OutputPathModifier` interfaces and Go closures. This removes unsafe type assertions and enforces compile-time safety across the processing pipeline.
 
+### 🛠 Engineering & Architecture
+- **Native Profiling Integration**: Introduced hidden `--memprofile` and `--cpuprofile` flags for advanced runtime diagnostics and performance bottleneck analysis in production environments without polluting the standard user CLI help.
+
 ## [1.5.0] - 2026-04-28
 
 ### 🚀 Added & Changed
