@@ -23,7 +23,8 @@ const (
 
 var bufferPool = sync.Pool{
 	New: func() interface{} {
-		return new(bytes.Buffer)
+		buf := bytes.NewBuffer(make([]byte, 0, 5*bytesInMb))
+		return buf
 	},
 }
 

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"runtime/pprof"
 	"strings"
 	"syscall"
 
@@ -67,6 +68,8 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().Bool("strip-metadata", false, "Strip EXIF data for privacy (GPS, camera info) and reduced file size")
 	cmd.PersistentFlags().BoolP("recursive", "r", false, "Recursively process images in subdirectories and mirror folder structure")
 
+	cmd.PersistentFlags().String("memprofile", "", "Write memory profile to this file")
+
 	if err := viper.BindPFlags(cmd.PersistentFlags()); err != nil {
 		fmt.Fprintf(cmd.ErrOrStderr(), "%s: %v\n", ui.Error("Error binding persistent flags"), err)
 	}
@@ -104,7 +107,23 @@ func Execute() error {
 	versionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")).Bold(true)
 	rootCmd.SetVersionTemplate(fmt.Sprintf("Compactify %s\n", versionStyle.Render("v"+displayVersion)))
 
-	return rootCmd.ExecuteContext(ctx)
+	execErr := rootCmd.ExecuteContext(ctx)
+
+	if memProfile, _ := rootCmd.Flags().GetString("memprofile"); memProfile != "" {
+		file, err := os.Create(memProfile)
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not create memory profile: %v\n", err)
+		} else {
+			defer file.Close()
+			runtime.GC()
+			if err := pprof.WriteHeapProfile(file); err != nil {
+				fmt.Fprintf(os.Stderr, "could not write memory profile: %v\n", err)
+			}
+		}
+	}
+
+	return execErr
 }
 
 func initConfig(cmd *cobra.Command) {
