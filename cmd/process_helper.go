@@ -23,7 +23,8 @@ const (
 
 var bufferPool = sync.Pool{
 	New: func() interface{} {
-		return new(bytes.Buffer)
+		buf := bytes.NewBuffer(make([]byte, 0, 5*bytesInMb))
+		return buf
 	},
 }
 
@@ -117,7 +118,11 @@ func HandleImageProcessing(
 	buf := bufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	buf.Grow(int(task.File.Size))
-	defer bufferPool.Put(buf)
+	defer func() {
+		if buf.Cap() <= 10*bytesInMb {
+			bufferPool.Put(buf)
+		}
+	}()
 
 	file, err := task.FS.OpenFile(task.File.Path)
 	if err != nil {

@@ -364,6 +364,34 @@ func (suite *E2ETestSuite) TestCLI_Recursive_ShouldProcessSubdirectoriesAndRepli
 	suite.FileExists(filepath.Join(outputDir, "subdir1", "nested", "photo3.webp"))
 }
 
+func (suite *E2ETestSuite) TestCLI_ShouldGenerateProfileFiles_WhenProfilingFlagsAreSet() {
+	testDataDir, err := filepath.Abs(filepath.Join("..", "..", "internal", "image", "testdata"))
+	suite.Require().NoError(err)
+
+	outputDir := suite.T().TempDir()
+	profileDir := suite.T().TempDir()
+
+	cpuProfile := filepath.Join(profileDir, "cpu.prof")
+	memProfile := filepath.Join(profileDir, "mem.prof")
+
+	cmd, cancel := suite.buildCommand(10*time.Second, "", nil, "convert", "--input", testDataDir, "--output", outputDir, "--format", "webp", "--cpuprofile", cpuProfile, "--memprofile", memProfile)
+	defer cancel()
+
+	output, err := cmd.CombinedOutput()
+	suite.NoError(err, "CLI failed to run with profiling flags. Output:\n%s", string(output))
+
+	suite.FileExists(cpuProfile)
+	suite.FileExists(memProfile)
+
+	cpuInfo, err := os.Stat(cpuProfile)
+	suite.Require().NoError(err)
+	suite.Greater(cpuInfo.Size(), int64(0))
+
+	memInfo, err := os.Stat(memProfile)
+	suite.Require().NoError(err)
+	suite.Greater(memInfo.Size(), int64(0))
+}
+
 func (suite *E2ETestSuite) assertIsValidImage(filePath string, expectedMimeType string) image.Image {
 	f, err := os.Open(filePath)
 	suite.Require().NoError(err)
