@@ -21,8 +21,9 @@ import (
 )
 
 var (
-	Version = "dev"
-	cfgFile string
+	Version        = "dev"
+	cfgFile        string
+	cpuProfileFile *os.File
 )
 
 func NewRootCmd() *cobra.Command {
@@ -34,22 +35,31 @@ func NewRootCmd() *cobra.Command {
 		Long:          `Compactify is your complete solution for optimizing images. With fast and intuitive commands, you can easily compress, resize, and convert your images, saving time and space.`,
 		Version:       Version,
 		SilenceErrors: true,
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 			initConfig(cmd)
 
-			if err := viper.BindPFlags(cmd.Flags()); err != nil {
-				return err
+			if bindErr := viper.BindPFlags(cmd.Flags()); bindErr != nil {
+				return bindErr
 			}
 
 			if cpuProfile, _ := cmd.Flags().GetString("cpuprofile"); cpuProfile != "" {
-				f, err := os.Create(cpuProfile)
+				cpuProfileFile, err = os.Create(cpuProfile)
 				if err != nil {
 					return fmt.Errorf("could not create CPU profile: %v", err)
 				}
-				if err := pprof.StartCPUProfile(f); err != nil {
+				if err := pprof.StartCPUProfile(cpuProfileFile); err != nil {
+					_ = cpuProfileFile.Close()
+					cpuProfileFile = nil
 					return fmt.Errorf("could not start CPU profile: %v", err)
 				}
 			}
+
+			defer func() {
+				if err != nil && cpuProfileFile != nil {
+					pprof.StopCPUProfile()
+					cpuProfileFile.Close()
+				}
+			}()
 
 			isHelp := cmd.Name() == "help" || cmd.Flags().Changed("help")
 			isInit := cmd.Name() == "init"
@@ -60,7 +70,8 @@ func NewRootCmd() *cobra.Command {
 
 			cfg := loadAppConfig()
 			if cfg.InputDir == "" {
-				return errors.New("required flag \"input\" (-i) not set")
+				err = errors.New("required flag \"input\" (-i) not set")
+				return err
 			}
 
 			if cfg.Concurrency > defaultWorkers*2 {
@@ -69,8 +80,9 @@ func NewRootCmd() *cobra.Command {
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if cpuProfile, _ := cmd.Flags().GetString("cpuprofile"); cpuProfile != "" {
+			if cpuProfileFile != nil {
 				pprof.StopCPUProfile()
+				cpuProfileFile.Close()
 			}
 		},
 	}
@@ -135,12 +147,12 @@ func Execute() error {
 		file, err := os.Create(memProfile)
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not create memory profile: %v\n", err)
+			fmt.Fprintf(rootCmd.ErrOrStderr(), "%s: %v\n", ui.Error("Error creating memory profile file"), err)
 		} else {
 			defer file.Close()
 			runtime.GC()
 			if err := pprof.WriteHeapProfile(file); err != nil {
-				fmt.Fprintf(os.Stderr, "could not write memory profile: %v\n", err)
+				fmt.Fprintf(rootCmd.ErrOrStderr(), "%s: %v\n", ui.Error("Error writing memory profile"), err)
 			}
 		}
 	}
