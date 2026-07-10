@@ -84,9 +84,13 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().BoolP("recursive", "r", false, "Recursively process images in subdirectories and mirror folder structure")
 
 	cmd.PersistentFlags().String("memprofile", "", "Write memory profile to this file")
-	cmd.PersistentFlags().MarkHidden("memprofile")
+	if err := cmd.PersistentFlags().MarkHidden("memprofile"); err != nil {
+		fmt.Fprintf(cmd.ErrOrStderr(), "%s: %v\n", ui.Error("Error hiding memprofile flag"), err)
+	}
 	cmd.PersistentFlags().String("cpuprofile", "", "Write CPU profile to this file")
-	cmd.PersistentFlags().MarkHidden("cpuprofile")
+	if err := cmd.PersistentFlags().MarkHidden("cpuprofile"); err != nil {
+		fmt.Fprintf(cmd.ErrOrStderr(), "%s: %v\n", ui.Error("Error hiding cpuprofile flag"), err)
+	}
 
 	if err := viper.BindPFlags(cmd.PersistentFlags()); err != nil {
 		fmt.Fprintf(cmd.ErrOrStderr(), "%s: %v\n", ui.Error("Error binding persistent flags"), err)
