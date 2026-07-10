@@ -189,6 +189,7 @@ compactify resize -i ./images --cpuprofile cpu.prof --memprofile mem.prof
 
 # Analyze the profiles using Go tools
 go tool pprof cpu.prof
+```
 
 ## 🛠 Built With
 - [Go](https://golang.org/) | [bimg](https://github.com/h2non/bimg) | [Cobra](https://github.com/spf13/cobra) | [Testify](https://github.com/stretchr/testify) | [Lipgloss](https://github.com/charmbracelet/lipgloss)
