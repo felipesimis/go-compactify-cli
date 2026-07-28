@@ -87,7 +87,7 @@ func (suite *FileSystemTestSuite) TestCreateDir_ShouldReturnNoError_WhenMkdirAll
 
 func (suite *FileSystemTestSuite) TestCreateSiblingDir_ShouldReturnErrCreateSiblingDir_WhenMkdirFails() {
 	expectedPath := suite.path + "-suffix"
-	suite.mockOS.On("Mkdir", expectedPath, os.ModePerm).Return(errors.New("mock error"))
+	suite.mockOS.On("MkdirAll", expectedPath, os.ModePerm).Return(errors.New("mock error"))
 
 	newDir, err := suite.fs.CreateSiblingDir(suite.path, "-suffix")
 	expectedErr := &ErrCreateSiblingDir{Path: suite.path, Err: errors.New("mock error")}
@@ -97,7 +97,7 @@ func (suite *FileSystemTestSuite) TestCreateSiblingDir_ShouldReturnErrCreateSibl
 
 func (suite *FileSystemTestSuite) TestCreateSiblingDir_ShouldReturnNewPath_WhenMkdirSucceeds() {
 	expectedPath := suite.path + "-suffix"
-	suite.mockOS.On("Mkdir", expectedPath, os.ModePerm).Return(nil)
+	suite.mockOS.On("MkdirAll", expectedPath, os.ModePerm).Return(nil)
 
 	newDir, err := suite.fs.CreateSiblingDir(suite.path, "-suffix")
 	suite.NoError(err)

@@ -20,6 +20,7 @@ Designed with **software engineering excellence** in mind, the project follows s
 - 🛡️ **Safety First**: Built-in `DryRun` mode to simulate filesystem operations before committing changes.
 - ⚙️ **Multi-layer Configuration**: Precedence order: Flags > Env Vars > Config File > Defaults.
 - 🛠️ **Versatile Processing**: Format conversion, resizing, cropping, grayscale, flipping, and lossless compression.
+- 🔁 **Idempotent Execution**: Safely resume interrupted batches; existing optimized files are instantly bypassed (Smart Skip) without redundant processing.
 - 📊 **Detailed Analytics**: Execution summary with a side-by-side "Impact Dashboard".
 
 ---
@@ -30,6 +31,12 @@ This section provides direct answers to common developer questions. Each example
 
 ### How do I process a massive library recursively while maintaining folder structure?
 Use the `--recursive` (or `-r`) flag to mirror the input hierarchy in the output destination:
+```bash
+./compactify convert --format webp -i ./massive_library -o ./optimized_library --recursive
+```
+
+### How do I resume an interrupted batch process?
+Compactify is fully idempotent. Simply run the exact same command again. The engine will perform a "Smart Skip" on already processed files in milliseconds and only consume CPU and RAM for the missing ones:
 ```bash
 ./compactify convert --format webp -i ./massive_library -o ./optimized_library --recursive
 ```

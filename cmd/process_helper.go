@@ -115,6 +115,18 @@ func HandleImageProcessing(
 	default:
 	}
 
+	outputPath := resolveImageDestination(task.File, task.OutputDir, modifier)
+
+	if info, err := task.FS.Stat(outputPath); err == nil {
+		if info.IsDir {
+			return fmt.Errorf("cannot write image: destination path '%s' is a directory", outputPath)
+		}
+		if info.Size > 0 {
+			stats.SkippedImages.Add(1)
+			return nil
+		}
+	}
+
 	buf := bufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	buf.Grow(int(task.File.Size))
@@ -149,8 +161,6 @@ func HandleImageProcessing(
 		stats.SkippedImages.Add(1)
 		return err
 	}
-
-	outputPath := resolveImageDestination(task.File, task.OutputDir, modifier)
 
 	destDir := filepath.Dir(outputPath)
 	if err := task.FS.CreateDir(destDir); err != nil {

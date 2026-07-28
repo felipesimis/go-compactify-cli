@@ -17,6 +17,7 @@ type ProcessorFS interface {
 	filesystem.FileReader
 	filesystem.FileWriter
 	CreateDir(path string) error
+	Stat(path string) (filesystem.FileInfo, error)
 }
 
 type FileTask struct {

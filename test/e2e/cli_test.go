@@ -392,6 +392,43 @@ func (suite *E2ETestSuite) TestCLI_ShouldGenerateProfileFiles_WhenProfilingFlags
 	suite.Greater(memInfo.Size(), int64(0))
 }
 
+func (suite *E2ETestSuite) TestCLI_Idempotency_ShouldSkipExistingFilesOnConsecutiveRuns() {
+	testDataDir, err := filepath.Abs(filepath.Join("..", "..", "internal", "image", "testdata"))
+	suite.Require().NoError(err)
+	outputDir := suite.T().TempDir()
+
+	cmd1, cancel1 := suite.buildCommand(10*time.Second, "", nil, "convert", "--input", testDataDir, "--output", outputDir, "--format", "webp")
+	defer cancel1()
+	output1, err := cmd1.CombinedOutput()
+	suite.NoError(err, "First run failed: %s", string(output1))
+	suite.NotContains(string(output1), "Skipped")
+
+	generatedFiles, err := filepath.Glob(filepath.Join(outputDir, "*.webp"))
+	suite.Require().NoError(err)
+	suite.Require().NotEmpty(generatedFiles)
+
+	fileStats := make(map[string]time.Time)
+	for _, file := range generatedFiles {
+		info, err := os.Stat(file)
+		suite.Require().NoError(err)
+		fileStats[file] = info.ModTime()
+	}
+
+	time.Sleep(1 * time.Second)
+
+	cmd2, cancel2 := suite.buildCommand(10*time.Second, "", nil, "convert", "--input", testDataDir, "--output", outputDir, "--format", "webp")
+	defer cancel2()
+	output2, err := cmd2.CombinedOutput()
+	suite.NoError(err, "Second run failed: %s", string(output2))
+	suite.Contains(string(output2), "Skipped")
+
+	for _, file := range generatedFiles {
+		info, err := os.Stat(file)
+		suite.Require().NoError(err)
+		suite.Equal(fileStats[file], info.ModTime(), "File %s was modified on second run", file)
+	}
+}
+
 func (suite *E2ETestSuite) assertIsValidImage(filePath string, expectedMimeType string) image.Image {
 	f, err := os.Open(filePath)
 	suite.Require().NoError(err)
