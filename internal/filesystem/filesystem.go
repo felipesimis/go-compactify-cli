@@ -138,7 +138,7 @@ func (fs *FileSystemWrapper) CreateDir(name string) error {
 func (fs *FileSystemWrapper) CreateSiblingDir(path, suffix string) (string, error) {
 	parentDir := filepath.Dir(path)
 	newDir := filepath.Join(parentDir, filepath.Base(path)+suffix)
-	if err := fs.os.Mkdir(newDir, os.ModePerm); err != nil {
+	if err := fs.os.MkdirAll(newDir, os.ModePerm); err != nil {
 		return "", &ErrCreateSiblingDir{Path: path, Err: err}
 	}
 	return newDir, nil
