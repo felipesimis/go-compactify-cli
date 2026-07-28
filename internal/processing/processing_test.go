@@ -45,6 +45,14 @@ func (m *MockFileSystem) CreateDir(path string) error {
 	return args.Error(0)
 }
 
+func (m *MockFileSystem) Stat(path string) (filesystem.FileInfo, error) {
+	args := m.Called(path)
+	if args.Get(0) == nil {
+		return filesystem.FileInfo{}, args.Error(1)
+	}
+	return args.Get(0).(filesystem.FileInfo), args.Error(1)
+}
+
 type MockProgressBar struct {
 	mock.Mock
 }

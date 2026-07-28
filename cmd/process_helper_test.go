@@ -45,6 +45,11 @@ func (m *mockHelperFS) CreateSiblingDir(inputDir, suffix string) (string, error)
 	return args.Get(0).(string), args.Error(1)
 }
 
+func (m *mockHelperFS) Stat(path string) (filesystem.FileInfo, error) {
+	args := m.Called(path)
+	return args.Get(0).(filesystem.FileInfo), args.Error(1)
+}
+
 func (m *mockHelperFS) ReadDir(path string) ([]filesystem.FileInfo, error) {
 	args := m.Called(path)
 	if args.Get(0) == nil {
@@ -220,6 +225,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenConte
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenOpenFileFails() {
+	suite.mockFS.On("Stat", mock.Anything).Return(filesystem.FileInfo{}, errors.New("not found"))
 	suite.mockFS.On("OpenFile", "test.jpg").Return(nil, errors.New("open error"))
 
 	stats, task := suite.defaultProcessingTask()
@@ -230,6 +236,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenOpenF
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenReadFails() {
+	suite.mockFS.On("Stat", mock.Anything).Return(filesystem.FileInfo{}, errors.New("not found"))
 	suite.mockFS.On("OpenFile", "test.jpg").Return(errorReader{}, nil)
 
 	stats, task := suite.defaultProcessingTask()
@@ -241,6 +248,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenReadF
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenCreateDirFails() {
+	suite.mockFS.On("Stat", mock.Anything).Return(filesystem.FileInfo{}, errors.New("not found"))
 	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
 	suite.mockFS.On("CreateDir", "output").Return(errors.New("create dir error"))
 
@@ -257,6 +265,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenCreat
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWriteFileFails() {
+	suite.mockFS.On("Stat", mock.Anything).Return(filesystem.FileInfo{}, errors.New("not found"))
 	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
 	suite.mockFS.On("CreateDir", "output").Return(nil)
 	suite.mockFS.On("WriteFile", mock.Anything, mock.Anything).Return(errors.New("write error"))
@@ -273,6 +282,7 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenWrite
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenProcessingFails() {
+	suite.mockFS.On("Stat", mock.Anything).Return(filesystem.FileInfo{}, errors.New("not found"))
 	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader([]byte("data"))), nil)
 
 	stats, task := suite.defaultProcessingTask()
@@ -283,9 +293,53 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenProce
 	suite.Equal(uint32(1), stats.SkippedImages.Load())
 }
 
+func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSkip_WhenFileAlreadyExistsAndIsValid() {
+	stats, task := suite.defaultProcessingTask()
+	task.OutputDir = "output"
+
+	expectedOutputPath := filepath.Join(task.OutputDir, "test.jpg")
+	suite.mockFS.On("Stat", expectedOutputPath).Return(filesystem.FileInfo{Size: 5000}, nil)
+
+	fakeFactory := func([]byte) image.ImageProcessor {
+		suite.Fail("ProcessorFactory should NEVER be called when the file is skipped")
+		return nil
+	}
+
+	err := HandleImageProcessing(context.Background(), task, stats, fakeFactory, AppConfig{}, nil)
+	suite.NoError(err)
+	suite.Equal(uint32(1), stats.SkippedImages.Load(), "Expected the image to be skipped due to existing valid file")
+	suite.Equal(uint64(0), stats.InitialSize.Load(), "Initial size should be 0 since the file was skipped")
+	suite.Equal(uint32(0), stats.ProcessedImages.Load(), "Processed images count should be 0 since the file was skipped")
+}
+
+func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldNotSkip_WhenFileExistsButIsEmpty() {
+	stats, task := suite.defaultProcessingTask()
+	task.OutputDir = "output"
+
+	expectedOutputPath := filepath.Join(task.OutputDir, "test.jpg")
+	suite.mockFS.On("Stat", expectedOutputPath).Return(filesystem.FileInfo{Size: 0}, nil)
+
+	originalData, processedData := []byte("original"), []byte("new-data")
+	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader(originalData)), nil)
+	suite.mockFS.On("CreateDir", "output").Return(nil)
+	suite.mockFS.On("WriteFile", expectedOutputPath, processedData).Return(nil)
+
+	task.File.Size = int64(len(originalData))
+
+	fakeFactory := func([]byte) image.ImageProcessor {
+		return &fakeProcessor{resultBytes: processedData}
+	}
+
+	err := HandleImageProcessing(context.Background(), task, stats, fakeFactory, AppConfig{}, nil)
+	suite.NoError(err)
+	suite.Equal(uint32(0), stats.SkippedImages.Load(), "Should not skip the image")
+	suite.Equal(uint32(1), stats.ProcessedImages.Load(), "File should be reprocessed and overwritten")
+}
+
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSucceed_WhenAllStepsPass() {
 	originalData, processedData := []byte("original"), []byte("new-data")
 
+	suite.mockFS.On("Stat", mock.Anything).Return(filesystem.FileInfo{}, errors.New("not found"))
 	suite.mockFS.On("OpenFile", "test.jpg").Return(io.NopCloser(bytes.NewReader(originalData)), nil)
 	suite.mockFS.On("CreateDir", "out").Return(nil)
 	suite.mockFS.On("WriteFile", filepath.Join("out", "test.jpg"), processedData).Return(nil)
