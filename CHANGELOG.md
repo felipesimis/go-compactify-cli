@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [2.0.0] - 2026-07-28
 
 ### ⚠️ Breaking Changes
 - **Dimensions Validation**: Increased minimum allowed width and height from `1` to `10` pixels to ensure processing stability.
