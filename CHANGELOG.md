@@ -20,6 +20,7 @@
 - **Resilient Versioning**: Added intelligent version string sanitization that handles both v-prefixed tags and raw version strings, preventing redundant visual prefixes in the UI.
 
 ### 🛠 Performance & Stability
+- **Smart Skip (Idempotency)**: The processing engine now strictly verifies destination files before allocating memory or invoking the CGO layer. Existing valid images are instantly bypassed, making massive batch operations safely resumable without wasting CPU cycles or causing memory bloat.
 - **Lazy Directory Creation**: Refactored the processing pipeline to create output directories "just-in-time". This ensures the output remains clean by only creating folders when a valid image is successfully processed, eliminating "ghost" (empty) directories.
 - **Instant Directory Discovery**: Rewrote the internal file reading engine. The CLI now resolves paths in massive folder trees up to 30x faster, eliminating the initial "choke" time before the progress bar starts.
 - **Bulletproof Memory Management (Scale-Ready)**: The tool is now immune to memory bloat from massive file queues. The internal orchestrator was refactored to ensure the CLI consumes a flat, fixed amount of RAM regardless of whether you process 100 or 1,000,000 images. No more out-of-memory crashes on giant batches.
