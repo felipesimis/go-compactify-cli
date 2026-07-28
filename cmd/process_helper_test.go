@@ -47,6 +47,9 @@ func (m *mockHelperFS) CreateSiblingDir(inputDir, suffix string) (string, error)
 
 func (m *mockHelperFS) Stat(path string) (filesystem.FileInfo, error) {
 	args := m.Called(path)
+	if args.Get(0) == nil {
+		return filesystem.FileInfo{}, args.Error(1)
+	}
 	return args.Get(0).(filesystem.FileInfo), args.Error(1)
 }
 
@@ -334,6 +337,27 @@ func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldNotSkip_WhenFi
 	suite.NoError(err)
 	suite.Equal(uint32(0), stats.SkippedImages.Load(), "Should not skip the image")
 	suite.Equal(uint32(1), stats.ProcessedImages.Load(), "File should be reprocessed and overwritten")
+}
+
+func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldReturnError_WhenDestinationIsDirectory() {
+	stats, task := suite.defaultProcessingTask()
+	task.OutputDir = "output"
+
+	expectedOutputPath := filepath.Join(task.OutputDir, "test.jpg")
+	suite.mockFS.On("Stat", expectedOutputPath).Return(filesystem.FileInfo{Size: 4096, IsDir: true}, nil)
+
+	fakeFactory := func([]byte) image.ImageProcessor {
+		suite.Fail("ProcessorFactory should NEVER be called when destination is a directory")
+		return nil
+	}
+
+	err := HandleImageProcessing(context.Background(), task, stats, fakeFactory, AppConfig{}, nil)
+	suite.Error(err)
+	suite.ErrorContains(err, "is a directory")
+
+	suite.Equal(uint32(0), stats.SkippedImages.Load(), "Should NOT mark as skipped when a directory collision occurs")
+	suite.Equal(uint32(0), stats.ProcessedImages.Load(), "Should NOT process any images")
+	suite.Equal(uint64(0), stats.InitialSize.Load(), "Should NOT read any bytes")
 }
 
 func (suite *ProcessingTestSuite) TestHandleImageProcessing_ShouldSucceed_WhenAllStepsPass() {
