@@ -2,7 +2,7 @@
 BINARY_NAME := compactify
 COVERAGE_FILE := coverage.out
 
-.PHONY : all fmt fmt-fix vet test coverage test-e2e build clean init-hooks
+.PHONY : all fmt fmt-fix vet test coverage test-e2e build clean init-hooks docker-build
 
 all: fmt vet test build
 
@@ -54,3 +54,7 @@ init-hooks:
 	@echo "🪝 Installing Git Hooks..."
 	@cd tools && go run github.com/evilmartians/lefthook/v2 install --force --reset-hooks-path
 	@echo "✅ Git Hooks installed!"
+
+docker-build:
+	@echo "🐳 Building Docker image..."
+	docker build -t $(BINARY_NAME):latest .
