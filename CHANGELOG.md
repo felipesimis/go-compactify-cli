@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### 🛠 Engineering & Architecture
+- **Docker BuildKit Optimization**: Injected cache mounts (`--mount=type=cache`) in the `Dockerfile` to drastically accelerate subsequent container compilation times.
+- **Base Image Security Patch**: Improved the Alpine runtime environment security by forcing `apk upgrade` prior to dependency installations.
+- **CI Validation Hardening**: Added an automated `docker-build` verification step within the GitHub Actions pipeline (`ci.yaml`) to prevent broken configurations from reaching the `main` branch.
+- **Cross-Platform Makefile**: Introduced a resilient `docker-build` target to standardize local container construction across environments.
+
 ## [2.0.0] - 2026-07-28
 
 ### ⚠️ Breaking Changes
