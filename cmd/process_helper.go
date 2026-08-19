@@ -131,7 +131,7 @@ func HandleImageProcessing(
 	buf.Reset()
 	buf.Grow(int(task.File.Size))
 	defer func() {
-		if buf.Cap() <= 10*bytesInMb {
+		if buf.Cap() <= 30*bytesInMb {
 			bufferPool.Put(buf)
 		}
 	}()
